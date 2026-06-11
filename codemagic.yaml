@@ -1,0 +1,74 @@
+workflows:
+  android-debug-build-from-zip:
+    name: Android Debug APK From ZIP
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+
+    environment:
+      java: 17
+
+    scripts:
+      - name: Show root files
+        script: |
+          pwd
+          ls -la
+
+      - name: Unzip project
+        script: |
+          rm -rf build_project
+          mkdir -p build_project
+          unzip -q IPTVmine-1.0.9.zip -d build_project
+          ls -la build_project
+          ls -la build_project/IPTVmine-1.0.9
+
+      - name: Clean local machine files
+        script: |
+          cd build_project/IPTVmine-1.0.9
+          rm -f local.properties
+          rm -rf .idea
+          rm -rf app/release
+
+      - name: Make Gradle executable
+        script: |
+          cd build_project/IPTVmine-1.0.9
+          chmod +x ./gradlew
+
+      - name: Build Debug APK
+        script: |
+          cd build_project/IPTVmine-1.0.9
+          attempt=1
+          max=3
+          while true; do
+            echo "===== Build attempt $attempt ====="
+            set -o pipefail
+            ./gradlew clean assembleDebug --stacktrace 2>&1 | tee build_log.txt
+            status=$?
+            set +o pipefail
+            if [ "$status" -eq 0 ]; then
+              echo "Build succeeded"
+              break
+            fi
+            if grep -qiE "Read timed out|Could not (GET|download)|connection reset|Network is unreachable|Could not resolve" build_log.txt \
+               && ! grep -qiE "compileDebugKotlin FAILED|compileDebugJavaWithJavac FAILED|Compilation error|^e: " build_log.txt \
+               && [ "$attempt" -lt "$max" ]; then
+              echo "Network issue detected. Retrying in 20s..."
+              attempt=$((attempt+1))
+              sleep 20
+              continue
+            fi
+            echo "Build failed due to a real error (see log above). Stopping."
+            exit 1
+          done
+
+      - name: Verify APK exists
+        script: |
+          cd build_project/IPTVmine-1.0.9
+          APK=$(find app/build/outputs -name "*.apk" | head -1)
+          if [ -z "$APK" ]; then
+            echo "ERROR: No APK produced — build did not actually succeed."
+            exit 1
+          fi
+          echo "APK found: $APK"
+
+    artifacts:
+      - build_project/IPTVmine-1.0.9/app/build/outputs/**/*.apk
