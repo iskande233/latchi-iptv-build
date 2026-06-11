@@ -19,23 +19,24 @@ workflows:
           mkdir -p build_project
           unzip -q IPTVmine-1.0.9.zip -d build_project
           ls -la build_project
-          ls -la build_project/IPTVmine-1.0.9
+          echo "Project root contents after unzip:"
+          ls -la build_project/
 
       - name: Clean local machine files
         script: |
-          cd build_project/IPTVmine-1.0.9
+          cd build_project
           rm -f local.properties
           rm -rf .idea
           rm -rf app/release
 
       - name: Make Gradle executable
         script: |
-          cd build_project/IPTVmine-1.0.9
+          cd build_project
           chmod +x ./gradlew
 
       - name: Build Debug APK
         script: |
-          cd build_project/IPTVmine-1.0.9
+          cd build_project
           attempt=1
           max=3
           while true; do
@@ -62,7 +63,7 @@ workflows:
 
       - name: Verify APK exists
         script: |
-          cd build_project/IPTVmine-1.0.9
+          cd build_project
           APK=$(find app/build/outputs -name "*.apk" | head -1)
           if [ -z "$APK" ]; then
             echo "ERROR: No APK produced — build did not actually succeed."
@@ -71,4 +72,4 @@ workflows:
           echo "APK found: $APK"
 
     artifacts:
-      - build_project/IPTVmine-1.0.9/app/build/outputs/**/*.apk
+      - build_project/app/build/outputs/**/*.apk
