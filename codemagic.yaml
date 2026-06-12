@@ -6,8 +6,6 @@ workflows:
 
     environment:
       java: 17
-      android:
-        build_tool: '34.0.0'
 
     scripts:
       - name: Show root files
