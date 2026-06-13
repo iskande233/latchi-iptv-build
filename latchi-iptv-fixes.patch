@@ -1,6 +1,6 @@
 diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/GOOGLE_SHEET_SETUP_AR.md IPTVmine/GOOGLE_SHEET_SETUP_AR.md
 --- IPTVmine_original/GOOGLE_SHEET_SETUP_AR.md	1970-01-01 00:00:00.000000000 +0000
-+++ IPTVmine/GOOGLE_SHEET_SETUP_AR.md	2026-06-13 20:50:54.569852051 +0000
++++ IPTVmine/GOOGLE_SHEET_SETUP_AR.md	2026-06-13 21:35:53.281791839 +0000
 @@ -0,0 +1,213 @@
 +# ماذا تدير الآن؟ ربط التطبيقين مع Google Sheet
 +
@@ -216,8 +216,8 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
 +admin_dashboard_fixed
 +```
 diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/AndroidManifest.xml IPTVmine/app/src/main/AndroidManifest.xml
---- IPTVmine_original/app/src/main/AndroidManifest.xml	2026-06-13 20:50:54.625852051 +0000
-+++ IPTVmine/app/src/main/AndroidManifest.xml	2026-06-13 20:53:43.529852051 +0000
+--- IPTVmine_original/app/src/main/AndroidManifest.xml	2026-06-13 21:35:53.337791839 +0000
++++ IPTVmine/app/src/main/AndroidManifest.xml	2026-06-13 21:35:53.285791839 +0000
 @@ -7,8 +7,11 @@
      <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
      <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
@@ -231,8 +231,8 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
      <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
      <application android:allowBackup="true" android:dataExtractionRules="@xml/data_extraction_rules" android:fullBackupContent="@xml/backup_rules" android:icon="@drawable/ic_tv" android:label="@string/app_name" android:roundIcon="@drawable/ic_tv" android:supportsRtl="true" android:theme="@style/Theme.IPTV" android:usesCleartextTraffic="true" tools:targetApi="31">
 diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/adapter/CategoryGridAdapter.kt IPTVmine/app/src/main/java/com/latchi/iptv/adapter/CategoryGridAdapter.kt
---- IPTVmine_original/app/src/main/java/com/latchi/iptv/adapter/CategoryGridAdapter.kt	2026-06-13 20:50:54.633852051 +0000
-+++ IPTVmine/app/src/main/java/com/latchi/iptv/adapter/CategoryGridAdapter.kt	2026-06-13 20:54:29.973852051 +0000
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/adapter/CategoryGridAdapter.kt	2026-06-13 21:35:53.345791839 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/adapter/CategoryGridAdapter.kt	2026-06-13 21:35:53.297791839 +0000
 @@ -38,7 +38,7 @@
 
          fun bind(item: CategoryItem) {
@@ -243,8 +243,8 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
              val lower = item.name.lowercase()
              val iconRes = when {
 diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/adapter/ChannelsAdapter.kt IPTVmine/app/src/main/java/com/latchi/iptv/adapter/ChannelsAdapter.kt
---- IPTVmine_original/app/src/main/java/com/latchi/iptv/adapter/ChannelsAdapter.kt	2026-06-13 20:50:54.633852051 +0000
-+++ IPTVmine/app/src/main/java/com/latchi/iptv/adapter/ChannelsAdapter.kt	2026-06-13 20:50:54.581852051 +0000
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/adapter/ChannelsAdapter.kt	2026-06-13 21:35:53.345791839 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/adapter/ChannelsAdapter.kt	2026-06-13 21:35:53.297791839 +0000
 @@ -31,6 +31,7 @@
 
      private val VIEW_TYPE_LIST = 1
@@ -277,8 +277,8 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
                  diffResult.dispatchUpdatesTo(this@ChannelsAdapter)
              }
 diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/provider/ChannelsProvider.kt IPTVmine/app/src/main/java/com/latchi/iptv/provider/ChannelsProvider.kt
---- IPTVmine_original/app/src/main/java/com/latchi/iptv/provider/ChannelsProvider.kt	2026-06-13 20:50:54.633852051 +0000
-+++ IPTVmine/app/src/main/java/com/latchi/iptv/provider/ChannelsProvider.kt	2026-06-13 20:54:23.449852051 +0000
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/provider/ChannelsProvider.kt	2026-06-13 21:35:53.345791839 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/provider/ChannelsProvider.kt	2026-06-13 21:35:53.297791839 +0000
 @@ -7,14 +7,31 @@
  import com.latchi.iptv.model.Channel
  import kotlinx.coroutines.Dispatchers
@@ -602,8 +602,8 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
 
      private fun parseXtreamStreamsUsingJsonReader(url: String, type: String, catMap: Map<String, String>, server: String, username: String, password: String): List<Channel> {
 diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/ChannelListActivity.kt IPTVmine/app/src/main/java/com/latchi/iptv/screens/ChannelListActivity.kt
---- IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/ChannelListActivity.kt	2026-06-13 20:50:54.633852051 +0000
-+++ IPTVmine/app/src/main/java/com/latchi/iptv/screens/ChannelListActivity.kt	2026-06-13 20:54:55.765852051 +0000
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/ChannelListActivity.kt	2026-06-13 21:35:53.345791839 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/screens/ChannelListActivity.kt	2026-06-13 21:35:53.297791839 +0000
 @@ -28,6 +28,7 @@
  import com.latchi.iptv.adapter.CategoryGridAdapter
  import com.latchi.iptv.adapter.ChannelsAdapter
@@ -759,8 +759,8 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
          currentCategory = "All"
          stickyCatTitle.text = if (contentType == "live") "كل القنوات" else "الكل"
 diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/HomeFragment.kt IPTVmine/app/src/main/java/com/latchi/iptv/screens/HomeFragment.kt
---- IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/HomeFragment.kt	2026-06-13 20:50:54.633852051 +0000
-+++ IPTVmine/app/src/main/java/com/latchi/iptv/screens/HomeFragment.kt	2026-06-13 20:55:06.345852051 +0000
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/HomeFragment.kt	2026-06-13 21:35:53.345791839 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/screens/HomeFragment.kt	2026-06-13 21:35:53.297791839 +0000
 @@ -343,13 +343,25 @@
              } catch (_: Throwable) {}
              checkExpiryWarning(active.expiresAt)
@@ -825,8 +825,8 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
                          }
                      } catch (_: Exception) {}
 diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/PlayerActivity.kt IPTVmine/app/src/main/java/com/latchi/iptv/screens/PlayerActivity.kt
---- IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/PlayerActivity.kt	2026-06-13 20:50:54.637852051 +0000
-+++ IPTVmine/app/src/main/java/com/latchi/iptv/screens/PlayerActivity.kt	2026-06-13 20:55:18.357852051 +0000
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/PlayerActivity.kt	2026-06-13 21:35:53.349791839 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/screens/PlayerActivity.kt	2026-06-13 21:38:36.249791839 +0000
 @@ -16,6 +16,7 @@
  import android.widget.Toast
  import androidx.appcompat.app.AppCompatActivity
@@ -835,9 +835,56 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
  import com.google.android.exoplayer2.ExoPlayer
  import com.google.android.exoplayer2.MediaItem
  import com.google.android.exoplayer2.PlaybackException
-@@ -270,6 +271,17 @@
+@@ -41,6 +42,7 @@
+     private lateinit var playerView: PlayerView
+     private lateinit var progressBar: ProgressBar
+     private lateinit var errorTextView: TextView
++    private lateinit var externalPlayerButton: TextView
+     private lateinit var imageViewFullScreen: ImageView
+     private lateinit var imageViewLock: ImageView
+     private lateinit var linearLayoutControlUp: LinearLayout
+@@ -59,6 +61,8 @@
+     private var currentChannelIndex = -1
+     private lateinit var watermarkText: TextView
+     private var watermarkHandler: android.os.Handler? = null
++    private var forcedPlayerMode: String? = null
++    private var autoHlsRetried = false
+
+     companion object {
+         private const val INCREMENT_MILLIS = 5000L
+@@ -212,7 +216,8 @@
+     }
+
+     private fun setFindViewById() {
+-        playerView = findViewById(R.id.playerView); progressBar = findViewById(R.id.progressBar); errorTextView = findViewById(R.id.errorTextView)
++        playerView = findViewById(R.id.playerView); progressBar = findViewById(R.id.progressBar); errorTextView = findViewById(R.id.errorTextView); externalPlayerButton = findViewById(R.id.externalPlayerButton)
++        externalPlayerButton.setOnClickListener { openExternalPlayer() }
+         imageViewFullScreen = findViewById(R.id.imageViewFullScreen); imageViewLock = findViewById(R.id.imageViewLock)
+         linearLayoutControlUp = findViewById(R.id.linearLayoutControlUp); linearLayoutControlBottom = findViewById(R.id.linearLayoutControlBottom)
+         epgOverlay = findViewById(R.id.epgOverlay); watermarkText = findViewById(R.id.watermarkText); epgNow = findViewById(R.id.epgNow); epgNext = findViewById(R.id.epgNext)
+@@ -265,24 +270,49 @@
+     private fun setupPlayer() {
+         progressBar.visibility = View.VISIBLE
+         errorTextView.visibility = View.GONE
++        externalPlayerButton.visibility = View.GONE
+         playerView.visibility = View.VISIBLE
+
++        val streamUrl = channel.streamUrl.trim().replace("&amp;", "&")
++        val mode = forcedPlayerMode ?: PlayerPrefs.getMode(this)
++        if (mode == PlayerPrefs.MODE_EXTERNAL) {
++            progressBar.visibility = View.GONE
++            openExternalPlayer()
++            return
++        }
++
          val dataSourceFactory = DefaultHttpDataSource.Factory()
-             .setUserAgent("Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36")
+-            .setUserAgent("Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36")
++            .setUserAgent("Mozilla/5.0 (Linux; Android) AppleWebKit/537.36")
++            .setDefaultRequestProperties(mapOf(
++                "Accept" to "*/*",
++                "Connection" to "keep-alive",
++                "Icy-MetaData" to "1"
++            ))
              .setAllowCrossProtocolRedirects(true)
 +            .setConnectTimeoutMs(8_000)
 +            .setReadTimeoutMs(12_000)
@@ -851,9 +898,10 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
 +            )
 +            .build()
 
-         val streamUrl = channel.streamUrl.trim().replace("&amp;", "&")
+-        val streamUrl = channel.streamUrl.trim().replace("&amp;", "&")
          val mediaItem = MediaItem.fromUri(Uri.parse(streamUrl))
-@@ -278,11 +290,13 @@
+-        val mode = PlayerPrefs.getMode(this)
+
          player = if (mode == PlayerPrefs.MODE_AUTO) {
              val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
              ExoPlayer.Builder(this).setMediaSourceFactory(mediaSourceFactory)
@@ -867,9 +915,81 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
                  .setSeekBackIncrementMs(INCREMENT_MILLIS)
                  .setSeekForwardIncrementMs(INCREMENT_MILLIS)
                  .build()
+@@ -318,15 +348,40 @@
+                 }
+
+                 override fun onPlayerError(error: PlaybackException) {
++                    if ((forcedPlayerMode == null || forcedPlayerMode == PlayerPrefs.MODE_AUTO) && !autoHlsRetried) {
++                        autoHlsRetried = true
++                        forcedPlayerMode = PlayerPrefs.MODE_HLS
++                        progressBar.visibility = View.VISIBLE
++                        errorTextView.visibility = View.GONE
++                        externalPlayerButton.visibility = View.GONE
++                        player?.release()
++                        player = null
++                        setupPlayer()
++                        return
++                    }
+                     progressBar.visibility = View.GONE
+                     playerView.visibility = View.GONE
+                     errorTextView.visibility = View.VISIBLE
++                    externalPlayerButton.visibility = View.VISIBLE
+                     errorTextView.text = getString(R.string.channel_unavailable)
+                 }
+             })
+         }
+     }
+
++    private fun openExternalPlayer() {
++        val streamUrl = channel.streamUrl.trim().replace("&amp;", "&")
++        try {
++            val intent = Intent(Intent.ACTION_VIEW).apply {
++                setDataAndType(Uri.parse(streamUrl), "video/*")
++                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
++            }
++            startActivity(Intent.createChooser(intent, getString(R.string.open_external_player)))
++        } catch (_: Exception) {
++            Toast.makeText(this, getString(R.string.no_external_player), Toast.LENGTH_LONG).show()
++        }
++    }
++
+     private fun lockScreen(lock: Boolean) {
+         linearLayoutControlUp.visibility = if (lock) View.INVISIBLE else View.VISIBLE
+         linearLayoutControlBottom.visibility = if (lock) View.INVISIBLE else View.VISIBLE
+diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/SettingsActivity.kt IPTVmine/app/src/main/java/com/latchi/iptv/screens/SettingsActivity.kt
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/SettingsActivity.kt	2026-06-13 21:35:53.349791839 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/screens/SettingsActivity.kt	2026-06-13 21:38:14.205791839 +0000
+@@ -87,7 +87,7 @@
+                 "▶️ المشغل",
+                 listOf(
+                     TvOption("player_engine", "Player Engine", "اختيار محرك التشغيل للتلفاز", listOf("ExoPlayer", "VLC"), "ExoPlayer"),
+-                    TvOption("tv_player_mode", "Current Player Mode", "الإعداد الحالي القديم محفوظ كما هو", listOf("Auto", "HLS", "Progressive"), PlayerPrefs.getModeLabel(this), "player_mode"),
++                    TvOption("tv_player_mode", "Current Player Mode", "الإعداد الحالي القديم محفوظ كما هو", listOf("Fast Auto", "Compatible HLS", "Progressive", "External"), PlayerPrefs.getModeLabel(this), "player_mode"),
+                     TvOption("hardware_acceleration", "Hardware Acceleration", "تفعيل GPU لتحسين تشغيل الفيديو", listOf("ON", "OFF"), "ON"),
+                     TvOption("auto_play_next", "Auto Play Next", "تشغيل القناة التالية تلقائياً", listOf("OFF", "ON"), "OFF"),
+                     TvOption("connection_timeout", "Connection Timeout", "مدة الانتظار قبل إلغاء الاتصال", listOf("5s", "10s", "15s", "30s"), "10s"),
+@@ -156,6 +156,7 @@
+         findViewById<TextView>(R.id.playerAuto).setOnClickListener { setPlayerMode(PlayerPrefs.MODE_AUTO) }
+         findViewById<TextView>(R.id.playerHls).setOnClickListener { setPlayerMode(PlayerPrefs.MODE_HLS) }
+         findViewById<TextView>(R.id.playerProgressive).setOnClickListener { setPlayerMode(PlayerPrefs.MODE_PROGRESSIVE) }
++        findViewById<TextView>(R.id.playerExternal).setOnClickListener { setPlayerMode(PlayerPrefs.MODE_EXTERNAL) }
+
+         findViewById<TextView>(R.id.supportButton).setOnClickListener {
+             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/213798712450")))
+@@ -431,8 +432,9 @@
+             }
+             "player_mode" -> {
+                 val mode = when (next) {
+-                    "HLS" -> PlayerPrefs.MODE_HLS
++                    "Compatible HLS", "HLS" -> PlayerPrefs.MODE_HLS
+                     "Progressive" -> PlayerPrefs.MODE_PROGRESSIVE
++                    "External" -> PlayerPrefs.MODE_EXTERNAL
+                     else -> PlayerPrefs.MODE_AUTO
+                 }
+                 PlayerPrefs.setMode(this, mode)
 diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/SplashActivity.kt IPTVmine/app/src/main/java/com/latchi/iptv/screens/SplashActivity.kt
---- IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/SplashActivity.kt	2026-06-13 20:50:54.637852051 +0000
-+++ IPTVmine/app/src/main/java/com/latchi/iptv/screens/SplashActivity.kt	2026-06-13 20:53:53.469852051 +0000
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/SplashActivity.kt	2026-06-13 21:35:53.349791839 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/screens/SplashActivity.kt	2026-06-13 21:38:55.537791839 +0000
 @@ -61,26 +61,39 @@
      }
 
@@ -920,7 +1040,7 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
      }
 
      companion object {
-@@ -105,12 +118,14 @@
+@@ -105,12 +118,15 @@
 
      private fun navigateToNextScreen() {
          val active = SourcePrefs.getActiveProfile(this)
@@ -928,12 +1048,13 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
 -            active == null -> UserListActivity::class.java
 -            getSharedPreferences("verification_prefs", MODE_PRIVATE).getBoolean("is_verified_${active.id}", false) -> com.latchi.iptv.MainActivity::class.java
 -            else -> VerificationActivity::class.java
++        val verified = active?.let {
++            getSharedPreferences("verification_prefs", MODE_PRIVATE).getBoolean("is_verified_${it.id}", false)
++        } ?: false
 +        val intent = when {
 +            active == null -> Intent(this, UserListActivity::class.java)
-+            active.activationCode == "MANUAL" -> Intent(this, com.latchi.iptv.MainActivity::class.java)
-+            // نتحقق من Google Sheet في كل تشغيل حتى إذا تغير رابط السيرفر في الشيت
-+            // يتحدث داخل التطبيق وينمسح كاش القنوات القديم تلقائياً.
-+            else -> Intent(this, VerificationActivity::class.java).putExtra("silent_verify", true)
++            active.activationCode == "MANUAL" || verified -> Intent(this, com.latchi.iptv.MainActivity::class.java)
++            else -> Intent(this, VerificationActivity::class.java)
          }
 -        startActivity(Intent(this, nextClass))
 +        startActivity(intent)
@@ -941,8 +1062,8 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
      }
 
 diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/UserListActivity.kt IPTVmine/app/src/main/java/com/latchi/iptv/screens/UserListActivity.kt
---- IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/UserListActivity.kt	2026-06-13 20:50:54.637852051 +0000
-+++ IPTVmine/app/src/main/java/com/latchi/iptv/screens/UserListActivity.kt	2026-06-13 20:50:54.585852051 +0000
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/UserListActivity.kt	2026-06-13 21:35:53.349791839 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/screens/UserListActivity.kt	2026-06-13 21:35:53.297791839 +0000
 @@ -8,7 +8,6 @@
  import android.os.Bundle
  import android.os.Handler
@@ -1014,8 +1135,8 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
                  }
              } catch (e: Exception) {
 diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/VerificationActivity.kt IPTVmine/app/src/main/java/com/latchi/iptv/screens/VerificationActivity.kt
---- IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/VerificationActivity.kt	2026-06-13 20:50:54.637852051 +0000
-+++ IPTVmine/app/src/main/java/com/latchi/iptv/screens/VerificationActivity.kt	2026-06-13 20:50:54.585852051 +0000
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/VerificationActivity.kt	2026-06-13 21:35:53.349791839 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/screens/VerificationActivity.kt	2026-06-13 21:35:53.297791839 +0000
 @@ -27,6 +27,7 @@
      private var statusText: TextView? = null
      private var progressHandler: Handler? = null
@@ -1059,8 +1180,8 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
                      } else {
                          showNoConnectionScreen()
 diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/utils/ActivationConfig.kt IPTVmine/app/src/main/java/com/latchi/iptv/utils/ActivationConfig.kt
---- IPTVmine_original/app/src/main/java/com/latchi/iptv/utils/ActivationConfig.kt	2026-06-13 20:50:54.637852051 +0000
-+++ IPTVmine/app/src/main/java/com/latchi/iptv/utils/ActivationConfig.kt	2026-06-13 20:50:54.585852051 +0000
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/utils/ActivationConfig.kt	2026-06-13 21:35:53.349791839 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/utils/ActivationConfig.kt	2026-06-13 21:35:53.297791839 +0000
 @@ -1,11 +1,11 @@
  package com.latchi.iptv.utils
 
@@ -1136,8 +1257,8 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
 +    private fun urlEncode(value: String): String = java.net.URLEncoder.encode(value.trim(), "UTF-8")
  }
 diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/utils/ActivationValidator.kt IPTVmine/app/src/main/java/com/latchi/iptv/utils/ActivationValidator.kt
---- IPTVmine_original/app/src/main/java/com/latchi/iptv/utils/ActivationValidator.kt	2026-06-13 20:50:54.637852051 +0000
-+++ IPTVmine/app/src/main/java/com/latchi/iptv/utils/ActivationValidator.kt	2026-06-13 20:50:54.585852051 +0000
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/utils/ActivationValidator.kt	2026-06-13 21:35:53.349791839 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/utils/ActivationValidator.kt	2026-06-13 21:35:53.297791839 +0000
 @@ -22,37 +22,60 @@
          if (profile.activationCode == "MANUAL") {
              return ActivationValidationResult(true, "OK", profile.name, profile.m3uUrl, profile.expiresAt, profile.maxDevices)
@@ -1210,8 +1331,8 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
      }
  }
 diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/utils/ChannelCache.kt IPTVmine/app/src/main/java/com/latchi/iptv/utils/ChannelCache.kt
---- IPTVmine_original/app/src/main/java/com/latchi/iptv/utils/ChannelCache.kt	2026-06-13 20:50:54.637852051 +0000
-+++ IPTVmine/app/src/main/java/com/latchi/iptv/utils/ChannelCache.kt	2026-06-13 20:50:54.585852051 +0000
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/utils/ChannelCache.kt	2026-06-13 21:35:53.349791839 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/utils/ChannelCache.kt	2026-06-13 21:35:53.297791839 +0000
 @@ -64,14 +64,14 @@
              val vodFile = getVodDiskFile(context, profileId)
              val seriesFile = getSeriesDiskFile(context, profileId)
@@ -1248,8 +1369,8 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
                      }
                  }
 diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/utils/FloatingBackHelper.kt IPTVmine/app/src/main/java/com/latchi/iptv/utils/FloatingBackHelper.kt
---- IPTVmine_original/app/src/main/java/com/latchi/iptv/utils/FloatingBackHelper.kt	2026-06-13 20:50:54.637852051 +0000
-+++ IPTVmine/app/src/main/java/com/latchi/iptv/utils/FloatingBackHelper.kt	2026-06-13 20:53:23.237852051 +0000
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/utils/FloatingBackHelper.kt	2026-06-13 21:35:53.349791839 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/utils/FloatingBackHelper.kt	2026-06-13 21:35:53.297791839 +0000
 @@ -2,11 +2,11 @@
 
  import android.app.Activity
@@ -1398,9 +1519,33 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
 +
 +    private fun dp(activity: Activity, value: Int): Int = (value * activity.resources.displayMetrics.density).toInt()
  }
+diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/utils/PlayerPrefs.kt IPTVmine/app/src/main/java/com/latchi/iptv/utils/PlayerPrefs.kt
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/utils/PlayerPrefs.kt	2026-06-13 21:35:53.349791839 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/utils/PlayerPrefs.kt	2026-06-13 21:37:26.653791839 +0000
+@@ -9,6 +9,7 @@
+     const val MODE_AUTO = "auto"
+     const val MODE_HLS = "hls"
+     const val MODE_PROGRESSIVE = "progressive"
++    const val MODE_EXTERNAL = "external"
+
+     fun getMode(context: Context): String {
+         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+@@ -22,9 +23,10 @@
+
+     fun getModeLabel(context: Context): String {
+         return when (getMode(context)) {
+-            MODE_HLS -> "HLS"
++            MODE_HLS -> "Compatible HLS"
+             MODE_PROGRESSIVE -> "Progressive"
+-            else -> "Auto"
++            MODE_EXTERNAL -> "External"
++            else -> "Fast Auto"
+         }
+     }
+ }
 diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/res/drawable/bg_back_professional.xml IPTVmine/app/src/main/res/drawable/bg_back_professional.xml
 --- IPTVmine_original/app/src/main/res/drawable/bg_back_professional.xml	1970-01-01 00:00:00.000000000 +0000
-+++ IPTVmine/app/src/main/res/drawable/bg_back_professional.xml	2026-06-13 20:52:58.885852051 +0000
++++ IPTVmine/app/src/main/res/drawable/bg_back_professional.xml	2026-06-13 21:35:53.305791839 +0000
 @@ -0,0 +1,11 @@
 +<?xml version="1.0" encoding="utf-8"?>
 +<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
@@ -1413,9 +1558,20 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
 +    <stroke android:width="1.5dp" android:color="#CCFFD700" />
 +    <padding android:left="10dp" android:right="10dp" android:top="6dp" android:bottom="6dp" />
 +</shape>
+diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/res/drawable/bg_external_player_button.xml IPTVmine/app/src/main/res/drawable/bg_external_player_button.xml
+--- IPTVmine_original/app/src/main/res/drawable/bg_external_player_button.xml	1970-01-01 00:00:00.000000000 +0000
++++ IPTVmine/app/src/main/res/drawable/bg_external_player_button.xml	2026-06-13 21:37:07.261791839 +0000
+@@ -0,0 +1,7 @@
++<?xml version="1.0" encoding="utf-8"?>
++<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
++    <corners android:radius="18dp" />
++    <gradient android:startColor="#AA7C3AED" android:endColor="#AA00E5FF" android:angle="0" />
++    <stroke android:width="1dp" android:color="#FFFFFFFF" />
++    <padding android:left="14dp" android:right="14dp" android:top="8dp" android:bottom="8dp" />
++</shape>
 diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/res/drawable/ic_back_professional.xml IPTVmine/app/src/main/res/drawable/ic_back_professional.xml
 --- IPTVmine_original/app/src/main/res/drawable/ic_back_professional.xml	1970-01-01 00:00:00.000000000 +0000
-+++ IPTVmine/app/src/main/res/drawable/ic_back_professional.xml	2026-06-13 20:52:52.165852051 +0000
++++ IPTVmine/app/src/main/res/drawable/ic_back_professional.xml	2026-06-13 21:35:53.309791839 +0000
 @@ -0,0 +1,24 @@
 +<?xml version="1.0" encoding="utf-8"?>
 +<vector xmlns:android="http://schemas.android.com/apk/res/android"
@@ -1441,9 +1597,54 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
 +        android:fillColor="#22FFD700"
 +        android:pathData="M14,2.5 A11.5,11.5 0,1 0,14,25.5 A11.5,11.5 0,1 0,14,2.5" />
 +</vector>
+diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/res/layout/activity_player.xml IPTVmine/app/src/main/res/layout/activity_player.xml
+--- IPTVmine_original/app/src/main/res/layout/activity_player.xml	2026-06-13 21:35:53.361791839 +0000
++++ IPTVmine/app/src/main/res/layout/activity_player.xml	2026-06-13 21:37:17.569791839 +0000
+@@ -76,5 +76,23 @@
+             android:textColor="#C7B7D8"
+             android:textSize="12sp" />
+     </LinearLayout>
++    <TextView
++        android:id="@+id/externalPlayerButton"
++        android:layout_width="wrap_content"
++        android:layout_height="46dp"
++        android:layout_alignParentBottom="true"
++        android:layout_centerHorizontal="true"
++        android:layout_marginBottom="26dp"
++        android:background="@drawable/bg_external_player_button"
++        android:clickable="true"
++        android:focusable="true"
++        android:gravity="center"
++        android:paddingHorizontal="18dp"
++        android:text="فتح بمشغل خارجي"
++        android:textColor="#FFFFFF"
++        android:textSize="15sp"
++        android:textStyle="bold"
++        android:visibility="gone" />
++
+     <TextView android:id="@+id/watermarkText" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_centerInParent="true" android:text="LATCHI TV APP" android:textColor="#99FFFFFF" android:textSize="22sp" android:textStyle="bold" android:shadowColor="#000000" android:shadowDx="2" android:shadowDy="2" android:shadowRadius="4" android:visibility="gone" />
+ </RelativeLayout>
+\ No newline at end of file
+diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/res/layout/activity_settings.xml IPTVmine/app/src/main/res/layout/activity_settings.xml
+--- IPTVmine_original/app/src/main/res/layout/activity_settings.xml	2026-06-13 21:35:53.361791839 +0000
++++ IPTVmine/app/src/main/res/layout/activity_settings.xml	2026-06-13 21:37:37.881791839 +0000
+@@ -75,9 +75,10 @@
+             android:layout_height="50dp"
+             android:layout_marginTop="8dp"
+             android:orientation="horizontal">
+-            <TextView android:id="@+id/playerAuto" android:clickable="true" android:focusable="true" android:foreground="@drawable/focus_selector" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginEnd="6dp" android:background="@drawable/bg_button_primary" android:gravity="center" android:text="Auto" android:textColor="@android:color/white" android:textStyle="bold" />
+-            <TextView android:id="@+id/playerHls" android:clickable="true" android:focusable="true" android:foreground="@drawable/focus_selector" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginEnd="6dp" android:background="@drawable/bg_panel" android:gravity="center" android:text="HLS" android:textColor="@android:color/white" android:textStyle="bold" />
+-            <TextView android:id="@+id/playerProgressive" android:clickable="true" android:focusable="true" android:foreground="@drawable/focus_selector" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:background="@drawable/bg_panel" android:gravity="center" android:text="Prog" android:textColor="@android:color/white" android:textStyle="bold" />
++            <TextView android:id="@+id/playerAuto" android:clickable="true" android:focusable="true" android:foreground="@drawable/focus_selector" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginEnd="6dp" android:background="@drawable/bg_button_primary" android:gravity="center" android:text="Fast" android:textColor="@android:color/white" android:textStyle="bold" />
++            <TextView android:id="@+id/playerHls" android:clickable="true" android:focusable="true" android:foreground="@drawable/focus_selector" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginEnd="6dp" android:background="@drawable/bg_panel" android:gravity="center" android:text="Compat" android:textColor="@android:color/white" android:textStyle="bold" />
++            <TextView android:id="@+id/playerProgressive" android:clickable="true" android:focusable="true" android:foreground="@drawable/focus_selector" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginEnd="6dp" android:background="@drawable/bg_panel" android:gravity="center" android:text="Prog" android:textColor="@android:color/white" android:textStyle="bold" />
++            <TextView android:id="@+id/playerExternal" android:clickable="true" android:focusable="true" android:foreground="@drawable/focus_selector" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:background="@drawable/bg_panel" android:gravity="center" android:text="External" android:textColor="@android:color/white" android:textStyle="bold" />
+         </LinearLayout>
+
+         <TextView android:id="@+id/supportButton" android:clickable="true" android:focusable="true" android:foreground="@drawable/focus_selector" android:layout_width="match_parent" android:layout_height="58dp" android:layout_marginTop="14dp" android:background="@drawable/bg_panel" android:gravity="center" android:text="@string/whatsapp_support" android:textColor="@android:color/white" android:textSize="16sp" android:textStyle="bold" />
 diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/res/layout/floating_back_buttons.xml IPTVmine/app/src/main/res/layout/floating_back_buttons.xml
---- IPTVmine_original/app/src/main/res/layout/floating_back_buttons.xml	2026-06-13 20:50:54.653852051 +0000
-+++ IPTVmine/app/src/main/res/layout/floating_back_buttons.xml	2026-06-13 20:53:31.781852051 +0000
+--- IPTVmine_original/app/src/main/res/layout/floating_back_buttons.xml	2026-06-13 21:35:53.365791839 +0000
++++ IPTVmine/app/src/main/res/layout/floating_back_buttons.xml	2026-06-13 21:35:53.313791839 +0000
 @@ -1,52 +1,41 @@
  <?xml version="1.0" encoding="utf-8"?>
 -<!-- 🎯 Universal Permanent Dual Floating Back Buttons (FAB) 🎯 -->
@@ -1516,9 +1717,39 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
              android:textStyle="bold" />
      </LinearLayout>
  </merge>
+diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/res/values/strings.xml IPTVmine/app/src/main/res/values/strings.xml
+--- IPTVmine_original/app/src/main/res/values/strings.xml	2026-06-13 21:35:53.381791839 +0000
++++ IPTVmine/app/src/main/res/values/strings.xml	2026-06-13 21:38:45.121791839 +0000
+@@ -257,4 +257,6 @@
+     <string name="match_upcoming">⏳ لم تبدأ</string>
+     <string name="weather">حالة الطقس</string>
+     <string name="loading_progress">%1$d%%</string>
++    <string name="open_external_player">فتح بمشغل خارجي</string>
++    <string name="no_external_player">لا يوجد مشغل خارجي مثبت</string>
+ </resources>
+diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/res/values-en/strings.xml IPTVmine/app/src/main/res/values-en/strings.xml
+--- IPTVmine_original/app/src/main/res/values-en/strings.xml	2026-06-13 21:35:53.377791839 +0000
++++ IPTVmine/app/src/main/res/values-en/strings.xml	2026-06-13 21:38:45.121791839 +0000
+@@ -176,4 +176,6 @@
+     <string name="match_upcoming">⏳ Upcoming</string>
+     <string name="weather">Weather</string>
+     <string name="loading_progress">%1$d%%</string>
++    <string name="open_external_player">Open with external player</string>
++    <string name="no_external_player">No external player installed</string>
+ </resources>
+diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/res/values-fr/strings.xml IPTVmine/app/src/main/res/values-fr/strings.xml
+--- IPTVmine_original/app/src/main/res/values-fr/strings.xml	2026-06-13 21:35:53.377791839 +0000
++++ IPTVmine/app/src/main/res/values-fr/strings.xml	2026-06-13 21:38:45.121791839 +0000
+@@ -176,4 +176,6 @@
+     <string name="match_upcoming">⏳ À venir</string>
+     <string name="weather">Météo</string>
+     <string name="loading_progress">%1$d%%</string>
++    <string name="open_external_player">Ouvrir avec un lecteur externe</string>
++    <string name="no_external_player">Aucun lecteur externe installé</string>
+ </resources>
 diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/google_apps_script_activation.gs IPTVmine/google_apps_script_activation.gs
 --- IPTVmine_original/google_apps_script_activation.gs	1970-01-01 00:00:00.000000000 +0000
-+++ IPTVmine/google_apps_script_activation.gs	2026-06-13 20:50:54.617852051 +0000
++++ IPTVmine/google_apps_script_activation.gs	2026-06-13 21:35:53.329791839 +0000
 @@ -0,0 +1,521 @@
 +/**
 + * Latchi IPTV - Google Sheet API v3 FULL
