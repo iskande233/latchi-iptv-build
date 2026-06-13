@@ -1,6 +1,6 @@
 diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/GOOGLE_SHEET_SETUP_AR.md IPTVmine/GOOGLE_SHEET_SETUP_AR.md
 --- IPTVmine_original/GOOGLE_SHEET_SETUP_AR.md	1970-01-01 00:00:00.000000000 +0000
-+++ IPTVmine/GOOGLE_SHEET_SETUP_AR.md	2026-06-13 20:14:19.254675477 +0000
++++ IPTVmine/GOOGLE_SHEET_SETUP_AR.md	2026-06-13 20:50:54.569852051 +0000
 @@ -0,0 +1,213 @@
 +# ماذا تدير الآن؟ ربط التطبيقين مع Google Sheet
 +
@@ -215,20 +215,47 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
 +```text
 +admin_dashboard_fixed
 +```
+diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/AndroidManifest.xml IPTVmine/app/src/main/AndroidManifest.xml
+--- IPTVmine_original/app/src/main/AndroidManifest.xml	2026-06-13 20:50:54.625852051 +0000
++++ IPTVmine/app/src/main/AndroidManifest.xml	2026-06-13 20:53:43.529852051 +0000
+@@ -7,8 +7,11 @@
+     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+     <uses-permission android:name="android.permission.WAKE_LOCK" />
++    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
++    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
+     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
++    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+     <uses-feature android:name="android.software.leanback" android:required="false" />
+     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+     <application android:allowBackup="true" android:dataExtractionRules="@xml/data_extraction_rules" android:fullBackupContent="@xml/backup_rules" android:icon="@drawable/ic_tv" android:label="@string/app_name" android:roundIcon="@drawable/ic_tv" android:supportsRtl="true" android:theme="@style/Theme.IPTV" android:usesCleartextTraffic="true" tools:targetApi="31">
+diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/adapter/CategoryGridAdapter.kt IPTVmine/app/src/main/java/com/latchi/iptv/adapter/CategoryGridAdapter.kt
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/adapter/CategoryGridAdapter.kt	2026-06-13 20:50:54.633852051 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/adapter/CategoryGridAdapter.kt	2026-06-13 20:54:29.973852051 +0000
+@@ -38,7 +38,7 @@
+
+         fun bind(item: CategoryItem) {
+             nameText.text = if (item.name == "All") "كل القنوات" else if (item.name == "Favorites") "⭐ المفضلة" else item.name
+-            countText.text = "${item.count} قناة"
++            countText.text = if (item.count < 0) "فتح سريع" else "${item.count} قناة"
+
+             val lower = item.name.lowercase()
+             val iconRes = when {
 diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/adapter/ChannelsAdapter.kt IPTVmine/app/src/main/java/com/latchi/iptv/adapter/ChannelsAdapter.kt
---- IPTVmine_original/app/src/main/java/com/latchi/iptv/adapter/ChannelsAdapter.kt	2026-06-13 20:14:19.326675477 +0000
-+++ IPTVmine/app/src/main/java/com/latchi/iptv/adapter/ChannelsAdapter.kt	2026-06-13 20:14:19.270675477 +0000
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/adapter/ChannelsAdapter.kt	2026-06-13 20:50:54.633852051 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/adapter/ChannelsAdapter.kt	2026-06-13 20:50:54.581852051 +0000
 @@ -31,6 +31,7 @@
- 
+
      private val VIEW_TYPE_LIST = 1
      private val VIEW_TYPE_GRID = 2
 +    private var updateGeneration = 0
- 
+
      override fun getItemViewType(position: Int): Int {
          return if (isGrid) VIEW_TYPE_GRID else VIEW_TYPE_LIST
 @@ -60,10 +61,22 @@
      override fun getItemCount(): Int = channels.size
- 
+
      fun updateChannels(newChannels: List<Channel>) {
 +        val generation = ++updateGeneration
          val old = channels
@@ -250,9 +277,9 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
                  diffResult.dispatchUpdatesTo(this@ChannelsAdapter)
              }
 diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/provider/ChannelsProvider.kt IPTVmine/app/src/main/java/com/latchi/iptv/provider/ChannelsProvider.kt
---- IPTVmine_original/app/src/main/java/com/latchi/iptv/provider/ChannelsProvider.kt	2026-06-13 20:14:19.326675477 +0000
-+++ IPTVmine/app/src/main/java/com/latchi/iptv/provider/ChannelsProvider.kt	2026-06-13 20:14:19.270675477 +0000
-@@ -7,6 +7,8 @@
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/provider/ChannelsProvider.kt	2026-06-13 20:50:54.633852051 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/provider/ChannelsProvider.kt	2026-06-13 20:54:23.449852051 +0000
+@@ -7,14 +7,31 @@
  import com.latchi.iptv.model.Channel
  import kotlinx.coroutines.Dispatchers
  import kotlinx.coroutines.Job
@@ -261,7 +288,40 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
  import kotlinx.coroutines.launch
  import kotlinx.coroutines.withContext
  import okhttp3.OkHttpClient
-@@ -39,7 +41,9 @@
+ import okhttp3.Request
+ import org.json.JSONArray
+ import java.net.URI
++import java.net.URLEncoder
++import java.net.URLDecoder
+ import java.util.concurrent.TimeUnit
+
++data class ChannelCategory(
++    val id: String,
++    val name: String,
++    val contentType: String,
++    val count: Int = -1
++)
++
++private data class XtreamInfo(
++    val server: String,
++    val username: String,
++    val password: String
++)
++
+ class ChannelsProvider : ViewModel() {
+     private val _channels = MutableLiveData<List<Channel>>()
+     val channels: LiveData<List<Channel>> get() = _channels
+@@ -22,6 +39,9 @@
+     private val _filteredChannels = MutableLiveData<List<Channel>>()
+     val filteredChannels: LiveData<List<Channel>> get() = _filteredChannels
+
++    private val _categories = MutableLiveData<List<ChannelCategory>>()
++    val categories: LiveData<List<ChannelCategory>> get() = _categories
++
+     private val _error = MutableLiveData<String?>()
+     val error: LiveData<String?> get() = _error
+
+@@ -39,7 +59,9 @@
      fun setLocalChannels(list: List<Channel>) {
          val curated = curateForArabicAudience(list)
          _channels.value = curated
@@ -271,8 +331,8 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
 +        // هذا يمنع سباق DiffUtil الذي كان يرجّع كل القنوات بعد اختيار فئة.
          _error.value = null
      }
- 
-@@ -54,7 +58,6 @@
+
+@@ -54,7 +76,6 @@
                          val curated = curateForArabicAudience(apiChannels)
                          withContext(Dispatchers.Main) {
                              _channels.value = curated
@@ -280,7 +340,7 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
                              _error.value = null
                          }
                          return@launch
-@@ -71,7 +74,6 @@
+@@ -71,7 +92,6 @@
                              val curated = curateForArabicAudience(m3uChannels)
                              withContext(Dispatchers.Main) {
                                  _channels.value = curated
@@ -288,10 +348,210 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
                                  _error.value = null
                              }
                              return@launch
-@@ -138,33 +140,38 @@
+@@ -94,6 +114,199 @@
+         }
+     }
+
++
++    fun isXtreamSource(sourceUrl: String): Boolean = parseXtreamInfo(sourceUrl) != null
++
++    fun fetchXtreamCategoriesAndFirst(sourceUrl: String, contentType: String) {
++        fetchJob?.cancel()
++        fetchJob = viewModelScope.launch(Dispatchers.IO) {
++            try {
++                val info = parseXtreamInfo(sourceUrl) ?: throw IllegalArgumentException("Xtream source not detected")
++                val cats = fetchXtreamCategoriesList(info, contentType)
++                if (cats.isEmpty()) {
++                    withContext(Dispatchers.Main) { _error.value = "لا توجد فئات متاحة لهذا القسم" }
++                    return@launch
++                }
++                val first = cats.first()
++                val channels = fetchXtreamChannelsForCategory(info, contentType, first.id, first.name)
++                withContext(Dispatchers.Main) {
++                    _categories.value = cats
++                    _channels.value = curateForArabicAudience(channels)
++                    _error.value = null
++                }
++            } catch (e: Exception) {
++                withContext(Dispatchers.Main) {
++                    _error.value = "فشل تحميل فئات Xtream: ${e.localizedMessage ?: "Unknown error"}"
++                }
++            }
++        }
++    }
++
++    fun fetchXtreamCategoryChannels(sourceUrl: String, contentType: String, categoryId: String, categoryName: String) {
++        fetchJob?.cancel()
++        fetchJob = viewModelScope.launch(Dispatchers.IO) {
++            try {
++                val info = parseXtreamInfo(sourceUrl) ?: throw IllegalArgumentException("Xtream source not detected")
++                val channels = fetchXtreamChannelsForCategory(info, contentType, categoryId, categoryName)
++                withContext(Dispatchers.Main) {
++                    _channels.value = curateForArabicAudience(channels)
++                    _error.value = null
++                }
++            } catch (e: Exception) {
++                withContext(Dispatchers.Main) {
++                    _error.value = "فشل تحميل الفئة: ${e.localizedMessage ?: "Unknown error"}"
++                }
++            }
++        }
++    }
++
++    private fun parseXtreamInfo(sourceUrl: String): XtreamInfo? {
++        return try {
++            val clean = cleanUrl(sourceUrl)
++            if (!clean.contains("get.php", ignoreCase = true)) return null
++            val uri = URI(clean)
++            val server = "${uri.scheme}://${uri.host}${if (uri.port != -1) ":${uri.port}" else ""}"
++            val query = uri.rawQuery ?: return null
++            val params = query.split("&").mapNotNull {
++                val p = it.split("=", limit = 2)
++                if (p.size == 2) {
++                    val key = URLDecoder.decode(p[0], "UTF-8")
++                    val value = URLDecoder.decode(p[1], "UTF-8")
++                    key to value
++                } else null
++            }.toMap()
++            val username = params["username"] ?: return null
++            val password = params["password"] ?: return null
++            XtreamInfo(server, username, password)
++        } catch (_: Exception) {
++            null
++        }
++    }
++
++    private fun fetchXtreamCategoriesList(info: XtreamInfo, contentType: String): List<ChannelCategory> {
++        val action = when (contentType) {
++            "movie" -> "get_vod_categories"
++            "series" -> "get_series_categories"
++            else -> "get_live_categories"
++        }
++        val url = "${info.server}/player_api.php?username=${urlEncode(info.username)}&password=${urlEncode(info.password)}&action=$action"
++        val request = Request.Builder()
++            .url(cleanUrl(url))
++            .header("User-Agent", "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36")
++            .get()
++            .build()
++
++        client.newCall(request).execute().use { response ->
++            if (!response.isSuccessful) return emptyList()
++            val stream = response.body?.byteStream() ?: return emptyList()
++            val reader = android.util.JsonReader(stream.bufferedReader(Charsets.UTF_8))
++            val list = mutableListOf<ChannelCategory>()
++            reader.use { r ->
++                r.beginArray()
++                while (r.hasNext()) {
++                    var id = ""
++                    var name = ""
++                    r.beginObject()
++                    while (r.hasNext()) {
++                        when (r.nextName()) {
++                            "category_id" -> id = readJsonStringSafe(r)
++                            "category_name" -> name = readJsonStringSafe(r)
++                            else -> r.skipValue()
++                        }
++                    }
++                    r.endObject()
++                    if (id.isNotBlank() && name.isNotBlank()) {
++                        list.add(ChannelCategory(id, normalizeCategory(name), contentType, -1))
++                    }
++                }
++                r.endArray()
++            }
++            return sortXtreamCategories(list)
++        }
++    }
++
++    private fun fetchXtreamChannelsForCategory(info: XtreamInfo, contentType: String, categoryId: String, categoryName: String): List<Channel> {
++        val action = when (contentType) {
++            "movie" -> "get_vod_streams"
++            "series" -> "get_series"
++            else -> "get_live_streams"
++        }
++        val url = "${info.server}/player_api.php?username=${urlEncode(info.username)}&password=${urlEncode(info.password)}&action=$action&category_id=${urlEncode(categoryId)}"
++        val request = Request.Builder()
++            .url(cleanUrl(url))
++            .header("User-Agent", "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36")
++            .get()
++            .build()
++
++        val list = mutableListOf<Channel>()
++        client.newCall(request).execute().use { response ->
++            if (!response.isSuccessful) return emptyList()
++            val stream = response.body?.byteStream() ?: return emptyList()
++            val reader = android.util.JsonReader(stream.bufferedReader(Charsets.UTF_8))
++            reader.use { r ->
++                r.beginArray()
++                while (r.hasNext()) {
++                    var id = ""
++                    var name = ""
++                    var icon = ""
++                    var ext = "mp4"
++
++                    r.beginObject()
++                    while (r.hasNext()) {
++                        when (r.nextName()) {
++                            "stream_id", "series_id" -> id = readJsonStringSafe(r)
++                            "name" -> name = readJsonStringSafe(r).ifBlank { "Stream" }
++                            "stream_icon", "cover" -> icon = readJsonStringSafe(r)
++                            "container_extension" -> ext = readJsonStringSafe(r).ifBlank { "mp4" }
++                            else -> r.skipValue()
++                        }
++                    }
++                    r.endObject()
++
++                    if (id.isNotBlank() && name.isNotBlank()) {
++                        val streamUrl = when (contentType) {
++                            "live" -> "${info.server}/live/${info.username}/${info.password}/$id.ts"
++                            "movie" -> "${info.server}/movie/${info.username}/${info.password}/$id.$ext"
++                            else -> "series://$id"
++                        }
++                        list.add(Channel(name, icon, streamUrl, categoryName.ifBlank { "Other" }, contentType))
++                    }
++                }
++                r.endArray()
++            }
++        }
++        return list
++    }
++
++    private fun readJsonStringSafe(r: android.util.JsonReader): String {
++        return try {
++            r.nextString()
++        } catch (_: Exception) {
++            try { r.nextInt().toString() } catch (_: Exception) { r.skipValue(); "" }
++        }
++    }
++
++    private fun sortXtreamCategories(cats: List<ChannelCategory>): List<ChannelCategory> {
++        fun score(cat: String): Int {
++            val l = cat.lowercase()
++            return when {
++                l.contains("world cup") || l.contains("كأس العالم") -> 1
++                l.contains("bein sport") || l.contains("bein sports") || l.contains("bein") -> 2
++                l.contains("sport") || l.contains("ssc") || l.contains("alkass") || l.contains("ad sport") -> 3
++                l.contains("movie") || l.contains("film") || l.contains("أفلام") || l.contains("افلام") -> 4
++                l.contains("series") || l.contains("مسلسل") || l.contains("مسلسلات") -> 5
++                l.contains("arab") || l.contains("عرب") || l.contains("عربي") -> 6
++                l.contains("kid") || l.contains("أطفال") || l.contains("اطفال") || l.contains("cartoon") -> 7
++                l.contains("news") || l.contains("أخبار") || l.contains("اخبار") -> 8
++                l.contains("islam") || l.contains("quran") || l.contains("إسلام") || l.contains("قرآن") -> 9
++                else -> 20
++            }
++        }
++        return cats.sortedWith(compareBy<ChannelCategory> { score(it.name) }.thenBy { it.name.lowercase() })
++    }
++
++    private fun urlEncode(value: String): String = URLEncoder.encode(value, "UTF-8")
++
+     private fun downloadAndParseM3uStream(url: String): List<Channel> {
+         val list = mutableListOf<Channel>()
+         try {
+@@ -138,33 +351,38 @@
          return list
      }
- 
+
 -    private fun tryXtreamApi(sourceUrl: String): List<Channel> {
 +    private suspend fun tryXtreamApi(sourceUrl: String): List<Channel> = coroutineScope {
          val clean = cleanUrl(sourceUrl)
@@ -309,12 +569,12 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
 -        val password = params["password"] ?: return emptyList()
 +        val username = params["username"] ?: return@coroutineScope emptyList()
 +        val password = params["password"] ?: return@coroutineScope emptyList()
- 
+
 -        val list = mutableListOf<Channel>()
          val liveUrl = "$server/player_api.php?username=$username&password=$password&action=get_live_streams"
          val vodUrl = "$server/player_api.php?username=$username&password=$password&action=get_vod_streams"
          val seriesUrl = "$server/player_api.php?username=$username&password=$password&action=get_series"
- 
+
 -        val liveCatMap = fetchCategoryMap("$server/player_api.php?username=$username&password=$password&action=get_live_categories")
 -        val vodCatMap = fetchCategoryMap("$server/player_api.php?username=$username&password=$password&action=get_vod_categories")
 -        val seriesCatMap = fetchCategoryMap("$server/player_api.php?username=$username&password=$password&action=get_series_categories")
@@ -335,29 +595,76 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
 +        val liveDeferred = async { parseXtreamStreamsUsingJsonReader(liveUrl, "live", liveCatMap, server, username, password) }
 +        val vodDeferred = async { parseXtreamStreamsUsingJsonReader(vodUrl, "movie", vodCatMap, server, username, password) }
 +        val seriesDeferred = async { parseXtreamStreamsUsingJsonReader(seriesUrl, "series", seriesCatMap, server, username, password) }
- 
+
 -        return list
 +        liveDeferred.await() + vodDeferred.await() + seriesDeferred.await()
      }
- 
+
      private fun parseXtreamStreamsUsingJsonReader(url: String, type: String, catMap: Map<String, String>, server: String, username: String, password: String): List<Channel> {
 diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/ChannelListActivity.kt IPTVmine/app/src/main/java/com/latchi/iptv/screens/ChannelListActivity.kt
---- IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/ChannelListActivity.kt	2026-06-13 20:14:19.326675477 +0000
-+++ IPTVmine/app/src/main/java/com/latchi/iptv/screens/ChannelListActivity.kt	2026-06-13 20:14:19.270675477 +0000
-@@ -70,6 +70,7 @@
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/ChannelListActivity.kt	2026-06-13 20:50:54.633852051 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/screens/ChannelListActivity.kt	2026-06-13 20:54:55.765852051 +0000
+@@ -28,6 +28,7 @@
+ import com.latchi.iptv.adapter.CategoryGridAdapter
+ import com.latchi.iptv.adapter.ChannelsAdapter
+ import com.latchi.iptv.model.Channel
++import com.latchi.iptv.provider.ChannelCategory
+ import com.latchi.iptv.provider.ChannelsProvider
+ import com.latchi.iptv.utils.ChannelCache
+ import com.latchi.iptv.utils.FavoritesPrefs
+@@ -70,6 +71,11 @@
      private var debounceHandler: Handler? = null
      private var categoryDebounceHandler: Handler? = null
      private var lastChannels: List<Channel> = emptyList()
 +    private var saveAfterFetch = false
- 
++    private var lazyXtreamMode = false
++    private var activeSourceUrl = ""
++    private var xtreamCategories: List<ChannelCategory> = emptyList()
++    private var firstCategorySelected = false
+
      companion object {
          private const val EXTRA_TYPE = "extra_type"
-@@ -261,6 +262,16 @@
+@@ -150,9 +156,13 @@
+         gridAdapter = CategoryGridAdapter(emptyList()) { item ->
+             currentCategory = item.name
+             stickyCatTitle.text = if (item.name == "All") "كل القنوات" else if (item.name == "Favorites") "⭐ المفضلة" else item.name
+-            stickyCatSubtitle.text = "(${item.count} قناة - اضغط للتبديل)"
++            stickyCatSubtitle.text = if (item.count < 0) "(تحميل سريع حسب الفئة)" else "(${item.count} قناة - اضغط للتبديل)"
+             closeCategoryGrid()
+-            applyFilter()
++            if (lazyXtreamMode) {
++                loadLazyXtreamCategory(item.name)
++            } else {
++                applyFilter()
++            }
+         }
+
+         catGridRecyclerView.layoutManager = LinearLayoutManager(this)
+@@ -255,12 +265,35 @@
+     }
+
+     private fun setupObservers() {
++        channelsProvider.categories.observe(this, Observer { data ->
++            if (!lazyXtreamMode) return@Observer
++            xtreamCategories = data.filter { it.contentType == contentType }
++            if (!firstCategorySelected && xtreamCategories.isNotEmpty()) {
++                val first = xtreamCategories.first()
++                firstCategorySelected = true
++                currentCategory = first.name
++                stickyCatTitle.text = first.name
++                stickyCatSubtitle.text = "(تحميل سريع حسب الفئة)"
++            }
++            buildCategories(lastChannels)
++        })
++
+         channelsProvider.channels.observe(this, Observer { data ->
+             try {
+                 progressBar.visibility = View.GONE
                  lastChannels = data
                  buildCategories(data)
                  applyFilter()
 +
-+                if (saveAfterFetch && data.isNotEmpty()) {
++                if (!lazyXtreamMode && saveAfterFetch && data.isNotEmpty()) {
 +                    val profileId = activeId()
 +                    if (profileId != null) {
 +                        val appContext = applicationContext
@@ -369,9 +676,19 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
              } catch (e: Exception) { Log.e("ChannelList", "Observer Error: ${e.message}") }
          })
          channelsProvider.filteredChannels.observe(this, Observer { data ->
-@@ -288,13 +299,16 @@
+@@ -287,14 +320,26 @@
+                 finish()
                  return
              }
++            activeSourceUrl = active.m3uUrl
++            lazyXtreamMode = channelsProvider.isXtreamSource(activeSourceUrl)
++            if (lazyXtreamMode) {
++                progressBar.visibility = View.VISIBLE
++                firstCategorySelected = false
++                channelsProvider.fetchXtreamCategoriesAndFirst(activeSourceUrl, contentType)
++                return
++            }
++
              Thread {
 -                val embedded = com.latchi.iptv.utils.EmbeddedChannelsLoader.load(applicationContext)
 -                val cached = if (embedded.isNotEmpty()) emptyList() else ChannelCache.load(applicationContext, active.id)
@@ -389,7 +706,35 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
                              progressBar.visibility = View.VISIBLE
                              channelsProvider.fetchM3UFile(active.m3uUrl)
                          }
-@@ -345,7 +359,7 @@
+@@ -333,6 +378,12 @@
+     // ⚡ Requirement 1: Only list categories related to the current Content Type ⚡
+     private fun buildCategories(data: List<Channel>) {
+         try {
++            if (lazyXtreamMode) {
++                val visible = if (categoryQuery.isBlank()) xtreamCategories else xtreamCategories.filter { it.name.contains(categoryQuery, ignoreCase = true) }
++                gridAdapter.update(visible.map { CategoryGridAdapter.CategoryItem(it.name, it.count) })
++                return
++            }
++
+             val filtered = data.filter { it.contentType == contentType }
+             val cats = mutableListOf("All", "Favorites")
+             cats.addAll(filtered.map { it.category }.distinct())
+@@ -340,12 +391,22 @@
+             val sortedCats = sortCategoriesByPriority(cats)
+             val visibleCats = if (categoryQuery.isBlank()) sortedCats else sortedCats.filter { it.contains(categoryQuery, ignoreCase = true) }
+
++            if (!firstCategorySelected && filtered.isNotEmpty()) {
++                val firstReal = sortedCats.firstOrNull { it != "All" && it != "Favorites" }
++                if (!firstReal.isNullOrBlank()) {
++                    firstCategorySelected = true
++                    currentCategory = firstReal
++                    stickyCatTitle.text = firstReal
++                    stickyCatSubtitle.text = "اضغط للتبديل"
++                }
++            }
++
+             val favoriteUrls = activeId()?.let { FavoritesPrefs.getFavorites(this, it) } ?: emptySet()
+             val listItems = visibleCats.map { cat ->
                  val count = when (cat) {
                      "All" -> filtered.size
                      "Favorites" -> filtered.count { favoriteUrls.contains(it.streamUrl) }
@@ -398,13 +743,28 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
                  }
                  CategoryGridAdapter.CategoryItem(cat, count)
              }
+@@ -354,6 +415,14 @@
+         } catch (e: Exception) { Log.e("ChannelList", "Build Categories Error: ${e.message}") }
+     }
+
++    private fun loadLazyXtreamCategory(categoryName: String) {
++        val cat = xtreamCategories.firstOrNull { it.name.equals(categoryName, ignoreCase = true) } ?: return
++        progressBar.visibility = View.VISIBLE
++        lastChannels = emptyList()
++        adapter.updateChannels(emptyList())
++        channelsProvider.fetchXtreamCategoryChannels(activeSourceUrl, contentType, cat.id, cat.name)
++    }
++
+     private fun resetCategoryToAll() {
+         currentCategory = "All"
+         stickyCatTitle.text = if (contentType == "live") "كل القنوات" else "الكل"
 diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/HomeFragment.kt IPTVmine/app/src/main/java/com/latchi/iptv/screens/HomeFragment.kt
---- IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/HomeFragment.kt	2026-06-13 20:14:19.326675477 +0000
-+++ IPTVmine/app/src/main/java/com/latchi/iptv/screens/HomeFragment.kt	2026-06-13 20:14:19.270675477 +0000
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/HomeFragment.kt	2026-06-13 20:50:54.633852051 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/screens/HomeFragment.kt	2026-06-13 20:55:06.345852051 +0000
 @@ -343,13 +343,25 @@
              } catch (_: Throwable) {}
              checkExpiryWarning(active.expiresAt)
- 
+
 +            val appContext = requireContext().applicationContext
              Thread {
 -                val appContext = requireContext().applicationContext
@@ -430,7 +790,7 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
                              embedded.isNotEmpty() -> {
                                  channelsProvider.setLocalChannels(embedded)
                                  VoiceIndex.update(embedded)
-@@ -357,11 +369,6 @@
+@@ -357,18 +369,22 @@
                                  loadingOverlay.visibility = View.GONE
                                  stopAdhkarRotator()
                              }
@@ -440,13 +800,128 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
 -                                VoiceIndex.update(cached)
 -                            }
                              else -> {
-                                 saveAfterFetch = true
-                                 progressBar.visibility = View.VISIBLE
+-                                saveAfterFetch = true
+-                                progressBar.visibility = View.VISIBLE
+-                                loadingOverlay.visibility = View.VISIBLE
+-                                startAdhkarRotator()
+-                                startLoadingTimeout()
+-                                channelsProvider.fetchM3UFile(active.m3uUrl)
++                                if (channelsProvider.isXtreamSource(active.m3uUrl)) {
++                                    // نظام التحميل السريع: لا نحمل كل القنوات في الشاشة الرئيسية.
++                                    // كل قسم يحمل فئته الأولى فقط عند الدخول، مثل تطبيقات JSON السريعة.
++                                    channelsProvider.setLocalChannels(emptyList())
++                                    progressBar.visibility = View.GONE
++                                    loadingOverlay.visibility = View.GONE
++                                    stopAdhkarRotator()
++                                } else {
++                                    saveAfterFetch = true
++                                    progressBar.visibility = View.VISIBLE
++                                    loadingOverlay.visibility = View.VISIBLE
++                                    startAdhkarRotator()
++                                    startLoadingTimeout()
++                                    channelsProvider.fetchM3UFile(active.m3uUrl)
++                                }
+                             }
+                         }
+                     } catch (_: Exception) {}
+diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/PlayerActivity.kt IPTVmine/app/src/main/java/com/latchi/iptv/screens/PlayerActivity.kt
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/PlayerActivity.kt	2026-06-13 20:50:54.637852051 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/screens/PlayerActivity.kt	2026-06-13 20:55:18.357852051 +0000
+@@ -16,6 +16,7 @@
+ import android.widget.Toast
+ import androidx.appcompat.app.AppCompatActivity
+ import androidx.core.content.ContextCompat
++import com.google.android.exoplayer2.DefaultLoadControl
+ import com.google.android.exoplayer2.ExoPlayer
+ import com.google.android.exoplayer2.MediaItem
+ import com.google.android.exoplayer2.PlaybackException
+@@ -270,6 +271,17 @@
+         val dataSourceFactory = DefaultHttpDataSource.Factory()
+             .setUserAgent("Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36")
+             .setAllowCrossProtocolRedirects(true)
++            .setConnectTimeoutMs(8_000)
++            .setReadTimeoutMs(12_000)
++
++        val fastLoadControl = DefaultLoadControl.Builder()
++            .setBufferDurationsMs(
++                1_500,  // minBufferMs: بداية أسرع للقنوات الضعيفة
++                8_000,  // maxBufferMs: لا ننتظر تخزين طويل قبل التشغيل
++                500,    // bufferForPlaybackMs
++                1_000   // bufferForPlaybackAfterRebufferMs
++            )
++            .build()
+
+         val streamUrl = channel.streamUrl.trim().replace("&amp;", "&")
+         val mediaItem = MediaItem.fromUri(Uri.parse(streamUrl))
+@@ -278,11 +290,13 @@
+         player = if (mode == PlayerPrefs.MODE_AUTO) {
+             val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
+             ExoPlayer.Builder(this).setMediaSourceFactory(mediaSourceFactory)
++                .setLoadControl(fastLoadControl)
+                 .setSeekBackIncrementMs(INCREMENT_MILLIS)
+                 .setSeekForwardIncrementMs(INCREMENT_MILLIS)
+                 .build()
+         } else {
+             ExoPlayer.Builder(this)
++                .setLoadControl(fastLoadControl)
+                 .setSeekBackIncrementMs(INCREMENT_MILLIS)
+                 .setSeekForwardIncrementMs(INCREMENT_MILLIS)
+                 .build()
 diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/SplashActivity.kt IPTVmine/app/src/main/java/com/latchi/iptv/screens/SplashActivity.kt
---- IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/SplashActivity.kt	2026-06-13 20:14:19.326675477 +0000
-+++ IPTVmine/app/src/main/java/com/latchi/iptv/screens/SplashActivity.kt	2026-06-13 20:14:19.274675477 +0000
-@@ -105,12 +105,14 @@
- 
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/SplashActivity.kt	2026-06-13 20:50:54.637852051 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/screens/SplashActivity.kt	2026-06-13 20:53:53.469852051 +0000
+@@ -61,26 +61,39 @@
+     }
+
+     private fun needsPermissions(): Boolean {
+-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+-                return true
+-            }
++        return requiredFirstRunPermissions().any {
++            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+         }
+-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+-            return true
+-        }
+-        return false
+     }
+
+     private fun requestAppPermissions() {
++        val permissions = requiredFirstRunPermissions().filter {
++            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
++        }
++        if (permissions.isEmpty()) {
++            scheduleNavigation(1000)
++            return
++        }
++        requestPermissions(permissions.toTypedArray(), PERMISSION_REQUEST_CODE)
++    }
++
++    private fun requiredFirstRunPermissions(): List<String> {
+         val permissions = mutableListOf<String>()
++
+         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+             permissions.add(Manifest.permission.POST_NOTIFICATIONS)
++            permissions.add(Manifest.permission.READ_MEDIA_IMAGES)
++            permissions.add(Manifest.permission.READ_MEDIA_VIDEO)
++        } else {
++            permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
++            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
++                permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
++            }
+         }
++
+         permissions.add(Manifest.permission.ACCESS_FINE_LOCATION)
+         permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+-
+-        requestPermissions(permissions.toTypedArray(), PERMISSION_REQUEST_CODE)
++        return permissions.distinct()
+     }
+
+     companion object {
+@@ -105,12 +118,14 @@
+
      private fun navigateToNextScreen() {
          val active = SourcePrefs.getActiveProfile(this)
 -        val nextClass = when {
@@ -464,10 +939,10 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
 +        startActivity(intent)
          finish()
      }
- 
+
 diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/UserListActivity.kt IPTVmine/app/src/main/java/com/latchi/iptv/screens/UserListActivity.kt
---- IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/UserListActivity.kt	2026-06-13 20:14:19.326675477 +0000
-+++ IPTVmine/app/src/main/java/com/latchi/iptv/screens/UserListActivity.kt	2026-06-13 20:14:19.274675477 +0000
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/UserListActivity.kt	2026-06-13 20:50:54.637852051 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/screens/UserListActivity.kt	2026-06-13 20:50:54.585852051 +0000
 @@ -8,7 +8,6 @@
  import android.os.Bundle
  import android.os.Handler
@@ -491,10 +966,10 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
 -import java.net.HttpURLConnection
 -import java.net.URL
  import kotlin.concurrent.thread
- 
+
  class UserListActivity : AppCompatActivity() {
 @@ -238,33 +234,23 @@
- 
+
          thread {
              try {
 -                val deviceId = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID) ?: "unknown"
@@ -539,14 +1014,14 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
                  }
              } catch (e: Exception) {
 diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/VerificationActivity.kt IPTVmine/app/src/main/java/com/latchi/iptv/screens/VerificationActivity.kt
---- IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/VerificationActivity.kt	2026-06-13 20:14:19.330675477 +0000
-+++ IPTVmine/app/src/main/java/com/latchi/iptv/screens/VerificationActivity.kt	2026-06-13 20:14:19.274675477 +0000
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/VerificationActivity.kt	2026-06-13 20:50:54.637852051 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/screens/VerificationActivity.kt	2026-06-13 20:50:54.585852051 +0000
 @@ -27,6 +27,7 @@
      private var statusText: TextView? = null
      private var progressHandler: Handler? = null
      private var fakeProgress = 0
 +    private var silentVerify = false
- 
+
      override fun attachBaseContext(context: Context) {
          super.attachBaseContext(LocaleHelper.wrap(context))
 @@ -36,6 +37,7 @@
@@ -554,7 +1029,7 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
          TvUtils.applyOrientation(this)
          com.latchi.iptv.utils.ThemeManager.apply(this)
 +        silentVerify = intent.getBooleanExtra("silent_verify", false)
-         
+
          val profile = SourcePrefs.getActiveProfile(this)
          if (profile == null) {
 @@ -66,7 +68,9 @@
@@ -584,20 +1059,20 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
                      } else {
                          showNoConnectionScreen()
 diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/utils/ActivationConfig.kt IPTVmine/app/src/main/java/com/latchi/iptv/utils/ActivationConfig.kt
---- IPTVmine_original/app/src/main/java/com/latchi/iptv/utils/ActivationConfig.kt	2026-06-13 20:14:19.330675477 +0000
-+++ IPTVmine/app/src/main/java/com/latchi/iptv/utils/ActivationConfig.kt	2026-06-13 20:14:19.718675477 +0000
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/utils/ActivationConfig.kt	2026-06-13 20:50:54.637852051 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/utils/ActivationConfig.kt	2026-06-13 20:50:54.585852051 +0000
 @@ -1,11 +1,11 @@
  package com.latchi.iptv.utils
- 
+
  object ActivationConfig {
 -    const val ACTIVATION_API_URL = "https://script.google.com/macros/s/AKfycbxbPxWCm5AQTDaIJTod1_hXVwy49QLaTUaNfRFs5ZA9OTekePEPcU4KRdk3ZFqDEh2R/exec"
 +    const val ACTIVATION_API_URL = "https://script.google.com/macros/s/AKfycbzjNXSTwzkRZTwh1PdMaAsY5YOoAwCA8hzr6_dlGU4XocvWgUiD_wfFsKDRHcBo0eXJ/exec"
- 
+
      // When Google validates a code successfully, use the locked provider endpoint below.
      // It is intentionally assembled at runtime so it is not shown in the UI or stored in plain settings before activation.
 -    const val USE_LOCKED_PROVIDER_AFTER_GOOGLE_CODE = true
 +    const val USE_LOCKED_PROVIDER_AFTER_GOOGLE_CODE = false
- 
+
      fun lockedProviderPlaylistUrl(): String {
          val reversed = listOf(
 @@ -21,4 +21,59 @@
@@ -661,27 +1136,27 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
 +    private fun urlEncode(value: String): String = java.net.URLEncoder.encode(value.trim(), "UTF-8")
  }
 diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/utils/ActivationValidator.kt IPTVmine/app/src/main/java/com/latchi/iptv/utils/ActivationValidator.kt
---- IPTVmine_original/app/src/main/java/com/latchi/iptv/utils/ActivationValidator.kt	2026-06-13 20:14:19.330675477 +0000
-+++ IPTVmine/app/src/main/java/com/latchi/iptv/utils/ActivationValidator.kt	2026-06-13 20:14:19.274675477 +0000
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/utils/ActivationValidator.kt	2026-06-13 20:50:54.637852051 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/utils/ActivationValidator.kt	2026-06-13 20:50:54.585852051 +0000
 @@ -22,37 +22,60 @@
          if (profile.activationCode == "MANUAL") {
              return ActivationValidationResult(true, "OK", profile.name, profile.m3uUrl, profile.expiresAt, profile.maxDevices)
          }
 +        return validateCode(context, profile.activationCode, profile)
 +    }
- 
+
 +    fun validateCode(context: Context, activationCode: String, existingProfile: IptvProfile? = null): ActivationValidationResult {
          val apiUrl = ActivationConfig.ACTIVATION_API_URL
          if (apiUrl.contains("PASTE_GOOGLE")) {
              return ActivationValidationResult(false, "Activation API not configured")
          }
- 
+
          val deviceId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID) ?: "unknown"
 -        val code = URLEncoder.encode(profile.activationCode, "UTF-8")
 +        val code = URLEncoder.encode(activationCode.trim(), "UTF-8")
          val device = URLEncoder.encode(deviceId, "UTF-8")
          val requestUrl = "$apiUrl?code=$code&device_id=$device"
- 
+
          val connection = URL(requestUrl).openConnection() as HttpURLConnection
          connection.requestMethod = "GET"
          connection.connectTimeout = 15000
@@ -699,7 +1174,7 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
 +        if (response.isBlank()) {
 +            throw IllegalStateException("Empty activation response")
 +        }
- 
+
 -        val response = connection.inputStream.bufferedReader().use(BufferedReader::readText)
 -        val json = JSONObject(response)
 -        val success = json.optBoolean("success", false)
@@ -719,7 +1194,7 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
 +        if (playlist.isBlank()) {
 +            return ActivationValidationResult(false, "Empty playlist_url from Google Sheet")
          }
- 
+
          return ActivationValidationResult(
              success = true,
              message = "OK",
@@ -735,17 +1210,17 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
      }
  }
 diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/utils/ChannelCache.kt IPTVmine/app/src/main/java/com/latchi/iptv/utils/ChannelCache.kt
---- IPTVmine_original/app/src/main/java/com/latchi/iptv/utils/ChannelCache.kt	2026-06-13 20:14:19.330675477 +0000
-+++ IPTVmine/app/src/main/java/com/latchi/iptv/utils/ChannelCache.kt	2026-06-13 20:14:19.274675477 +0000
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/utils/ChannelCache.kt	2026-06-13 20:50:54.637852051 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/utils/ChannelCache.kt	2026-06-13 20:50:54.585852051 +0000
 @@ -64,14 +64,14 @@
              val vodFile = getVodDiskFile(context, profileId)
              val seriesFile = getSeriesDiskFile(context, profileId)
- 
+
 -            if (!liveFile.exists() && !vodFile.exists()) return emptyList()
 +            if (!liveFile.exists() && !vodFile.exists() && !seriesFile.exists()) return emptyList()
- 
+
              val list = mutableListOf<Channel>()
-             
+
              if (liveFile.exists()) {
                  liveFile.useLines(Charsets.UTF_8) { lines ->
                      lines.forEach { line ->
@@ -772,9 +1247,278 @@ diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_o
                          if (parts.size >= 5) list.add(Channel(parts[0], parts[1], parts[2], parts[3], parts[4]))
                      }
                  }
+diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/utils/FloatingBackHelper.kt IPTVmine/app/src/main/java/com/latchi/iptv/utils/FloatingBackHelper.kt
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/utils/FloatingBackHelper.kt	2026-06-13 20:50:54.637852051 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/utils/FloatingBackHelper.kt	2026-06-13 20:53:23.237852051 +0000
+@@ -2,11 +2,11 @@
+
+ import android.app.Activity
+ import android.graphics.Color
+-import android.graphics.Typeface
+-import android.graphics.drawable.GradientDrawable
+ import android.view.Gravity
+ import android.view.View
+ import android.widget.FrameLayout
++import android.widget.ImageView
++import android.widget.LinearLayout
+ import android.widget.TextView
+ import com.latchi.iptv.R
+
+@@ -15,13 +15,21 @@
+
+     fun setup(activity: Activity) {
+         try {
+-            val topFab = activity.findViewById<View?>(R.id.fabBackTopRight)
+-            val bottomFab = activity.findViewById<View?>(R.id.fabBackBottomRight)
++            val regularBack = activity.findViewById<View?>(R.id.backButton)
++            if (regularBack != null) {
++                styleRegularBackButton(activity, regularBack)
++                TvFocusHelper.setup(activity)
++                return
++            }
+
+-            topFab?.setOnClickListener { goBack(activity) }
+-            bottomFab?.setOnClickListener { goBack(activity) }
++            // الزر العلوي القديم نلغيه نهائياً إذا وجد في Layout قديم حتى لا يظهر زرين.
++            activity.findViewById<View?>(R.id.fabBackTopRight)?.visibility = View.GONE
+
+-            if (topFab == null && bottomFab == null) {
++            val bottomFab = activity.findViewById<View?>(R.id.fabBackBottomRight)
++            if (bottomFab != null) {
++                styleFloatingButton(activity, bottomFab)
++                bottomFab.setOnClickListener { goBack(activity) }
++            } else {
+                 addProfessionalBottomBack(activity)
+             }
+             TvFocusHelper.setup(activity)
+@@ -36,45 +44,79 @@
+         }
+     }
+
++    private fun styleRegularBackButton(activity: Activity, view: View) {
++        view.setOnClickListener { goBack(activity) }
++        view.isClickable = true
++        view.isFocusable = true
++        view.setBackgroundResource(R.drawable.bg_back_professional)
++        view.elevation = dp(activity, 10).toFloat()
++        view.setOnFocusChangeListener { v, hasFocus -> animateFocus(v, hasFocus) }
++
++        if (view is TextView) {
++            view.text = "  رجوع"
++            view.setTextColor(Color.parseColor("#FFD700"))
++            view.textSize = 15f
++            view.gravity = Gravity.CENTER
++            view.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_back_professional, 0, 0, 0)
++            view.compoundDrawablePadding = dp(activity, 6)
++        }
++    }
++
++    private fun styleFloatingButton(activity: Activity, view: View) {
++        view.setBackgroundResource(R.drawable.bg_back_professional)
++        view.elevation = dp(activity, 14).toFloat()
++        view.alpha = 0.94f
++        view.setOnFocusChangeListener { v, hasFocus -> animateFocus(v, hasFocus) }
++    }
++
+     private fun addProfessionalBottomBack(activity: Activity) {
+         val root = activity.findViewById<FrameLayout?>(android.R.id.content) ?: return
+         if (root.findViewWithTag<View>(OVERLAY_TAG) != null) return
+
+-        val density = activity.resources.displayMetrics.density
+-        fun dp(value: Int): Int = (value * density).toInt()
+-
+-        val button = TextView(activity).apply {
++        val button = LinearLayout(activity).apply {
+             tag = OVERLAY_TAG
+-            text = "←"
+-            textSize = 24f
+-            typeface = Typeface.DEFAULT_BOLD
+-            setTextColor(Color.parseColor("#FFD700"))
++            orientation = LinearLayout.HORIZONTAL
+             gravity = Gravity.CENTER
+             isClickable = true
+             isFocusable = true
+-            elevation = dp(12).toFloat()
+-            alpha = 0.88f
+-            background = GradientDrawable().apply {
+-                shape = GradientDrawable.RECTANGLE
+-                cornerRadius = dp(14).toFloat()
+-                setColor(Color.parseColor("#55101018"))
+-                setStroke(dp(1), Color.parseColor("#AAFFD700"))
+-            }
++            setBackgroundResource(R.drawable.bg_back_professional)
++            elevation = dp(activity, 14).toFloat()
++            alpha = 0.94f
++            setPadding(dp(activity, 10), 0, dp(activity, 10), 0)
+             setOnClickListener { goBack(activity) }
+-            setOnFocusChangeListener { v, hasFocus ->
+-                v.animate()
+-                    .scaleX(if (hasFocus) 1.12f else 1f)
+-                    .scaleY(if (hasFocus) 1.12f else 1f)
+-                    .setDuration(120)
+-                    .start()
+-            }
++            setOnFocusChangeListener { v, hasFocus -> animateFocus(v, hasFocus) }
++
++            addView(ImageView(activity).apply {
++                setImageResource(R.drawable.ic_back_professional)
++                contentDescription = "رجوع"
++            }, LinearLayout.LayoutParams(dp(activity, 28), dp(activity, 28)))
++
++            addView(TextView(activity).apply {
++                text = "رجوع"
++                setTextColor(Color.parseColor("#FFD700"))
++                textSize = 13f
++                setTypeface(null, android.graphics.Typeface.BOLD)
++            }, LinearLayout.LayoutParams(
++                LinearLayout.LayoutParams.WRAP_CONTENT,
++                LinearLayout.LayoutParams.WRAP_CONTENT
++            ).apply { marginStart = dp(activity, 6) })
+         }
+
+-        val params = FrameLayout.LayoutParams(dp(74), dp(42)).apply {
+-            gravity = Gravity.BOTTOM or Gravity.START
+-            marginStart = dp(18)
+-            bottomMargin = dp(22)
++        val params = FrameLayout.LayoutParams(dp(activity, 92), dp(activity, 48)).apply {
++            gravity = Gravity.BOTTOM or Gravity.END
++            marginEnd = dp(activity, 18)
++            bottomMargin = dp(activity, 24)
+         }
+         root.addView(button, params)
+     }
++
++    private fun animateFocus(v: View, hasFocus: Boolean) {
++        v.animate()
++            .scaleX(if (hasFocus) 1.10f else 1f)
++            .scaleY(if (hasFocus) 1.10f else 1f)
++            .setDuration(120)
++            .start()
++    }
++
++    private fun dp(activity: Activity, value: Int): Int = (value * activity.resources.displayMetrics.density).toInt()
+ }
+diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/res/drawable/bg_back_professional.xml IPTVmine/app/src/main/res/drawable/bg_back_professional.xml
+--- IPTVmine_original/app/src/main/res/drawable/bg_back_professional.xml	1970-01-01 00:00:00.000000000 +0000
++++ IPTVmine/app/src/main/res/drawable/bg_back_professional.xml	2026-06-13 20:52:58.885852051 +0000
+@@ -0,0 +1,11 @@
++<?xml version="1.0" encoding="utf-8"?>
++<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
++    <corners android:radius="18dp" />
++    <gradient
++        android:startColor="#DD101018"
++        android:centerColor="#AA1E1E38"
++        android:endColor="#66121228"
++        android:angle="0" />
++    <stroke android:width="1.5dp" android:color="#CCFFD700" />
++    <padding android:left="10dp" android:right="10dp" android:top="6dp" android:bottom="6dp" />
++</shape>
+diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/res/drawable/ic_back_professional.xml IPTVmine/app/src/main/res/drawable/ic_back_professional.xml
+--- IPTVmine_original/app/src/main/res/drawable/ic_back_professional.xml	1970-01-01 00:00:00.000000000 +0000
++++ IPTVmine/app/src/main/res/drawable/ic_back_professional.xml	2026-06-13 20:52:52.165852051 +0000
+@@ -0,0 +1,24 @@
++<?xml version="1.0" encoding="utf-8"?>
++<vector xmlns:android="http://schemas.android.com/apk/res/android"
++    android:width="28dp"
++    android:height="28dp"
++    android:viewportWidth="28"
++    android:viewportHeight="28">
++    <path
++        android:fillColor="#00000000"
++        android:strokeColor="#FFD700"
++        android:strokeWidth="2.2"
++        android:strokeLineCap="round"
++        android:strokeLineJoin="round"
++        android:pathData="M17.5,7 L10.5,14 L17.5,21" />
++    <path
++        android:fillColor="#00000000"
++        android:strokeColor="#00E5FF"
++        android:strokeWidth="1.6"
++        android:strokeAlpha="0.85"
++        android:strokeLineCap="round"
++        android:pathData="M11,14 L24,14" />
++    <path
++        android:fillColor="#22FFD700"
++        android:pathData="M14,2.5 A11.5,11.5 0,1 0,14,25.5 A11.5,11.5 0,1 0,14,2.5" />
++</vector>
+diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/res/layout/floating_back_buttons.xml IPTVmine/app/src/main/res/layout/floating_back_buttons.xml
+--- IPTVmine_original/app/src/main/res/layout/floating_back_buttons.xml	2026-06-13 20:50:54.653852051 +0000
++++ IPTVmine/app/src/main/res/layout/floating_back_buttons.xml	2026-06-13 20:53:31.781852051 +0000
+@@ -1,52 +1,41 @@
+ <?xml version="1.0" encoding="utf-8"?>
+-<!-- 🎯 Universal Permanent Dual Floating Back Buttons (FAB) 🎯 -->
++<!-- 🎯 Universal Professional Floating Back Button (single, no duplicate top button) -->
+ <merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+-    <!-- 🔝 Top Right Corner Floating Back Button -->
+-    <LinearLayout
++    <View
+         android:id="@+id/fabBackTopRight"
+-        android:layout_width="74dp"
+-        android:layout_height="42dp"
+-        android:layout_gravity="top|end"
+-        android:layout_marginTop="24dp"
+-        android:layout_marginEnd="18dp"
+-        android:background="@drawable/bg_floating_back_rect"
+-        android:clickable="true"
+-        android:focusable="true"
+-        android:foreground="@drawable/focus_selector"
+-        android:gravity="center"
+-        android:elevation="14dp">
+-
+-        <TextView
+-            android:layout_width="wrap_content"
+-            android:layout_height="wrap_content"
+-            android:text="←"
+-            android:textColor="#FFD700"
+-            android:textSize="24sp"
+-            android:textStyle="bold" />
+-    </LinearLayout>
++        android:layout_width="1dp"
++        android:layout_height="1dp"
++        android:visibility="gone" />
+
+-    <!-- 🔽 Bottom Right Corner Floating Back Button -->
+     <LinearLayout
+         android:id="@+id/fabBackBottomRight"
+-        android:layout_width="74dp"
+-        android:layout_height="42dp"
++        android:layout_width="92dp"
++        android:layout_height="48dp"
+         android:layout_gravity="bottom|end"
+         android:layout_marginBottom="24dp"
+         android:layout_marginEnd="18dp"
+-        android:background="@drawable/bg_floating_back_rect"
++        android:background="@drawable/bg_back_professional"
+         android:clickable="true"
+         android:focusable="true"
+         android:foreground="@drawable/focus_selector"
+         android:gravity="center"
++        android:orientation="horizontal"
+         android:elevation="14dp">
+
++        <ImageView
++            android:layout_width="28dp"
++            android:layout_height="28dp"
++            android:src="@drawable/ic_back_professional"
++            android:contentDescription="رجوع" />
++
+         <TextView
+             android:layout_width="wrap_content"
+             android:layout_height="wrap_content"
+-            android:text="←"
+-            android:textColor="#00E5FF"
+-            android:textSize="24sp"
++            android:layout_marginStart="6dp"
++            android:text="رجوع"
++            android:textColor="#FFD700"
++            android:textSize="13sp"
+             android:textStyle="bold" />
+     </LinearLayout>
+ </merge>
 diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/google_apps_script_activation.gs IPTVmine/google_apps_script_activation.gs
 --- IPTVmine_original/google_apps_script_activation.gs	1970-01-01 00:00:00.000000000 +0000
-+++ IPTVmine/google_apps_script_activation.gs	2026-06-13 20:14:19.306675477 +0000
++++ IPTVmine/google_apps_script_activation.gs	2026-06-13 20:50:54.617852051 +0000
 @@ -0,0 +1,521 @@
 +/**
 + * Latchi IPTV - Google Sheet API v3 FULL
