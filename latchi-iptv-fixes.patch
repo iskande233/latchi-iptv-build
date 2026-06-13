@@ -1,0 +1,1299 @@
+diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/GOOGLE_SHEET_SETUP_AR.md IPTVmine/GOOGLE_SHEET_SETUP_AR.md
+--- IPTVmine_original/GOOGLE_SHEET_SETUP_AR.md	1970-01-01 00:00:00.000000000 +0000
++++ IPTVmine/GOOGLE_SHEET_SETUP_AR.md	2026-06-13 20:14:19.254675477 +0000
+@@ -0,0 +1,213 @@
++# ماذا تدير الآن؟ ربط التطبيقين مع Google Sheet
++
++## النتيجة المطلوبة
++
++بعد التعديل عندك زوج تطبيقات يخدمو على نفس Google Apps Script:
++
++1. **تطبيق المشاهدة Latchi IPTV**
++   - المستخدم يدخل كود.
++   - التطبيق يسأل Google Sheet.
++   - يرجع `playlist_url` ويشغل القنوات.
++   - عند كل تشغيل يعاود يتحقق بصمت، وإذا تبدل السيرفر يمسح الكاش القديم ويجيب الجديد.
++
++2. **تطبيق التحكم LTC IPTV Dashboard**
++   - تضيف كود جديد.
++   - تعمم سيرفر واحد على كل المستخدمين.
++   - تشوف المستخدمين والسيرفرات.
++   - تعدل، توقف، تجدد، تحذف.
++
++## جدول Google Sheet تاعك مدعوم
++
++الصورة تاعك فيها:
++
++```text
++code | status | max_devices | devices | expires_at | playlist_url | name
++```
++
++هذا هو الشكل الصحيح.
++
++## أهم سبب يخلي كود ما يخدمش
++
++إذا `max_devices = 1` وعمود `devices` فيه جهاز قديم، الكود لن يشتغل في هاتف/تلفاز آخر.
++
++الحل:
++
++- امسح خلية `devices` للكود الذي تريد تجربته
++- أو زيد `max_devices`
++
++مثال:
++
++```text
++code: 123321
++max_devices: 1
++devices: 7473a1895dff...
++```
++
++هذا راه محجوز لجهاز واحد.
++
++## كيف تدير سيرفر واحد لكل المستخدمين؟
++
++عندك زوج طرق:
++
++### الطريقة السهلة من تطبيق Dashboard
++
++1. افتح تطبيق التحكم.
++2. أدخل PIN.
++3. في خانة `رابط السيرفر المعتمد Google Script` حط رابط Apps Script `/exec`.
++4. في خانة `سيرفر واحد لكل المستخدمين` ألصق رابط M3U:
++
++```text
++http://server/get.php?username=USER&password=PASS&type=m3u_plus&output=ts
++```
++
++5. اضغط:
++
++```text
++تعميم السيرفر على كل المستخدمين
++```
++
++السكريبت سيقوم بـ:
++
++- وضع الرابط في `Config/default_playlist_url`
++- تحديث `playlist_url` لكل الأكواد الموجودة
++- أي مستخدم يفتح تطبيق المشاهدة يأخذ الرابط الجديد
++
++### الطريقة اليدوية من Google Sheet
++
++اعمل Sheet اسمه:
++
++```text
++Config
++```
++
++وفيه:
++
++```text
++key | value
++default_playlist_url | http://server/get.php?username=USER&password=PASS&type=m3u_plus&output=ts
++```
++
++ملاحظة: إذا سطر المستخدم عنده `playlist_url` خاص، هذا له أولوية. إذا حبيت كل المستخدمين يستعملو الرابط العام، خليه نفس الرابط أو امسح روابطهم الخاصة.
++
++## لازم تحديث السكريبت؟
++
++نعم، لكن ليس لأنك لم تحدثه سابقاً؛ السبب أن السكريبت السابق كان يخدم التفعيل فقط وما كانش يدعم أوامر Dashboard مثل:
++
++```text
++add_code
++update_master_url
++get_all_users
++update_status
++edit_user
++renew_user
++delete_user
++```
++
++السكريبت الجديد v3 يخدم التطبيقين معاً.
++
++## خطوات تحديث Google Apps Script
++
++1. افتح Google Sheet.
++2. Extensions > Apps Script.
++3. امسح الكود القديم.
++4. انسخ كامل محتوى الملف:
++
++```text
++latchi-iptv-build/google_apps_script_activation.gs
++```
++
++5. اضغط Save.
++6. Deploy > Manage deployments.
++7. Edit.
++8. Version: New version.
++9. Deploy.
++10. استعمل رابط `/exec` نفسه أو الرابط الجديد في التطبيقين.
++
++مهم جداً:
++
++- تغيير بيانات Google Sheet لا يحتاج Deploy.
++- تغيير كود Apps Script يحتاج New version ثم Deploy.
++
++## اختبارات ضرورية
++
++### اختبار التفعيل
++
++```text
++https://script.google.com/macros/s/XXXX/exec?code=123400&device_id=test123
++```
++
++لازم يرجع:
++
++```json
++{
++  "success": true,
++  "message": "OK",
++  "playlist_url": "http://...",
++  "expires_at": "2026-10-30"
++}
++```
++
++### اختبار Dashboard - كل المستخدمين
++
++```text
++https://script.google.com/macros/s/XXXX/exec?action=get_all_users&secret=LatchiAdmin2026
++```
++
++لازم يرجع:
++
++```json
++{
++  "success": true,
++  "users": []
++}
++```
++
++### اختبار تعميم سيرفر واحد
++
++```text
++https://script.google.com/macros/s/XXXX/exec?action=update_master_url&secret=LatchiAdmin2026&master_url=http://server/get.php?username=u&password=p&type=m3u_plus&output=ts
++```
++
++يرجع:
++
++```json
++{
++  "success": true,
++  "message": "Master URL updated for all users",
++  "updated_users": 10
++}
++```
++
++## ملاحظة حول التاريخ
++
++السكريبت يقبل التاريخ كما في صورتك:
++
++```text
++26-12-2026
++```
++
++ويحوّله إلى:
++
++```text
++2026-12-26
++```
++
++## الملفات الجاهزة
++
++- سكريبت Google الكامل:
++
++```text
++google_apps_script_activation.gs
++```
++
++- مشروع تطبيق المشاهدة المعدل:
++
++```text
++viewer_app_IPTVmine_fixed
++```
++
++- مشروع تطبيق التحكم المعدل:
++
++```text
++admin_dashboard_fixed
++```
+diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/adapter/ChannelsAdapter.kt IPTVmine/app/src/main/java/com/latchi/iptv/adapter/ChannelsAdapter.kt
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/adapter/ChannelsAdapter.kt	2026-06-13 20:14:19.326675477 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/adapter/ChannelsAdapter.kt	2026-06-13 20:14:19.270675477 +0000
+@@ -31,6 +31,7 @@
+ 
+     private val VIEW_TYPE_LIST = 1
+     private val VIEW_TYPE_GRID = 2
++    private var updateGeneration = 0
+ 
+     override fun getItemViewType(position: Int): Int {
+         return if (isGrid) VIEW_TYPE_GRID else VIEW_TYPE_LIST
+@@ -60,10 +61,22 @@
+     override fun getItemCount(): Int = channels.size
+ 
+     fun updateChannels(newChannels: List<Channel>) {
++        val generation = ++updateGeneration
+         val old = channels
++
++        // القوائم IPTV غالباً كبيرة جداً. DiffUtil على 30k/100k عنصر يقدر يجي متأخر
++        // ويغلب فلتر التصنيف الجديد. لذلك نعمل تحديث مباشر للقوائم الكبيرة،
++        // ونستعمل generation guard للقوائم الصغيرة.
++        if (old.size > 5000 || newChannels.size > 5000) {
++            channels = newChannels
++            notifyDataSetChanged()
++            return
++        }
++
+         CoroutineScope(Dispatchers.Default).launch {
+             val diffResult = DiffUtil.calculateDiff(ChannelDiffCallback(old, newChannels))
+             withContext(Dispatchers.Main) {
++                if (generation != updateGeneration) return@withContext
+                 channels = newChannels
+                 diffResult.dispatchUpdatesTo(this@ChannelsAdapter)
+             }
+diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/provider/ChannelsProvider.kt IPTVmine/app/src/main/java/com/latchi/iptv/provider/ChannelsProvider.kt
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/provider/ChannelsProvider.kt	2026-06-13 20:14:19.326675477 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/provider/ChannelsProvider.kt	2026-06-13 20:14:19.270675477 +0000
+@@ -7,6 +7,8 @@
+ import com.latchi.iptv.model.Channel
+ import kotlinx.coroutines.Dispatchers
+ import kotlinx.coroutines.Job
++import kotlinx.coroutines.async
++import kotlinx.coroutines.coroutineScope
+ import kotlinx.coroutines.launch
+ import kotlinx.coroutines.withContext
+ import okhttp3.OkHttpClient
+@@ -39,7 +41,9 @@
+     fun setLocalChannels(list: List<Channel>) {
+         val curated = curateForArabicAudience(list)
+         _channels.value = curated
+-        _filteredChannels.value = curated
++        // لا نضع curated مباشرة في filteredChannels هنا.
++        // شاشة ChannelList تطبق contentType/category/search بعد وصول channels.
++        // هذا يمنع سباق DiffUtil الذي كان يرجّع كل القنوات بعد اختيار فئة.
+         _error.value = null
+     }
+ 
+@@ -54,7 +58,6 @@
+                         val curated = curateForArabicAudience(apiChannels)
+                         withContext(Dispatchers.Main) {
+                             _channels.value = curated
+-                            _filteredChannels.value = curated
+                             _error.value = null
+                         }
+                         return@launch
+@@ -71,7 +74,6 @@
+                             val curated = curateForArabicAudience(m3uChannels)
+                             withContext(Dispatchers.Main) {
+                                 _channels.value = curated
+-                                _filteredChannels.value = curated
+                                 _error.value = null
+                             }
+                             return@launch
+@@ -138,33 +140,38 @@
+         return list
+     }
+ 
+-    private fun tryXtreamApi(sourceUrl: String): List<Channel> {
++    private suspend fun tryXtreamApi(sourceUrl: String): List<Channel> = coroutineScope {
+         val clean = cleanUrl(sourceUrl)
+-        if (!clean.contains("get.php", ignoreCase = true)) return emptyList()
++        if (!clean.contains("get.php", ignoreCase = true)) return@coroutineScope emptyList()
+         val uri = URI(clean)
+         val server = "${uri.scheme}://${uri.host}${if (uri.port != -1) ":${uri.port}" else ""}"
+-        val query = uri.query ?: return emptyList()
++        val query = uri.query ?: return@coroutineScope emptyList()
+         val params = query.split("&").mapNotNull {
+             val p = it.split("=", limit = 2)
+             if (p.size == 2) p[0] to p[1] else null
+         }.toMap()
+-        val username = params["username"] ?: return emptyList()
+-        val password = params["password"] ?: return emptyList()
++        val username = params["username"] ?: return@coroutineScope emptyList()
++        val password = params["password"] ?: return@coroutineScope emptyList()
+ 
+-        val list = mutableListOf<Channel>()
+         val liveUrl = "$server/player_api.php?username=$username&password=$password&action=get_live_streams"
+         val vodUrl = "$server/player_api.php?username=$username&password=$password&action=get_vod_streams"
+         val seriesUrl = "$server/player_api.php?username=$username&password=$password&action=get_series"
+ 
+-        val liveCatMap = fetchCategoryMap("$server/player_api.php?username=$username&password=$password&action=get_live_categories")
+-        val vodCatMap = fetchCategoryMap("$server/player_api.php?username=$username&password=$password&action=get_vod_categories")
+-        val seriesCatMap = fetchCategoryMap("$server/player_api.php?username=$username&password=$password&action=get_series_categories")
+-
+-        list.addAll(parseXtreamStreamsUsingJsonReader(liveUrl, "live", liveCatMap, server, username, password))
+-        list.addAll(parseXtreamStreamsUsingJsonReader(vodUrl, "movie", vodCatMap, server, username, password))
+-        list.addAll(parseXtreamStreamsUsingJsonReader(seriesUrl, "series", seriesCatMap, server, username, password))
++        // تحميل خرائط التصنيفات بالتوازي بدل 3 طلبات متسلسلة.
++        val liveCatDeferred = async { fetchCategoryMap("$server/player_api.php?username=$username&password=$password&action=get_live_categories") }
++        val vodCatDeferred = async { fetchCategoryMap("$server/player_api.php?username=$username&password=$password&action=get_vod_categories") }
++        val seriesCatDeferred = async { fetchCategoryMap("$server/player_api.php?username=$username&password=$password&action=get_series_categories") }
++
++        val liveCatMap = liveCatDeferred.await()
++        val vodCatMap = vodCatDeferred.await()
++        val seriesCatMap = seriesCatDeferred.await()
++
++        // تحميل Live/VOD/Series بالتوازي لتقليل وقت أول تحديث.
++        val liveDeferred = async { parseXtreamStreamsUsingJsonReader(liveUrl, "live", liveCatMap, server, username, password) }
++        val vodDeferred = async { parseXtreamStreamsUsingJsonReader(vodUrl, "movie", vodCatMap, server, username, password) }
++        val seriesDeferred = async { parseXtreamStreamsUsingJsonReader(seriesUrl, "series", seriesCatMap, server, username, password) }
+ 
+-        return list
++        liveDeferred.await() + vodDeferred.await() + seriesDeferred.await()
+     }
+ 
+     private fun parseXtreamStreamsUsingJsonReader(url: String, type: String, catMap: Map<String, String>, server: String, username: String, password: String): List<Channel> {
+diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/ChannelListActivity.kt IPTVmine/app/src/main/java/com/latchi/iptv/screens/ChannelListActivity.kt
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/ChannelListActivity.kt	2026-06-13 20:14:19.326675477 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/screens/ChannelListActivity.kt	2026-06-13 20:14:19.270675477 +0000
+@@ -70,6 +70,7 @@
+     private var debounceHandler: Handler? = null
+     private var categoryDebounceHandler: Handler? = null
+     private var lastChannels: List<Channel> = emptyList()
++    private var saveAfterFetch = false
+ 
+     companion object {
+         private const val EXTRA_TYPE = "extra_type"
+@@ -261,6 +262,16 @@
+                 lastChannels = data
+                 buildCategories(data)
+                 applyFilter()
++
++                if (saveAfterFetch && data.isNotEmpty()) {
++                    val profileId = activeId()
++                    if (profileId != null) {
++                        val appContext = applicationContext
++                        val snapshot = data.toList()
++                        saveAfterFetch = false
++                        Thread { ChannelCache.save(appContext, profileId, snapshot) }.start()
++                    }
++                }
+             } catch (e: Exception) { Log.e("ChannelList", "Observer Error: ${e.message}") }
+         })
+         channelsProvider.filteredChannels.observe(this, Observer { data ->
+@@ -288,13 +299,16 @@
+                 return
+             }
+             Thread {
+-                val embedded = com.latchi.iptv.utils.EmbeddedChannelsLoader.load(applicationContext)
+-                val cached = if (embedded.isNotEmpty()) emptyList() else ChannelCache.load(applicationContext, active.id)
++                val cached = ChannelCache.load(applicationContext, active.id)
++                val embedded = if (cached.isEmpty() && active.m3uUrl.isBlank()) {
++                    com.latchi.iptv.utils.EmbeddedChannelsLoader.load(applicationContext)
++                } else emptyList()
+                 Handler(Looper.getMainLooper()).post {
+                     when {
+-                        embedded.isNotEmpty() -> channelsProvider.setLocalChannels(embedded)
+                         cached.isNotEmpty() -> channelsProvider.setLocalChannels(cached)
++                        embedded.isNotEmpty() -> channelsProvider.setLocalChannels(embedded)
+                         else -> {
++                            saveAfterFetch = true
+                             progressBar.visibility = View.VISIBLE
+                             channelsProvider.fetchM3UFile(active.m3uUrl)
+                         }
+@@ -345,7 +359,7 @@
+                 val count = when (cat) {
+                     "All" -> filtered.size
+                     "Favorites" -> filtered.count { favoriteUrls.contains(it.streamUrl) }
+-                    else -> filtered.count { it.category == cat }
++                    else -> filtered.count { it.category.equals(cat, ignoreCase = true) }
+                 }
+                 CategoryGridAdapter.CategoryItem(cat, count)
+             }
+diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/HomeFragment.kt IPTVmine/app/src/main/java/com/latchi/iptv/screens/HomeFragment.kt
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/HomeFragment.kt	2026-06-13 20:14:19.326675477 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/screens/HomeFragment.kt	2026-06-13 20:14:19.270675477 +0000
+@@ -343,13 +343,25 @@
+             } catch (_: Throwable) {}
+             checkExpiryWarning(active.expiresAt)
+ 
++            val appContext = requireContext().applicationContext
+             Thread {
+-                val appContext = requireContext().applicationContext
+-                val embedded = com.latchi.iptv.utils.EmbeddedChannelsLoader.load(appContext)
+-                val cached = if (embedded.isNotEmpty()) emptyList() else ChannelCache.load(appContext, active.id)
++                val cached = ChannelCache.load(appContext, active.id)
++                // القنوات المدمجة داخل assets تستعمل فقط كـ fallback إذا لم يكن للحساب رابط أصلاً.
++                // سابقاً كانت assets تتغلب دائماً على حساب المستخدم، وهذا يسبب قوائم/تصنيفات خاطئة.
++                val embedded = if (cached.isEmpty() && active.m3uUrl.isBlank()) {
++                    com.latchi.iptv.utils.EmbeddedChannelsLoader.load(appContext)
++                } else emptyList()
+                 Handler(Looper.getMainLooper()).post {
+                     try {
+                         when {
++                            cached.isNotEmpty() -> {
++                                channelsProvider.setLocalChannels(cached)
++                                updateCacheTime(active.id)
++                                VoiceIndex.update(cached)
++                                progressBar.visibility = View.GONE
++                                loadingOverlay.visibility = View.GONE
++                                stopAdhkarRotator()
++                            }
+                             embedded.isNotEmpty() -> {
+                                 channelsProvider.setLocalChannels(embedded)
+                                 VoiceIndex.update(embedded)
+@@ -357,11 +369,6 @@
+                                 loadingOverlay.visibility = View.GONE
+                                 stopAdhkarRotator()
+                             }
+-                            cached.isNotEmpty() -> {
+-                                channelsProvider.setLocalChannels(cached)
+-                                updateCacheTime(active.id)
+-                                VoiceIndex.update(cached)
+-                            }
+                             else -> {
+                                 saveAfterFetch = true
+                                 progressBar.visibility = View.VISIBLE
+diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/SplashActivity.kt IPTVmine/app/src/main/java/com/latchi/iptv/screens/SplashActivity.kt
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/SplashActivity.kt	2026-06-13 20:14:19.326675477 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/screens/SplashActivity.kt	2026-06-13 20:14:19.274675477 +0000
+@@ -105,12 +105,14 @@
+ 
+     private fun navigateToNextScreen() {
+         val active = SourcePrefs.getActiveProfile(this)
+-        val nextClass = when {
+-            active == null -> UserListActivity::class.java
+-            getSharedPreferences("verification_prefs", MODE_PRIVATE).getBoolean("is_verified_${active.id}", false) -> com.latchi.iptv.MainActivity::class.java
+-            else -> VerificationActivity::class.java
++        val intent = when {
++            active == null -> Intent(this, UserListActivity::class.java)
++            active.activationCode == "MANUAL" -> Intent(this, com.latchi.iptv.MainActivity::class.java)
++            // نتحقق من Google Sheet في كل تشغيل حتى إذا تغير رابط السيرفر في الشيت
++            // يتحدث داخل التطبيق وينمسح كاش القنوات القديم تلقائياً.
++            else -> Intent(this, VerificationActivity::class.java).putExtra("silent_verify", true)
+         }
+-        startActivity(Intent(this, nextClass))
++        startActivity(intent)
+         finish()
+     }
+ 
+diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/UserListActivity.kt IPTVmine/app/src/main/java/com/latchi/iptv/screens/UserListActivity.kt
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/UserListActivity.kt	2026-06-13 20:14:19.326675477 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/screens/UserListActivity.kt	2026-06-13 20:14:19.274675477 +0000
+@@ -8,7 +8,6 @@
+ import android.os.Bundle
+ import android.os.Handler
+ import android.os.Looper
+-import android.provider.Settings
+ import android.view.View
+ import android.widget.EditText
+ import android.widget.LinearLayout
+@@ -25,15 +24,12 @@
+ import com.latchi.iptv.R
+ import com.latchi.iptv.adapter.UserProfilesAdapter
+ import com.latchi.iptv.utils.ActivationConfig
++import com.latchi.iptv.utils.ActivationValidator
+ import com.latchi.iptv.utils.FloatingBackHelper
+ import com.latchi.iptv.utils.IptvProfile
+ import com.latchi.iptv.utils.SourcePrefs
+ import com.latchi.iptv.utils.ThemeManager
+ import com.latchi.iptv.utils.TvUtils
+-import org.json.JSONObject
+-import java.io.BufferedReader
+-import java.net.HttpURLConnection
+-import java.net.URL
+ import kotlin.concurrent.thread
+ 
+ class UserListActivity : AppCompatActivity() {
+@@ -238,33 +234,23 @@
+ 
+         thread {
+             try {
+-                val deviceId = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID) ?: "unknown"
+-                val url = "${ActivationConfig.ACTIVATION_API_URL}?code=$code&device_id=$deviceId"
+-                val connection = URL(url).openConnection() as HttpURLConnection
+-                connection.requestMethod = "GET"
+-                connection.connectTimeout = 15000
+-                connection.readTimeout = 20000
+-                val response = connection.inputStream.bufferedReader().use(BufferedReader::readText)
+-                val json = JSONObject(response)
+-                val success = json.optBoolean("success", false)
+-                val playlistUrl = json.optString("playlist_url", "")
+-                val expiresAt = json.optString("expires_at", "")
+-                val serverName = json.optString("name", "")
++                val result = ActivationValidator.validateCode(this, code)
+                 runOnUiThread {
+                     dialog.dismiss()
+                     activateCodeButton.isEnabled = true
+-                    if (success) {
+-                        val resolvedPlaylistUrl = ActivationConfig.resolvePlaylistUrlFromGoogle(playlistUrl)
+-                        if (resolvedPlaylistUrl.isBlank()) {
+-                            Toast.makeText(this, getString(R.string.empty_playlist), Toast.LENGTH_SHORT).show()
+-                            return@runOnUiThread
+-                        }
+-                        val autoName = serverName.ifBlank { "User ${'$'}code" }
+-                        SourcePrefs.saveActivatedProfile(this, code = code, name = autoName, playlistUrl = resolvedPlaylistUrl, expiresAt = expiresAt, maxDevices = 1)
++                    if (result.success) {
++                        SourcePrefs.saveActivatedProfile(
++                            context = this,
++                            code = code,
++                            name = result.name.ifBlank { "User $code" },
++                            playlistUrl = result.playlistUrl,
++                            expiresAt = result.expiresAt,
++                            maxDevices = result.maxDevices
++                        )
+                         refreshScreen()
+                         Toast.makeText(this, "تمت إضافة الحساب بنجاح ✓", Toast.LENGTH_SHORT).show()
+                     } else {
+-                        Toast.makeText(this, json.optString("message", getString(R.string.invalid_code)), Toast.LENGTH_LONG).show()
++                        Toast.makeText(this, result.message.ifBlank { getString(R.string.invalid_code) }, Toast.LENGTH_LONG).show()
+                     }
+                 }
+             } catch (e: Exception) {
+diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/VerificationActivity.kt IPTVmine/app/src/main/java/com/latchi/iptv/screens/VerificationActivity.kt
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/screens/VerificationActivity.kt	2026-06-13 20:14:19.330675477 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/screens/VerificationActivity.kt	2026-06-13 20:14:19.274675477 +0000
+@@ -27,6 +27,7 @@
+     private var statusText: TextView? = null
+     private var progressHandler: Handler? = null
+     private var fakeProgress = 0
++    private var silentVerify = false
+ 
+     override fun attachBaseContext(context: Context) {
+         super.attachBaseContext(LocaleHelper.wrap(context))
+@@ -36,6 +37,7 @@
+         super.onCreate(savedInstanceState)
+         TvUtils.applyOrientation(this)
+         com.latchi.iptv.utils.ThemeManager.apply(this)
++        silentVerify = intent.getBooleanExtra("silent_verify", false)
+         
+         val profile = SourcePrefs.getActiveProfile(this)
+         if (profile == null) {
+@@ -66,7 +68,9 @@
+                             maxDevices = result.maxDevices
+                         )
+                         statusText?.text = getString(R.string.subscription_verified)
+-                        finishProgressThen { showVerificationSummaryDialog(profile, result) }
++                        finishProgressThen {
++                            if (silentVerify) goToMain() else showVerificationSummaryDialog(profile, result)
++                        }
+                     } else {
+                         SourcePrefs.deleteProfile(this, profile.id)
+                         goExpired(result.message)
+@@ -78,8 +82,12 @@
+                     if (hasCache) {
+                         Toast.makeText(this, getString(R.string.offline_mode), Toast.LENGTH_SHORT).show()
+                         finishProgressThen {
+-                            val emptyResult = com.latchi.iptv.utils.ActivationValidationResult(true, "Offline", profile.name, profile.m3uUrl, profile.expiresAt, profile.maxDevices)
+-                            showVerificationSummaryDialog(profile, emptyResult)
++                            if (silentVerify) {
++                                goToMain()
++                            } else {
++                                val emptyResult = com.latchi.iptv.utils.ActivationValidationResult(true, "Offline", profile.name, profile.m3uUrl, profile.expiresAt, profile.maxDevices)
++                                showVerificationSummaryDialog(profile, emptyResult)
++                            }
+                         }
+                     } else {
+                         showNoConnectionScreen()
+diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/utils/ActivationConfig.kt IPTVmine/app/src/main/java/com/latchi/iptv/utils/ActivationConfig.kt
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/utils/ActivationConfig.kt	2026-06-13 20:14:19.330675477 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/utils/ActivationConfig.kt	2026-06-13 20:14:19.718675477 +0000
+@@ -1,11 +1,11 @@
+ package com.latchi.iptv.utils
+ 
+ object ActivationConfig {
+-    const val ACTIVATION_API_URL = "https://script.google.com/macros/s/AKfycbxbPxWCm5AQTDaIJTod1_hXVwy49QLaTUaNfRFs5ZA9OTekePEPcU4KRdk3ZFqDEh2R/exec"
++    const val ACTIVATION_API_URL = "https://script.google.com/macros/s/AKfycbzjNXSTwzkRZTwh1PdMaAsY5YOoAwCA8hzr6_dlGU4XocvWgUiD_wfFsKDRHcBo0eXJ/exec"
+ 
+     // When Google validates a code successfully, use the locked provider endpoint below.
+     // It is intentionally assembled at runtime so it is not shown in the UI or stored in plain settings before activation.
+-    const val USE_LOCKED_PROVIDER_AFTER_GOOGLE_CODE = true
++    const val USE_LOCKED_PROVIDER_AFTER_GOOGLE_CODE = false
+ 
+     fun lockedProviderPlaylistUrl(): String {
+         val reversed = listOf(
+@@ -21,4 +21,59 @@
+         val cleaned = rawPlaylistUrl.trim().replace("&amp;", "&")
+         return if (USE_LOCKED_PROVIDER_AFTER_GOOGLE_CODE) lockedProviderPlaylistUrl() else cleaned
+     }
++
++    /**
++     * تقبل أكثر من اسم عمود من Google Sheet:
++     * playlist_url / m3u_url / m3u / url / playlist / link
++     * أو بيانات Xtream منفصلة: server + username + password.
++     */
++    fun extractPlaylistUrl(json: org.json.JSONObject, fallback: String = ""): String {
++        var raw = firstString(json, listOf("playlist_url", "m3u_url", "m3u", "url", "playlist", "link", "server_link"))
++        if (raw.isBlank()) {
++            val server = firstString(json, listOf("server", "server_url", "host", "portal"))
++            val username = firstString(json, listOf("username", "user", "login"))
++            val password = firstString(json, listOf("password", "pass"))
++            if (server.isNotBlank() && username.isNotBlank() && password.isNotBlank()) {
++                var cleanServer = server.trim().replace("&amp;", "&")
++                if (!cleanServer.startsWith("http://") && !cleanServer.startsWith("https://")) cleanServer = "http://$cleanServer"
++                while (cleanServer.endsWith("/")) cleanServer = cleanServer.dropLast(1)
++                raw = "$cleanServer/get.php?username=${urlEncode(username)}&password=${urlEncode(password)}&type=m3u_plus&output=ts"
++            }
++        }
++        return resolvePlaylistUrlFromGoogle(raw.ifBlank { fallback })
++    }
++
++    fun extractSuccess(json: org.json.JSONObject): Boolean {
++        if (json.has("success")) return json.optBoolean("success", false)
++        val status = firstString(json, listOf("status", "state", "active", "valid")).lowercase()
++        return status == "ok" || status == "success" || status == "active" || status == "true" || status == "1"
++    }
++
++    fun extractName(json: org.json.JSONObject, fallback: String = ""): String =
++        firstString(json, listOf("name", "user_name", "client", "customer", "title")).ifBlank { fallback }
++
++    fun extractExpiry(json: org.json.JSONObject, fallback: String = ""): String =
++        firstString(json, listOf("expires_at", "expiry", "expire", "end_date", "valid_until")).ifBlank { fallback }
++
++    fun extractMaxDevices(json: org.json.JSONObject, fallback: Int = 1): Int {
++        val keys = listOf("max_devices", "maxDevices", "devices_limit", "limit")
++        for (key in keys) {
++            if (!json.has(key)) continue
++            val value = json.optString(key, "").trim().toIntOrNull()
++            if (value != null && value > 0) return value
++            val intValue = json.optInt(key, -1)
++            if (intValue > 0) return intValue
++        }
++        return fallback
++    }
++
++    private fun firstString(json: org.json.JSONObject, keys: List<String>): String {
++        for (key in keys) {
++            val value = json.optString(key, "").trim().replace("&amp;", "&")
++            if (value.isNotBlank() && value.lowercase() != "null") return value
++        }
++        return ""
++    }
++
++    private fun urlEncode(value: String): String = java.net.URLEncoder.encode(value.trim(), "UTF-8")
+ }
+diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/utils/ActivationValidator.kt IPTVmine/app/src/main/java/com/latchi/iptv/utils/ActivationValidator.kt
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/utils/ActivationValidator.kt	2026-06-13 20:14:19.330675477 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/utils/ActivationValidator.kt	2026-06-13 20:14:19.274675477 +0000
+@@ -22,37 +22,60 @@
+         if (profile.activationCode == "MANUAL") {
+             return ActivationValidationResult(true, "OK", profile.name, profile.m3uUrl, profile.expiresAt, profile.maxDevices)
+         }
++        return validateCode(context, profile.activationCode, profile)
++    }
+ 
++    fun validateCode(context: Context, activationCode: String, existingProfile: IptvProfile? = null): ActivationValidationResult {
+         val apiUrl = ActivationConfig.ACTIVATION_API_URL
+         if (apiUrl.contains("PASTE_GOOGLE")) {
+             return ActivationValidationResult(false, "Activation API not configured")
+         }
+ 
+         val deviceId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID) ?: "unknown"
+-        val code = URLEncoder.encode(profile.activationCode, "UTF-8")
++        val code = URLEncoder.encode(activationCode.trim(), "UTF-8")
+         val device = URLEncoder.encode(deviceId, "UTF-8")
+         val requestUrl = "$apiUrl?code=$code&device_id=$device"
+ 
+         val connection = URL(requestUrl).openConnection() as HttpURLConnection
+         connection.requestMethod = "GET"
+         connection.connectTimeout = 15000
+-        connection.readTimeout = 20000
++        connection.readTimeout = 25000
+         connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36")
++        connection.setRequestProperty("Accept", "application/json,text/plain,*/*")
++
++        val responseCode = connection.responseCode
++        val stream = if (responseCode in 200..299) connection.inputStream else connection.errorStream
++        val response = stream?.bufferedReader()?.use(BufferedReader::readText).orEmpty()
++        if (responseCode !in 200..299) {
++            throw IllegalStateException("Activation HTTP $responseCode: ${response.take(160)}")
++        }
++        if (response.isBlank()) {
++            throw IllegalStateException("Empty activation response")
++        }
+ 
+-        val response = connection.inputStream.bufferedReader().use(BufferedReader::readText)
+-        val json = JSONObject(response)
+-        val success = json.optBoolean("success", false)
++        val json = try {
++            JSONObject(response)
++        } catch (_: Exception) {
++            throw IllegalStateException("Invalid activation JSON: ${response.take(160)}")
++        }
++
++        val success = ActivationConfig.extractSuccess(json)
+         if (!success) {
+-            return ActivationValidationResult(false, json.optString("message", "Activation failed"))
++            return ActivationValidationResult(false, json.optString("message", json.optString("error", "Activation failed")))
++        }
++
++        val playlist = ActivationConfig.extractPlaylistUrl(json, existingProfile?.m3uUrl ?: "")
++        if (playlist.isBlank()) {
++            return ActivationValidationResult(false, "Empty playlist_url from Google Sheet")
+         }
+ 
+         return ActivationValidationResult(
+             success = true,
+             message = "OK",
+-            name = json.optString("name", profile.name),
+-            playlistUrl = ActivationConfig.resolvePlaylistUrlFromGoogle(json.optString("playlist_url", profile.m3uUrl)),
+-            expiresAt = json.optString("expires_at", profile.expiresAt),
+-            maxDevices = json.optInt("max_devices", profile.maxDevices)
++            name = ActivationConfig.extractName(json, existingProfile?.name ?: "User ${activationCode.trim()}"),
++            playlistUrl = playlist,
++            expiresAt = ActivationConfig.extractExpiry(json, existingProfile?.expiresAt ?: ""),
++            maxDevices = ActivationConfig.extractMaxDevices(json, existingProfile?.maxDevices ?: 1)
+         )
+     }
+ }
+diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/app/src/main/java/com/latchi/iptv/utils/ChannelCache.kt IPTVmine/app/src/main/java/com/latchi/iptv/utils/ChannelCache.kt
+--- IPTVmine_original/app/src/main/java/com/latchi/iptv/utils/ChannelCache.kt	2026-06-13 20:14:19.330675477 +0000
++++ IPTVmine/app/src/main/java/com/latchi/iptv/utils/ChannelCache.kt	2026-06-13 20:14:19.274675477 +0000
+@@ -64,14 +64,14 @@
+             val vodFile = getVodDiskFile(context, profileId)
+             val seriesFile = getSeriesDiskFile(context, profileId)
+ 
+-            if (!liveFile.exists() && !vodFile.exists()) return emptyList()
++            if (!liveFile.exists() && !vodFile.exists() && !seriesFile.exists()) return emptyList()
+ 
+             val list = mutableListOf<Channel>()
+             
+             if (liveFile.exists()) {
+                 liveFile.useLines(Charsets.UTF_8) { lines ->
+                     lines.forEach { line ->
+-                        val parts = line.split("\t")
++                        val parts = line.split("\t", limit = 5)
+                         if (parts.size >= 5) list.add(Channel(parts[0], parts[1], parts[2], parts[3], parts[4]))
+                     }
+                 }
+@@ -80,7 +80,7 @@
+             if (vodFile.exists()) {
+                 vodFile.useLines(Charsets.UTF_8) { lines ->
+                     lines.forEach { line ->
+-                        val parts = line.split("\t")
++                        val parts = line.split("\t", limit = 5)
+                         if (parts.size >= 5) list.add(Channel(parts[0], parts[1], parts[2], parts[3], parts[4]))
+                     }
+                 }
+@@ -89,7 +89,7 @@
+             if (seriesFile.exists()) {
+                 seriesFile.useLines(Charsets.UTF_8) { lines ->
+                     lines.forEach { line ->
+-                        val parts = line.split("\t")
++                        val parts = line.split("\t", limit = 5)
+                         if (parts.size >= 5) list.add(Channel(parts[0], parts[1], parts[2], parts[3], parts[4]))
+                     }
+                 }
+diff -ruN '--exclude=.gradle' '--exclude=build' '--exclude=app/build' IPTVmine_original/google_apps_script_activation.gs IPTVmine/google_apps_script_activation.gs
+--- IPTVmine_original/google_apps_script_activation.gs	1970-01-01 00:00:00.000000000 +0000
++++ IPTVmine/google_apps_script_activation.gs	2026-06-13 20:14:19.306675477 +0000
+@@ -0,0 +1,521 @@
++/**
++ * Latchi IPTV - Google Sheet API v3 FULL
++ *
++ * هذا سكريبت واحد يخدم التطبيقين معاً:
++ * 1) تطبيق المشاهدة: التحقق بالكود وجلب playlist_url
++ * 2) تطبيق التحكم Dashboard: إضافة أكواد، رابط موحد لكل المستخدمين، قائمة المستخدمين، تعديل/تجديد/حذف
++ *
++ * يدعم جدولك الحالي:
++ * code | status | max_devices | devices | expires_at | playlist_url | name
++ *
++ * مهم بعد لصق السكريبت:
++ * Deploy > Manage deployments > Edit > New version > Deploy
++ */
++
++const SPREADSHEET_ID = ''; // اتركه فارغ إذا السكريبت مربوط بنفس Google Sheet
++const ADMIN_SECRET = 'LatchiAdmin2026';
++const CODES_SHEET_NAMES = ['codes', 'Codes', 'CODES'];
++const CONFIG_SHEET_NAMES = ['Config', 'config', 'CONFIG'];
++const DEFAULT_HEADERS = ['code', 'status', 'max_devices', 'devices', 'expires_at', 'playlist_url', 'name'];
++
++function doGet(e) {
++  try {
++    const p = (e && e.parameter) ? e.parameter : {};
++    const action = String(p.action || '').trim();
++    if (action) return handleAdminAction_(action, p);
++    return handleValidateCode_(p);
++  } catch (err) {
++    return jsonOut({ success: false, message: String(err && err.message ? err.message : err) });
++  }
++}
++
++/* =========================================================
++ * تطبيق المشاهدة: ?code=XXXX&device_id=YYYY
++ * =======================================================*/
++function handleValidateCode_(p) {
++  const code = String(p.code || '').trim();
++  const deviceId = String(p.device_id || p.device || '').trim();
++
++  if (!code || !deviceId) {
++    return jsonOut({ success: false, message: 'Missing code or device' });
++  }
++
++  const ctx = getCodesContext_();
++  const found = findRowByCode_(ctx.values, ctx.col, code);
++  if (found < 0) {
++    return jsonOut({ success: false, message: 'Invalid code' });
++  }
++
++  const row = ctx.values[found];
++  const status = getCell_(row, ctx.col, 'status', 'active');
++  if (!isActive_(status)) {
++    return jsonOut({ success: false, message: 'Code disabled or inactive', status: String(status) });
++  }
++
++  const expiresAt = normalizeDate_(getCell_(row, ctx.col, 'expires_at', ''));
++  if (expiresAt && isExpired_(expiresAt)) {
++    return jsonOut({ success: false, message: 'Subscription expired', expires_at: expiresAt });
++  }
++
++  const maxDevices = positiveInt_(getCell_(row, ctx.col, 'max_devices', '1'), 1);
++  let devices = splitDevices_(getCell_(row, ctx.col, 'devices', ''));
++
++  if (devices.indexOf(deviceId) < 0) {
++    if (devices.length >= maxDevices) {
++      return jsonOut({
++        success: false,
++        message: 'Device limit reached',
++        max_devices: maxDevices,
++        devices_count: devices.length
++      });
++    }
++    devices.push(deviceId);
++    setCellByKey_(ctx.sh, found, ctx.col, 'devices', devices.join(','));
++  }
++
++  const playlistUrl = getEffectivePlaylistUrl_(row, ctx.values, ctx.col);
++  if (!playlistUrl) {
++    return jsonOut({ success: false, message: 'playlist_url empty' });
++  }
++
++  return jsonOut({
++    success: true,
++    message: 'OK',
++    code: code,
++    status: 'active',
++    name: getCell_(row, ctx.col, 'name', 'User ' + code),
++    playlist_url: playlistUrl,
++    expires_at: expiresAt,
++    max_devices: maxDevices,
++    devices_count: devices.length
++  });
++}
++
++/* =========================================================
++ * تطبيق التحكم Dashboard: ?action=...&secret=...
++ * =======================================================*/
++function handleAdminAction_(action, p) {
++  const secret = String(p.secret || '').trim();
++  if (secret !== ADMIN_SECRET) {
++    return jsonOut({ success: false, message: 'Unauthorized admin secret' });
++  }
++
++  const ctx = getCodesContext_();
++
++  switch (action) {
++    case 'add_code':
++      return adminAddCode_(ctx, p);
++    case 'update_master_url':
++    case 'set_default_playlist':
++      return adminUpdateMasterUrl_(ctx, p);
++    case 'get_all_users':
++      return adminGetAllUsers_(ctx);
++    case 'update_status':
++      return adminUpdateStatus_(ctx, p);
++    case 'edit_user':
++      return adminEditUser_(ctx, p);
++    case 'renew_user':
++      return adminRenewUser_(ctx, p);
++    case 'delete_user':
++      return adminDeleteUser_(ctx, p);
++    case 'reset_devices':
++      return adminResetDevices_(ctx, p);
++    default:
++      return jsonOut({ success: false, message: 'Unknown action: ' + action });
++  }
++}
++
++function adminAddCode_(ctx, p) {
++  const code = String(p.code || '').trim();
++  const name = String(p.name || ('User ' + code)).trim();
++  const playlist = cleanPlaylistUrl_(p.playlist_url || p.m3u_url || p.url || '');
++  const expiresAt = normalizeDate_(p.expires_at || '');
++  const maxDevices = positiveInt_(p.max_devices || '1', 1);
++
++  if (!code) return jsonOut({ success: false, message: 'code required' });
++  if (findRowByCode_(ctx.values, ctx.col, code) >= 0) {
++    return jsonOut({ success: false, message: 'Code already exists' });
++  }
++
++  const row = new Array(ctx.sh.getLastColumn()).fill('');
++  row[ctx.col.code] = code;
++  row[ctx.col.status] = 'active';
++  row[ctx.col.max_devices] = maxDevices;
++  row[ctx.col.devices] = '';
++  row[ctx.col.expires_at] = expiresAt;
++  row[ctx.col.playlist_url] = playlist; // إذا فارغ يستعمل default_playlist_url من Config عند التحقق
++  row[ctx.col.name] = name;
++
++  ctx.sh.appendRow(row);
++  return jsonOut({
++    success: true,
++    message: playlist ? 'Code added with custom playlist_url' : 'Code added; will use default/master playlist_url',
++    code: code,
++    name: name,
++    playlist_url: playlist,
++    expires_at: expiresAt,
++    max_devices: maxDevices
++  });
++}
++
++function adminUpdateMasterUrl_(ctx, p) {
++  const masterUrl = cleanPlaylistUrl_(p.master_url || p.playlist_url || p.url || '');
++  if (!masterUrl) return jsonOut({ success: false, message: 'master_url required' });
++
++  setConfigValue_('default_playlist_url', masterUrl);
++
++  // بما أنك تريد سيرفر واحد لكل المستخدمين: نحدّث كل صف فيه code أيضاً.
++  let updated = 0;
++  for (let i = 1; i < ctx.values.length; i++) {
++    const code = getCell_(ctx.values[i], ctx.col, 'code', '');
++    if (!code) continue;
++    setCellByKey_(ctx.sh, i, ctx.col, 'playlist_url', masterUrl);
++    updated++;
++  }
++
++  return jsonOut({
++    success: true,
++    message: 'Master URL updated for all users',
++    playlist_url: masterUrl,
++    updated_users: updated
++  });
++}
++
++function adminGetAllUsers_(ctx) {
++  const users = [];
++  for (let i = 1; i < ctx.values.length; i++) {
++    const row = ctx.values[i];
++    const code = getCell_(row, ctx.col, 'code', '');
++    if (!code) continue;
++
++    const rawStatus = getCell_(row, ctx.col, 'status', 'active');
++    users.push({
++      rowIdx: i + 1,
++      code: code,
++      name: getCell_(row, ctx.col, 'name', 'User ' + code),
++      playlistUrl: getEffectivePlaylistUrl_(row, ctx.values, ctx.col),
++      rawPlaylistUrl: cleanPlaylistUrl_(getCell_(row, ctx.col, 'playlist_url', '')),
++      expiresAt: normalizeDate_(getCell_(row, ctx.col, 'expires_at', '')),
++      maxDevices: positiveInt_(getCell_(row, ctx.col, 'max_devices', '1'), 1),
++      status: isActive_(rawStatus) ? 'Active' : 'Inactive',
++      registeredDevices: getCell_(row, ctx.col, 'devices', 'None') || 'None'
++    });
++  }
++  return jsonOut({ success: true, users: users, count: users.length });
++}
++
++function adminUpdateStatus_(ctx, p) {
++  const code = String(p.code || '').trim();
++  const newStatusRaw = String(p.new_status || p.status || '').trim();
++  if (!code) return jsonOut({ success: false, message: 'code required' });
++
++  const rowIdx = findRowByCode_(ctx.values, ctx.col, code);
++  if (rowIdx < 0) return jsonOut({ success: false, message: 'Code not found' });
++
++  const newStatus = isActive_(newStatusRaw) ? 'active' : 'inactive';
++  setCellByKey_(ctx.sh, rowIdx, ctx.col, 'status', newStatus);
++  return jsonOut({ success: true, message: 'Status updated', code: code, status: newStatus });
++}
++
++function adminEditUser_(ctx, p) {
++  const code = String(p.code || '').trim();
++  if (!code) return jsonOut({ success: false, message: 'code required' });
++
++  const rowIdx = findRowByCode_(ctx.values, ctx.col, code);
++  if (rowIdx < 0) return jsonOut({ success: false, message: 'Code not found' });
++
++  if (p.name != null) setCellByKey_(ctx.sh, rowIdx, ctx.col, 'name', String(p.name).trim());
++  if (p.max_devices != null) setCellByKey_(ctx.sh, rowIdx, ctx.col, 'max_devices', positiveInt_(p.max_devices, 1));
++  if (p.expires_at != null) setCellByKey_(ctx.sh, rowIdx, ctx.col, 'expires_at', normalizeDate_(p.expires_at));
++  if (p.playlist_url != null) setCellByKey_(ctx.sh, rowIdx, ctx.col, 'playlist_url', cleanPlaylistUrl_(p.playlist_url));
++
++  return jsonOut({ success: true, message: 'User updated', code: code });
++}
++
++function adminRenewUser_(ctx, p) {
++  const code = String(p.code || '').trim();
++  const days = positiveInt_(p.duration_days || '30', 30);
++  if (!code) return jsonOut({ success: false, message: 'code required' });
++
++  const rowIdx = findRowByCode_(ctx.values, ctx.col, code);
++  if (rowIdx < 0) return jsonOut({ success: false, message: 'Code not found' });
++
++  const currentExpiry = normalizeDate_(getCell_(ctx.values[rowIdx], ctx.col, 'expires_at', ''));
++  const base = futureBaseDate_(currentExpiry);
++  base.setDate(base.getDate() + days);
++  const newExpiry = formatDate_(base);
++
++  setCellByKey_(ctx.sh, rowIdx, ctx.col, 'expires_at', newExpiry);
++  setCellByKey_(ctx.sh, rowIdx, ctx.col, 'status', 'active');
++
++  return jsonOut({ success: true, message: 'User renewed', code: code, newExpiry: newExpiry, expires_at: newExpiry });
++}
++
++function adminDeleteUser_(ctx, p) {
++  const code = String(p.code || '').trim();
++  if (!code) return jsonOut({ success: false, message: 'code required' });
++
++  const rowIdx = findRowByCode_(ctx.values, ctx.col, code);
++  if (rowIdx < 0) return jsonOut({ success: false, message: 'Code not found' });
++
++  ctx.sh.deleteRow(rowIdx + 1);
++  return jsonOut({ success: true, message: 'User deleted', code: code });
++}
++
++function adminResetDevices_(ctx, p) {
++  const code = String(p.code || '').trim();
++  if (!code) return jsonOut({ success: false, message: 'code required' });
++
++  const rowIdx = findRowByCode_(ctx.values, ctx.col, code);
++  if (rowIdx < 0) return jsonOut({ success: false, message: 'Code not found' });
++
++  setCellByKey_(ctx.sh, rowIdx, ctx.col, 'devices', '');
++  return jsonOut({ success: true, message: 'Devices reset', code: code });
++}
++
++/* =========================================================
++ * Helpers
++ * =======================================================*/
++function getSpreadsheet_() {
++  if (SPREADSHEET_ID && SPREADSHEET_ID.trim()) return SpreadsheetApp.openById(SPREADSHEET_ID.trim());
++  return SpreadsheetApp.getActiveSpreadsheet();
++}
++
++function getSheetByNames_(ss, names) {
++  for (const n of names) {
++    const sh = ss.getSheetByName(n);
++    if (sh) return sh;
++  }
++  return null;
++}
++
++function getCodesContext_() {
++  const ss = getSpreadsheet_();
++  let sh = getSheetByNames_(ss, CODES_SHEET_NAMES);
++  if (!sh) sh = ss.insertSheet('codes');
++
++  if (sh.getLastRow() === 0 || sh.getLastColumn() === 0) {
++    sh.getRange(1, 1, 1, DEFAULT_HEADERS.length).setValues([DEFAULT_HEADERS]);
++  }
++
++  let values = sh.getDataRange().getValues();
++  if (values.length === 0) {
++    sh.getRange(1, 1, 1, DEFAULT_HEADERS.length).setValues([DEFAULT_HEADERS]);
++    values = sh.getDataRange().getValues();
++  }
++
++  let headers = values[0].map(h => normalizeHeader_(h));
++  let col = indexMap_(headers);
++
++  // إذا أعمدة ناقصة نضيفها بدون ما نخرب ترتيب جدولك الحالي
++  const required = {
++    code: 'code',
++    status: 'status',
++    max_devices: 'max_devices',
++    devices: 'devices',
++    expires_at: 'expires_at',
++    playlist_url: 'playlist_url',
++    name: 'name'
++  };
++  Object.keys(required).forEach(key => {
++    if (col[key] == null) {
++      const newCol = sh.getLastColumn() + 1;
++      sh.getRange(1, newCol).setValue(required[key]);
++      col[key] = newCol - 1;
++    }
++  });
++
++  values = sh.getDataRange().getValues();
++  headers = values[0].map(h => normalizeHeader_(h));
++  col = indexMap_(headers);
++  return { ss: ss, sh: sh, values: values, headers: headers, col: col };
++}
++
++function normalizeHeader_(h) {
++  return String(h || '').trim().toLowerCase().replace(/\s+/g, '_');
++}
++
++function indexMap_(headers) {
++  const aliases = {
++    code: ['code', 'activation_code', 'pin'],
++    status: ['status', 'active', 'enabled', 'valid'],
++    max_devices: ['max_devices', 'maxdevices', 'devices_limit', 'limit'],
++    devices: ['devices', 'device_ids', 'device_id'],
++    expires_at: ['expires_at', 'expiry', 'expire', 'end_date', 'valid_until'],
++    playlist_url: ['playlist_url', 'm3u_url', 'm3u', 'url', 'playlist', 'link', 'server_link'],
++    name: ['name', 'user_name', 'client', 'customer', 'title'],
++    server: ['server', 'server_url', 'host', 'portal'],
++    username: ['username', 'user', 'login'],
++    password: ['password', 'pass']
++  };
++  const out = {};
++  Object.keys(aliases).forEach(key => {
++    for (const a of aliases[key]) {
++      const idx = headers.indexOf(a);
++      if (idx >= 0) { out[key] = idx; break; }
++    }
++  });
++  return out;
++}
++
++function findRowByCode_(values, col, code) {
++  if (col.code == null) return -1;
++  const target = String(code || '').trim().toLowerCase();
++  for (let i = 1; i < values.length; i++) {
++    const rowCode = String(values[i][col.code] || '').trim().toLowerCase();
++    if (rowCode && rowCode === target) return i;
++  }
++  return -1;
++}
++
++function getCell_(row, col, key, fallback) {
++  if (col[key] == null) return fallback;
++  const v = row[col[key]];
++  if (v == null) return fallback;
++  const s = String(v).trim();
++  return s || fallback;
++}
++
++function setCellByKey_(sh, rowIndex0, col, key, value) {
++  if (col[key] == null) throw new Error('Missing column: ' + key);
++  sh.getRange(rowIndex0 + 1, col[key] + 1).setValue(value);
++}
++
++function splitDevices_(value) {
++  return String(value || '')
++    .split(',')
++    .map(s => s.trim())
++    .filter(Boolean);
++}
++
++function isActive_(value) {
++  const s = String(value || '').trim().toLowerCase();
++  return s === '' || s === 'active' || s === 'true' || s === '1' || s === 'yes' || s === 'ok' || s === 'success';
++}
++
++function positiveInt_(value, fallback) {
++  const n = parseInt(String(value || '').trim(), 10);
++  return (isNaN(n) || n <= 0) ? fallback : n;
++}
++
++function normalizeDate_(value) {
++  if (!value) return '';
++  if (Object.prototype.toString.call(value) === '[object Date]' && !isNaN(value)) {
++    return Utilities.formatDate(value, Session.getScriptTimeZone(), 'yyyy-MM-dd');
++  }
++
++  const s = String(value).trim();
++  let m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/); // dd-MM-yyyy
++  if (m) return `${m[3]}-${pad2_(m[2])}-${pad2_(m[1])}`;
++
++  m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/); // yyyy-MM-dd
++  if (m) return `${m[1]}-${pad2_(m[2])}-${pad2_(m[3])}`;
++
++  return s;
++}
++
++function pad2_(x) {
++  return String(x).padStart(2, '0');
++}
++
++function isExpired_(yyyyMmDd) {
++  const d = new Date(yyyyMmDd + 'T23:59:59');
++  if (isNaN(d.getTime())) return false;
++  return Date.now() > d.getTime();
++}
++
++function futureBaseDate_(yyyyMmDd) {
++  const now = new Date();
++  const current = new Date(yyyyMmDd + 'T12:00:00');
++  if (!isNaN(current.getTime()) && current.getTime() > now.getTime()) return current;
++  return now;
++}
++
++function formatDate_(date) {
++  return Utilities.formatDate(date, Session.getScriptTimeZone(), 'yyyy-MM-dd');
++}
++
++function cleanPlaylistUrl_(value) {
++  if (!value) return '';
++  const lines = String(value)
++    .replace(/&amp;/g, '&')
++    .split(/\r?\n/)
++    .map(s => s.trim())
++    .filter(Boolean);
++  for (const line of lines) {
++    if (/^https?:\/\//i.test(line)) return line;
++  }
++  return lines[0] || '';
++}
++
++function getEffectivePlaylistUrl_(row, values, col) {
++  let playlistUrl = cleanPlaylistUrl_(getCell_(row, col, 'playlist_url', ''));
++  if (!playlistUrl) playlistUrl = cleanPlaylistUrl_(getConfigValue_('default_playlist_url'));
++  if (!playlistUrl) playlistUrl = cleanPlaylistUrl_(findBlankCodeDefaultPlaylist_(values, col));
++
++  if (!playlistUrl) {
++    const server = getCell_(row, col, 'server', '');
++    const username = getCell_(row, col, 'username', '');
++    const password = getCell_(row, col, 'password', '');
++    if (server && username && password) playlistUrl = buildM3uUrl_(server, username, password);
++  }
++  return playlistUrl;
++}
++
++function getConfigSheet_() {
++  const ss = getSpreadsheet_();
++  let sh = getSheetByNames_(ss, CONFIG_SHEET_NAMES);
++  if (!sh) {
++    sh = ss.insertSheet('Config');
++    sh.getRange(1, 1, 1, 2).setValues([['key', 'value']]);
++  }
++  return sh;
++}
++
++function getConfigValue_(key) {
++  const sh = getConfigSheet_();
++  const values = sh.getDataRange().getValues();
++  for (let i = 0; i < values.length; i++) {
++    if (String(values[i][0] || '').trim().toLowerCase() === key.toLowerCase()) {
++      return String(values[i][1] || '').trim();
++    }
++  }
++  return '';
++}
++
++function setConfigValue_(key, value) {
++  const sh = getConfigSheet_();
++  const values = sh.getDataRange().getValues();
++  for (let i = 0; i < values.length; i++) {
++    if (String(values[i][0] || '').trim().toLowerCase() === key.toLowerCase()) {
++      sh.getRange(i + 1, 2).setValue(value);
++      return;
++    }
++  }
++  sh.appendRow([key, value]);
++}
++
++function findBlankCodeDefaultPlaylist_(values, col) {
++  if (col.playlist_url == null || col.code == null) return '';
++  for (let i = 1; i < values.length; i++) {
++    const code = String(values[i][col.code] || '').trim();
++    const url = String(values[i][col.playlist_url] || '').trim();
++    if (!code && url) return url;
++  }
++  return '';
++}
++
++function buildM3uUrl_(server, username, password) {
++  let s = String(server || '').trim();
++  if (!/^https?:\/\//i.test(s)) s = 'http://' + s;
++  s = s.replace(/\/+$/, '');
++  return s + '/get.php?username=' + encodeURIComponent(username) +
++    '&password=' + encodeURIComponent(password) +
++    '&type=m3u_plus&output=ts';
++}
++
++function jsonOut(obj) {
++  return ContentService
++    .createTextOutput(JSON.stringify(obj))
++    .setMimeType(ContentService.MimeType.JSON);
++}
