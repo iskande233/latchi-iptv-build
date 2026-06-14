@@ -262,4 +262,11 @@
     <string name="voice_try_again">🤔 أعد المحاولة بوضوح</string>
     <string name="voice_searching">جاري البحث عن %1$s</string>
     <string name="search">بحث</string>
+
+<!-- Automated Update System strings -->
+    <string name="update_message_default">يتوفر إصدار جديد من التطبيق. يُنصح بالتحديث للحصول على أحدث الميزات والإصلاحات.</string>
+    <string name="downloading_update">جاري تحميل التحديث</string>
+    <string name="downloading_update_desc">يتم تحميل النسخة الجديدة في الخلفية</string>
+    <string name="update_download_failed">فشل التحميل. تحقق من الاتصال بالإنترنت.</string>
+    <string name="update_install_failed">فشل فتح المثبت. يرجى تثبيت الملف يدوياً من مجلد التنزيلات.</string>
 </resources>

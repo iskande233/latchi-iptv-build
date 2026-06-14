@@ -28,6 +28,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.latchi.iptv.MainActivity
 import com.latchi.iptv.R
+import com.latchi.iptv.utils.ErrorOverlayHelper
 import com.latchi.iptv.adapter.UserProfilesAdapter
 import com.latchi.iptv.model.Channel
 import com.latchi.iptv.provider.ChannelsProvider
@@ -38,6 +39,8 @@ import com.latchi.iptv.utils.LastWatchedPrefs
 import com.latchi.iptv.utils.SourcePrefs
 import com.latchi.iptv.utils.ServerSyncManager
 import com.latchi.iptv.utils.ServerUpdateOverlayHelper
+import com.latchi.iptv.utils.LiveClockHelper
+import com.latchi.iptv.utils.ServerHealthChecker
 import com.latchi.iptv.utils.UpdateChecker
 import com.latchi.iptv.utils.VoiceCommand
 import com.latchi.iptv.utils.VoiceCommandParser
@@ -131,9 +134,13 @@ class HomeFragment : Fragment() {
         try {
             setupObservers()
             loadCachedOrFetch()
+            // Quick server health indicator (Priority 1/2)
+            checkAndShowServerHealth()
             animateUi(view)
             com.latchi.iptv.utils.TvFocusHelper.setupTree(view)
             startSilentServerSync()
+            // Priority 5: Live clock in Home (updates every second)
+            updatedText?.let { LiveClockHelper.startClock(it, "HH:mm") }
             if (arguments?.getBoolean(MainActivity.EXTRA_OPEN_AI_VOICE, false) == true) {
                 view.postDelayed({ onAIVoiceClicked() }, 650L)
                 arguments?.putBoolean(MainActivity.EXTRA_OPEN_AI_VOICE, false)
@@ -149,6 +156,8 @@ class HomeFragment : Fragment() {
     }
 
     private fun startSilentServerSync() {
+            // Priority 5: Live clock in Home (updates every second)
+            updatedText?.let { LiveClockHelper.startClock(it, "HH:mm") }
         ServerSyncManager.checkForServerUpdate(requireContext(), force = false) { result ->
             if (!isAdded || !result.changed) return@checkForServerUpdate
             ServerUpdateOverlayHelper.show(requireActivity()) {
@@ -249,7 +258,7 @@ class HomeFragment : Fragment() {
             SourcePrefs.getActiveProfile(requireContext())?.let { active ->
                 LastWatchedPrefs.load(requireContext(), active.id)?.let { ch ->
                     PlayerActivity.start(requireContext(), ch)
-                } ?: Toast.makeText(requireContext(), getString(R.string.no_last_watched), Toast.LENGTH_SHORT).show()
+                } ?: ErrorOverlayHelper.show(requireContext(), "تنبيه", getString(R.string.no_last_watched))
             }
         }
         whatsappButton.setOnClickListener {
@@ -274,7 +283,7 @@ class HomeFragment : Fragment() {
         if (requestCode == 2026 && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             voiceHandler?.startListening()
         } else {
-            Toast.makeText(requireContext(), "صلاحية الميكروفون مطلوبة للبحث الصوتي", Toast.LENGTH_SHORT).show()
+            ErrorOverlayHelper.show(requireContext(), "تنبيه", "صلاحية الميكروفون مطلوبة للبحث الصوتي")
         }
     }
 
@@ -286,14 +295,14 @@ class HomeFragment : Fragment() {
             is VoiceCommand.Category -> openCategorySearch(command.category)
             is VoiceCommand.PlayerControl -> sendPlayerControl(command.target, command.extra)
             VoiceCommand.Favorites -> openSearchResults("Favorites", "live")
-            VoiceCommand.Home -> Toast.makeText(requireContext(), getString(R.string.home), Toast.LENGTH_SHORT).show()
-            VoiceCommand.Unknown -> Toast.makeText(requireContext(), getString(R.string.voice_not_understood), Toast.LENGTH_SHORT).show()
+            VoiceCommand.Home -> ErrorOverlayHelper.show(requireContext(), "تنبيه", getString(R.string.home))
+            VoiceCommand.Unknown -> ErrorOverlayHelper.show(requireContext(), "تنبيه", getString(R.string.voice_not_understood))
         }
     }
 
     private fun handleGeminiAction(action: GeminiVoiceController.VoiceAction) {
         if (!action.isConfident()) {
-            Toast.makeText(requireContext(), getString(R.string.voice_try_again), Toast.LENGTH_SHORT).show()
+            ErrorOverlayHelper.show(requireContext(), "تنبيه", getString(R.string.voice_try_again))
             return
         }
         when (action.actionType.lowercase()) {
@@ -303,15 +312,15 @@ class HomeFragment : Fragment() {
             "category" -> openCategorySearch(action.target)
             "player_control" -> sendPlayerControl(action.target, action.extra)
             "favorites" -> openSearchResults("Favorites", "live")
-            "home" -> Toast.makeText(requireContext(), getString(R.string.home), Toast.LENGTH_SHORT).show()
-            else -> Toast.makeText(requireContext(), "ℹ️ ${action.target}", Toast.LENGTH_SHORT).show()
+            "home" -> ErrorOverlayHelper.show(requireContext(), "تنبيه", getString(R.string.home))
+            else -> ErrorOverlayHelper.show(requireContext(), "تنبيه", "ℹ️ ${action.target}")
         }
     }
 
     private fun playOrSearch(query: String, preferredType: String?) {
         val clean = query.trim()
         if (clean.isBlank()) {
-            Toast.makeText(requireContext(), getString(R.string.voice_not_understood), Toast.LENGTH_SHORT).show()
+            ErrorOverlayHelper.show(requireContext(), "تنبيه", getString(R.string.voice_not_understood))
             return
         }
         val item = VoiceIndex.findChannel(clean, preferredType)
@@ -329,7 +338,7 @@ class HomeFragment : Fragment() {
             "series" -> {
                 val active = SourcePrefs.getActiveProfile(requireContext())
                 if (active != null) SeriesDetailActivity.start(requireContext(), channel, active.m3uUrl)
-                else Toast.makeText(requireContext(), getString(R.string.series_not_available), Toast.LENGTH_SHORT).show()
+                else ErrorOverlayHelper.show(requireContext(), "تنبيه", getString(R.string.series_not_available))
             }
             else -> PlayerActivity.start(requireContext(), channel)
         }
@@ -363,7 +372,7 @@ class HomeFragment : Fragment() {
             putExtra("target", target)
             putExtra("extra", extra)
         })
-        Toast.makeText(requireContext(), "🎮 $target", Toast.LENGTH_SHORT).show()
+        ErrorOverlayHelper.show(requireContext(), "تنبيه", "🎮 $target")
     }
 
     private fun navigateByScreenName(screen: String?) {
@@ -377,7 +386,7 @@ class HomeFragment : Fragment() {
             "pricing" -> navigateTo(VoiceCommand.Screen.PRICING)
             "prayer" -> navigateTo(VoiceCommand.Screen.PRAYER)
             "about" -> navigateTo(VoiceCommand.Screen.ABOUT)
-            else -> Toast.makeText(requireContext(), getString(R.string.voice_not_understood), Toast.LENGTH_SHORT).show()
+            else -> ErrorOverlayHelper.show(requireContext(), "تنبيه", getString(R.string.voice_not_understood))
         }
     }
 
@@ -415,7 +424,7 @@ class HomeFragment : Fragment() {
                         Handler(Looper.getMainLooper()).post {
                             try {
                                 updateCacheTime(profileId)
-                                Toast.makeText(appContext, getString(R.string.playlist_updated), Toast.LENGTH_SHORT).show()
+                                ErrorOverlayHelper.show(appContext, "تنبيه", getString(R.string.playlist_updated))
                             } catch (_: Exception) {}
                         }
                     }.start()
@@ -436,6 +445,8 @@ class HomeFragment : Fragment() {
     }
 
     private fun loadCachedOrFetch() {
+            // Quick server health indicator (Priority 1/2)
+            checkAndShowServerHealth()
         try {
             val active = SourcePrefs.getActiveProfile(requireContext())
             if (active == null) { startActivity(Intent(requireContext(), UserListActivity::class.java).putExtra("show_settings", true)); requireActivity().finish(); return }
@@ -599,5 +610,24 @@ class HomeFragment : Fragment() {
         voiceHandler?.destroy()
         voiceHandler = null
         stopAdhkarRotator()
+        LiveClockHelper.stopClock()
+    }
+
+    private fun checkAndShowServerHealth() {
+        val active = SourcePrefs.getActiveProfile(requireContext()) ?: return
+        if (active.m3uUrl.isBlank()) return
+
+        ServerHealthChecker.checkPlaylistHealth(requireContext(), active.m3uUrl) { health ->
+            if (isAdded) {
+                val status = if (health.isOnline) "🟢" else "🔴"
+                // Append to existing expiry or updated text if available
+                expiryText?.let {
+                    val current = it.text?.toString() ?: ""
+                    if (!current.contains("🟢") && !current.contains("🔴")) {
+                        it.text = "$current  $status"
+                    }
+                }
+            }
+        }
     }
 }

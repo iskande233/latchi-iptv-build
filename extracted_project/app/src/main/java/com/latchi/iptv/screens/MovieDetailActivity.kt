@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
 import com.latchi.iptv.MainActivity
 import com.latchi.iptv.R
+import com.latchi.iptv.utils.ErrorOverlayHelper
 import com.latchi.iptv.model.Channel
 import com.latchi.iptv.utils.FavoritesPrefs
 import com.latchi.iptv.utils.SourcePrefs
@@ -85,7 +86,7 @@ class MovieDetailActivity : AppCompatActivity() {
             if (profileId != null) {
                 FavoritesPrefs.toggle(this, profileId, channel.streamUrl)
                 updateFavIcon()
-                Toast.makeText(this, if (favText.text == getString(R.string.add_favorite)) getString(R.string.added_to_favorites) else getString(R.string.removed_from_favorites), Toast.LENGTH_SHORT).show()
+                ErrorOverlayHelper.show(this, "تنبيه", if (favText.text == getString(R.string.add_favorite)) getString(R.string.added_to_favorites) else getString(R.string.removed_from_favorites))
             }
         }
     }

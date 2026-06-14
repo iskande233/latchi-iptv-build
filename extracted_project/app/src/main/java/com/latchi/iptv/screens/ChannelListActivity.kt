@@ -10,6 +10,7 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
 import android.view.View
+import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ProgressBar
@@ -25,6 +26,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.latchi.iptv.MainActivity
 import com.latchi.iptv.R
+import com.latchi.iptv.utils.ErrorOverlayHelper
 import com.latchi.iptv.adapter.CategoryGridAdapter
 import com.latchi.iptv.adapter.ChannelsAdapter
 import com.latchi.iptv.model.Channel
@@ -78,6 +80,7 @@ class ChannelListActivity : AppCompatActivity() {
     private var activeSourceUrl = ""
     private var xtreamCategories: List<ChannelCategory> = emptyList()
     private var firstCategorySelected = false
+    private var focusMode = "channels"
 
     companion object {
         private const val EXTRA_TYPE = "extra_type"
@@ -146,13 +149,20 @@ class ChannelListActivity : AppCompatActivity() {
                         if (active != null) {
                             SeriesDetailActivity.start(this, channel, active.m3uUrl)
                         } else {
-                            Toast.makeText(this, getString(R.string.series_not_available), Toast.LENGTH_SHORT).show()
+                            ErrorOverlayHelper.show(this, "⚠️ تنبيه", getString(R.string.series_not_available) ?: "المحتوى غير متاح")
                         }
                     }
                     channel.contentType == "movie" -> {
                         MovieDetailActivity.start(this, channel)
                     }
                     else -> {
+                        if (TvUtils.isTv(this) && contentType == "live") {
+                            // TV Live: open dedicated preview screen (Priority 4)
+                            val category = currentCategory
+                            TvLivePreviewActivity.start(this, channel, category, lastChannels)
+                        } else {
+                            PlayerActivity.start(this, channel)
+                        }
                         PlayerActivity.start(this, channel)
                     }
                 }
@@ -246,7 +256,12 @@ class ChannelListActivity : AppCompatActivity() {
     private fun activeId(): String? = SourcePrefs.getActiveProfile(this)?.id
 
     private fun openCategoryGrid() {
+        focusMode = "categories"
         categoryOverlayGrid.visibility = View.VISIBLE
+        recyclerView.isFocusable = false
+        recyclerView.descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
+        catGridRecyclerView.isFocusable = true
+        catGridRecyclerView.descendantFocusability = ViewGroup.FOCUS_AFTER_DESCENDANTS
         buildCategories(lastChannels)
         catGridRecyclerView.postDelayed({
             catGridRecyclerView.requestFocus()
@@ -255,7 +270,11 @@ class ChannelListActivity : AppCompatActivity() {
     }
 
     private fun closeCategoryGrid() {
+        focusMode = "channels"
         categoryOverlayGrid.visibility = View.GONE
+        recyclerView.isFocusable = true
+        recyclerView.descendantFocusability = ViewGroup.FOCUS_AFTER_DESCENDANTS
+        catGridRecyclerView.clearFocus()
         recyclerView.postDelayed({
             recyclerView.requestFocus()
             recyclerView.findViewHolderForAdapterPosition(0)?.itemView?.requestFocus()

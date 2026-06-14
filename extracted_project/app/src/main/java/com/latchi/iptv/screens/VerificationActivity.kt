@@ -17,6 +17,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.latchi.iptv.MainActivity
 import com.latchi.iptv.R
+import com.latchi.iptv.utils.ErrorOverlayHelper
 import com.latchi.iptv.utils.ActivationValidator
 import com.latchi.iptv.utils.ChannelCache
 import com.latchi.iptv.utils.LocaleHelper
@@ -89,7 +90,7 @@ class VerificationActivity : AppCompatActivity() {
                 runOnUiThread {
                     val hasCache = ChannelCache.load(this, profile.id).isNotEmpty()
                     if (hasCache) {
-                        Toast.makeText(this, getString(R.string.offline_mode), Toast.LENGTH_SHORT).show()
+                        ErrorOverlayHelper.show(this, "تنبيه", getString(R.string.offline_mode))
                         finishProgressThen {
                             if (silentVerify) {
                                 goToMain()
@@ -265,7 +266,7 @@ class VerificationActivity : AppCompatActivity() {
             finishAffinity()
         } else {
             backPressedTime = System.currentTimeMillis()
-            Toast.makeText(this, "اضغط مرة أخرى للخروج", Toast.LENGTH_SHORT).show()
+            ErrorOverlayHelper.show(this, "تنبيه", "اضغط مرة أخرى للخروج")
         }
     }
 }

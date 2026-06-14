@@ -39,6 +39,8 @@ class SplashActivity : AppCompatActivity() {
             requestAppPermissions()
         } else {
             scheduleNavigation(5000)
+        // Automated Update Check (new CI/CD system - 2026-06-14)
+        com.latchi.iptv.utils.UpdateManager.checkForUpdate(this)
         }
     }
 

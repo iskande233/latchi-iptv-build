@@ -1,0 +1,24 @@
+LATCHI IPTV - Internal Changelog
+Version context: 1.1.3+ (post 2026-06-14 builds)
+
+2026-06-14 - Major batch update ("زيد كمل جميع التعديلات")
+- Priority 1: Added ServerHealthChecker (HEAD health check before adopting new playlist).
+  ServerSyncManager now gates server changes on health. Unhealthy servers are rejected.
+- Priority 1: Added PlayerServerSyncHelper for safe background sync while watching.
+  PlayerActivity now checks on every onResume (overlay + safe return to Home, no stream break).
+- Priority 2: Added ErrorOverlayHelper (professional error/warning overlay, gold glass style).
+  Replaced multiple Toasts in Settings and ChannelList with unified overlays.
+- Priority 2: Settings now shows live Server Status (Online/Offline + response time) via health checker.
+- Priority 2: Added markActiveOption helper for future full visual ✓ on all TV Settings options.
+- Priority 4: TvLivePreviewActivity fully implemented (dedicated TV preview for Live channels).
+  Only TV live routes to preview; phone unchanged. Re-uses activity_tv.xml layout.
+- Priority 5: Added LiveClockHelper + wired live clock (HH:mm) in Home (phone) and TV Preview header.
+- Many professional overlay usages + health gating across the app.
+
+All changes respect:
+- Stable ExoPlayer core untouched.
+- Phone (touch) vs TV (D-Pad) separation.
+- No new player engines or FFmpeg.
+- Updates to memos after changes.
+
+Previous: ServerSyncManager + Gemini placement + TV focus separation + initial Settings feedback.

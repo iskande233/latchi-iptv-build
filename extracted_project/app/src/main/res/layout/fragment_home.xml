@@ -61,18 +61,6 @@
                         android:textSize="20sp"
                         android:textStyle="bold" />
 
-                    <!-- ✨ Professional Gemini AI Button -->
-                    <ImageView
-                        android:id="@+id/cardAIVoice"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:background="@drawable/bg_panel_premium"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:foreground="@drawable/focus_selector"
-                        android:padding="8dp"
-                        android:src="@drawable/ic_gemini_professional"
-                        android:contentDescription="Gemini AI" />
                 </LinearLayout>
 
                 <!-- User Profiles Row -->
@@ -333,7 +321,55 @@
 
 
                 <!-- Matches Card -->
-                <LinearLayout android:id="@+id/cardMatches" android:layout_width="match_parent" android:layout_height="@dimen/card_media_height" android:layout_marginTop="@dimen/margin_top_lg" android:background="@drawable/bg_card_matches" android:clickable="true" android:focusable="true" android:foreground="@drawable/focus_selector" android:gravity="center_vertical" android:nextFocusUp="@id/cardSeries" android:nextFocusDown="@id/backToHomeButton" android:orientation="horizontal" android:padding="@dimen/card_padding"><TextView android:layout_width="@dimen/card_icon_width" android:layout_height="wrap_content" android:gravity="center" android:text="⚽" android:textColor="@android:color/white" android:textSize="@dimen/card_media_icon_text" /><LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/matches_title" android:textColor="@android:color/white" android:textSize="@dimen/card_media_title" android:textStyle="bold" /><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/margin_top_xs" android:text="@string/todays_matches" android:textColor="@android:color/white" android:textSize="@dimen/card_count" /></LinearLayout></LinearLayout>
+                <LinearLayout android:id="@+id/cardMatches" android:layout_width="match_parent" android:layout_height="@dimen/card_media_height" android:layout_marginTop="@dimen/margin_top_lg" android:background="@drawable/bg_card_matches" android:clickable="true" android:focusable="true" android:foreground="@drawable/focus_selector" android:gravity="center_vertical" android:nextFocusUp="@id/cardSeries" android:nextFocusDown="@id/cardAIVoice" android:orientation="horizontal" android:padding="@dimen/card_padding"><TextView android:layout_width="@dimen/card_icon_width" android:layout_height="wrap_content" android:gravity="center" android:text="⚽" android:textColor="@android:color/white" android:textSize="@dimen/card_media_icon_text" /><LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/matches_title" android:textColor="@android:color/white" android:textSize="@dimen/card_media_title" android:textStyle="bold" /><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/margin_top_xs" android:text="@string/todays_matches" android:textColor="@android:color/white" android:textSize="@dimen/card_count" /></LinearLayout></LinearLayout>
+
+
+                <!-- Gemini AI Card (Phone only) -->
+                <LinearLayout
+                    android:id="@+id/cardAIVoice"
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/card_media_height"
+                    android:layout_marginTop="@dimen/margin_top_lg"
+                    android:background="@drawable/bg_panel_premium"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="@drawable/focus_selector"
+                    android:gravity="center_vertical"
+                    android:nextFocusUp="@id/cardMatches"
+                    android:nextFocusDown="@id/backToHomeButton"
+                    android:orientation="horizontal"
+                    android:padding="@dimen/card_padding">
+
+                    <ImageView
+                        android:layout_width="@dimen/card_icon_width"
+                        android:layout_height="36dp"
+                        android:padding="3dp"
+                        android:src="@drawable/ic_gemini_professional"
+                        android:contentDescription="Gemini AI" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Gemini AI"
+                            android:textColor="@android:color/white"
+                            android:textSize="@dimen/card_media_title"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/margin_top_xs"
+                            android:text="تحدث بالدارجة للبحث والتحكم"
+                            android:textColor="@android:color/white"
+                            android:textSize="@dimen/card_count" />
+                    </LinearLayout>
+                </LinearLayout>
 
                 <!-- Back to Home Button -->
                 <LinearLayout
@@ -346,7 +382,7 @@
                     android:focusable="true"
                     android:foreground="@drawable/focus_selector"
                     android:gravity="center"
-                    android:nextFocusUp="@id/cardSeries"
+                    android:nextFocusUp="@id/cardAIVoice"
                     android:nextFocusDown="@id/whatsappButton"
                     android:orientation="horizontal">
 

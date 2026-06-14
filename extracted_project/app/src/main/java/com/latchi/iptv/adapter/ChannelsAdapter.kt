@@ -32,6 +32,7 @@ class ChannelsAdapter(
     private val VIEW_TYPE_LIST = 1
     private val VIEW_TYPE_GRID = 2
     private var updateGeneration = 0
+    private var selectedStreamUrl: String? = null
 
     override fun getItemViewType(position: Int): Int {
         return if (isGrid) VIEW_TYPE_GRID else VIEW_TYPE_LIST
@@ -59,6 +60,12 @@ class ChannelsAdapter(
     }
 
     override fun getItemCount(): Int = channels.size
+
+    /** Highlight the currently playing/previewed channel (used by TvLivePreviewActivity) */
+    fun updateSelectedChannel(streamUrl: String) {
+        selectedStreamUrl = streamUrl
+        notifyDataSetChanged()
+    }
 
     fun updateChannels(newChannels: List<Channel>) {
         val generation = ++updateGeneration

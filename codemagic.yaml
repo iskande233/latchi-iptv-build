@@ -6,6 +6,13 @@ workflows:
 
     environment:
       java: 17
+      vars:
+        # ضع GITHUB_TOKEN (classic token بصلاحية repo) في:
+        # Codemagic > App settings > Environment variables (Secure)
+        GITHUB_OWNER: "iskande233"
+        GITHUB_REPO: "latchi-iptv-build"
+        RELEASE_TAG: "latest"
+        RELEASE_APK_NAME: "latchi-vip-latest.apk"
 
     scripts:
       - name: Show root files
@@ -91,5 +98,52 @@ workflows:
           fi
           echo "APK found: $APK"
 
+      - name: Upload APK to GitHub Releases (fixed permanent link)
+        script: |
+          # هذه الخطوة اختيارية: تعمل فقط إذا تم ضبط GITHUB_TOKEN في متغيرات البيئة.
+          if [ -z "$GITHUB_TOKEN" ]; then
+            echo "GITHUB_TOKEN غير مضبوط — تخطّي رفع GitHub Releases (البناء نفسه نجح)."
+            exit 0
+          fi
+          GRADLEW_PATH="$(find build_project -maxdepth 3 -type f -name gradlew -print -quit)"
+          PROJECT_ROOT="$(dirname "$GRADLEW_PATH")"
+          cd "$PROJECT_ROOT"
+          APK=$(find app/build/outputs -name "*.apk" | head -1)
+          cp "$APK" "/tmp/${RELEASE_APK_NAME}"
+
+          API="https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}"
+          UP="https://uploads.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}"
+          AUTH="Authorization: token ${GITHUB_TOKEN}"
+
+          # 1) نتأكد من وجود release بالوسم RELEASE_TAG (ننشئه إذا غير موجود)
+          REL=$(curl -s -H "$AUTH" "${API}/releases/tags/${RELEASE_TAG}")
+          REL_ID=$(echo "$REL" | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('id',''))" 2>/dev/null)
+          if [ -z "$REL_ID" ]; then
+            echo "Creating release ${RELEASE_TAG}..."
+            REL=$(curl -s -X POST -H "$AUTH" "${API}/releases" \
+              -d "{\"tag_name\":\"${RELEASE_TAG}\",\"name\":\"Latchi VIP Latest\",\"body\":\"Automated build from Codemagic\",\"draft\":false,\"prerelease\":false}")
+            REL_ID=$(echo "$REL" | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('id',''))" 2>/dev/null)
+          fi
+          if [ -z "$REL_ID" ]; then
+            echo "WARNING: تعذّر إنشاء/إيجاد الـ release. تخطّي الرفع."
+            exit 0
+          fi
+
+          # 2) نحذف الأصل القديم بنفس الاسم (حتى يبقى الرابط ثابت)
+          ASSETS=$(curl -s -H "$AUTH" "${API}/releases/${REL_ID}/assets")
+          OLD_ID=$(echo "$ASSETS" | python3 -c "import sys,json;d=json.load(sys.stdin);print(next((a['id'] for a in d if a.get('name')=='${RELEASE_APK_NAME}'),''))" 2>/dev/null)
+          if [ -n "$OLD_ID" ]; then
+            echo "Deleting old asset $OLD_ID..."
+            curl -s -X DELETE -H "$AUTH" "${API}/releases/assets/${OLD_ID}" >/dev/null
+          fi
+
+          # 3) نرفع الـ APK الجديد بالاسم الثابت
+          echo "Uploading ${RELEASE_APK_NAME}..."
+          curl -s -X POST -H "$AUTH" -H "Content-Type: application/vnd.android.package-archive" \
+            --data-binary @"/tmp/${RELEASE_APK_NAME}" \
+            "${UP}/releases/${REL_ID}/assets?name=${RELEASE_APK_NAME}" | \
+            python3 -c "import sys,json;d=json.load(sys.stdin);print('Uploaded:',d.get('browser_download_url','(failed)'))" 2>/dev/null || echo "upload finished"
+          echo "Permanent link: https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases/${RELEASE_TAG}/download/${RELEASE_APK_NAME}"
+
     artifacts:
-      - build_project/app/build/outputs/**/*.apk
+      - build_project/**/app/build/outputs/**/*.apk

@@ -15,6 +15,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.latchi.iptv.R
+import com.latchi.iptv.utils.ErrorOverlayHelper
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -102,7 +103,7 @@ class PrayerActivity : AppCompatActivity() {
         if (requestCode == LOCATION_PERMISSION_CODE && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             detectLocationByGPS()
         } else {
-            Toast.makeText(this, getString(R.string.location_permission_denied), Toast.LENGTH_SHORT).show()
+            ErrorOverlayHelper.show(this, "تنبيه", getString(R.string.location_permission_denied))
         }
     }
 
@@ -130,16 +131,16 @@ class PrayerActivity : AppCompatActivity() {
                 android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
                     if (progressBar.visibility == View.VISIBLE) {
                         progressBar.visibility = View.GONE
-                        Toast.makeText(this, getString(R.string.location_not_found), Toast.LENGTH_SHORT).show()
+                        ErrorOverlayHelper.show(this, "تنبيه", getString(R.string.location_not_found))
                     }
                 }, 10000)
             } else {
                 progressBar.visibility = View.GONE
-                Toast.makeText(this, getString(R.string.location_not_found), Toast.LENGTH_SHORT).show()
+                ErrorOverlayHelper.show(this, "تنبيه", getString(R.string.location_not_found))
             }
         } catch (e: Exception) {
             progressBar.visibility = View.GONE
-            Toast.makeText(this, getString(R.string.location_error), Toast.LENGTH_SHORT).show()
+            ErrorOverlayHelper.show(this, "تنبيه", getString(R.string.location_error))
         }
     }
 

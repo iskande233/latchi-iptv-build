@@ -22,6 +22,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.latchi.iptv.MainActivity
 import com.latchi.iptv.R
+import com.latchi.iptv.utils.ErrorOverlayHelper
 import com.latchi.iptv.adapter.UserProfilesAdapter
 import com.latchi.iptv.utils.ActivationConfig
 import com.latchi.iptv.utils.ActivationValidator
@@ -101,7 +102,7 @@ class UserListActivity : AppCompatActivity() {
             activeProfile?.let { profile ->
                 SourcePrefs.setActiveProfile(this, profile.id)
                 showLoadingThenGoToMain()
-            } ?: Toast.makeText(this, "يرجى تحديد حساب أو تفعيل اشتراك", Toast.LENGTH_SHORT).show()
+            } ?: ErrorOverlayHelper.show(this, "تنبيه", "يرجى تحديد حساب أو تفعيل اشتراك")
         }
     }
 
@@ -204,7 +205,7 @@ class UserListActivity : AppCompatActivity() {
         try {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/213798712450?text=مرحبا، أريد شراء كود تفعيل لتطبيق LATCHI IPTV")))
         } catch (_: Exception) {
-            Toast.makeText(this, getString(R.string.whatsapp_error), Toast.LENGTH_SHORT).show()
+            ErrorOverlayHelper.show(this, "تنبيه", getString(R.string.whatsapp_error))
         }
     }
 
@@ -223,11 +224,11 @@ class UserListActivity : AppCompatActivity() {
     private fun activateCode() {
         val code = codeInput.text.toString().trim()
         if (code.length < 4) {
-            Toast.makeText(this, getString(R.string.invalid_code), Toast.LENGTH_SHORT).show()
+            ErrorOverlayHelper.show(this, "تنبيه", getString(R.string.invalid_code))
             return
         }
         if (ActivationConfig.ACTIVATION_API_URL.contains("PASTE_GOOGLE")) {
-            Toast.makeText(this, getString(R.string.api_not_configured), Toast.LENGTH_SHORT).show()
+            ErrorOverlayHelper.show(this, "تنبيه", getString(R.string.api_not_configured))
             return
         }
 
@@ -255,7 +256,7 @@ class UserListActivity : AppCompatActivity() {
                             maxDevices = result.maxDevices
                         )
                         refreshScreen()
-                        Toast.makeText(this, "تمت إضافة الحساب بنجاح ✓", Toast.LENGTH_SHORT).show()
+                        ErrorOverlayHelper.show(this, "تنبيه", "تمت إضافة الحساب بنجاح ✓")
                     } else {
                         Toast.makeText(this, result.message.ifBlank { getString(R.string.invalid_code) }, Toast.LENGTH_LONG).show()
                     }
@@ -285,7 +286,7 @@ class UserListActivity : AppCompatActivity() {
                     .show()
             } else {
                 backPressedTime = System.currentTimeMillis()
-                Toast.makeText(this, getString(R.string.press_back_again_exit), Toast.LENGTH_SHORT).show()
+                ErrorOverlayHelper.show(this, "تنبيه", getString(R.string.press_back_again_exit))
             }
         }
     }

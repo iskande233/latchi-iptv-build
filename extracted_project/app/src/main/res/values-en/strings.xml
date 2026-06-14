@@ -181,4 +181,11 @@
     <string name="voice_try_again">🤔 Please try again clearly</string>
     <string name="voice_searching">Searching for %1$s</string>
     <string name="search">Search</string>
+
+<!-- Automated Update System strings (English) -->
+    <string name="update_message_default">A new version of the app is available. We recommend updating for the latest features and fixes.</string>
+    <string name="downloading_update">Downloading Update</string>
+    <string name="downloading_update_desc">The new version is downloading in the background</string>
+    <string name="update_download_failed">Download failed. Please check your internet connection.</string>
+    <string name="update_install_failed">Failed to open installer. Please install the file manually from the Downloads folder.</string>
 </resources>

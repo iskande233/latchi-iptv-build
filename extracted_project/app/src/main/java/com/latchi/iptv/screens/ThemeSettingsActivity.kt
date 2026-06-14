@@ -8,6 +8,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.latchi.iptv.R
+import com.latchi.iptv.utils.ErrorOverlayHelper
 import com.latchi.iptv.utils.LocaleHelper
 import com.latchi.iptv.utils.ThemeManager
 
@@ -27,25 +28,25 @@ class ThemeSettingsActivity : AppCompatActivity() {
 
         findViewById<LinearLayout>(R.id.themeDefault).setOnClickListener {
             ThemeManager.setTheme(this, "default")
-            Toast.makeText(this, getString(R.string.theme_saved), Toast.LENGTH_SHORT).show()
+            ErrorOverlayHelper.show(this, "تنبيه", getString(R.string.theme_saved))
             recreate()
         }
 
         findViewById<LinearLayout>(R.id.themeDark).setOnClickListener {
             ThemeManager.setTheme(this, "dark")
-            Toast.makeText(this, getString(R.string.theme_saved), Toast.LENGTH_SHORT).show()
+            ErrorOverlayHelper.show(this, "تنبيه", getString(R.string.theme_saved))
             recreate()
         }
 
         findViewById<LinearLayout>(R.id.themeSpace).setOnClickListener {
             ThemeManager.setTheme(this, "space")
-            Toast.makeText(this, getString(R.string.theme_saved), Toast.LENGTH_SHORT).show()
+            ErrorOverlayHelper.show(this, "تنبيه", getString(R.string.theme_saved))
             recreate()
         }
 
         findViewById<LinearLayout>(R.id.themeNature).setOnClickListener {
             ThemeManager.setTheme(this, "nature")
-            Toast.makeText(this, getString(R.string.theme_saved), Toast.LENGTH_SHORT).show()
+            ErrorOverlayHelper.show(this, "تنبيه", getString(R.string.theme_saved))
             recreate()
         }
 
@@ -66,7 +67,7 @@ class ThemeSettingsActivity : AppCompatActivity() {
         if (requestCode == 2001 && resultCode == RESULT_OK && data?.data != null) {
             val uri = data.data!!.toString()
             ThemeManager.setCustomTheme(this, uri)
-            Toast.makeText(this, getString(R.string.theme_saved), Toast.LENGTH_SHORT).show()
+            ErrorOverlayHelper.show(this, "تنبيه", getString(R.string.theme_saved))
             recreate()
         }
     }

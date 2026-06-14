@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.latchi.iptv.R
+import com.latchi.iptv.utils.ErrorOverlayHelper
 import com.latchi.iptv.adapter.EpisodeAdapter
 import com.latchi.iptv.adapter.SeasonAdapter
 import com.latchi.iptv.model.Channel
@@ -87,11 +88,11 @@ class SeriesDetailActivity : AppCompatActivity() {
         val creds = XtreamHelper.parseCreds(m3uUrl)
         val seriesId = XtreamHelper.seriesIdFromMarker(series.streamUrl)
         if (creds == null || seriesId == null) {
-            Toast.makeText(this, getString(R.string.series_not_available), Toast.LENGTH_SHORT).show()
+            ErrorOverlayHelper.show(this, "تنبيه", getString(R.string.series_not_available))
             finish()
             return
         }
-        Toast.makeText(this, getString(R.string.loading_episodes), Toast.LENGTH_SHORT).show()
+        ErrorOverlayHelper.show(this, "تنبيه", getString(R.string.loading_episodes))
         Thread {
             val episodes = try {
                 XtreamHelper.fetchEpisodes(creds, seriesId)
@@ -100,7 +101,7 @@ class SeriesDetailActivity : AppCompatActivity() {
             }
             runOnUiThread {
                 if (episodes.isEmpty()) {
-                    Toast.makeText(this, getString(R.string.no_episodes), Toast.LENGTH_SHORT).show()
+                    ErrorOverlayHelper.show(this, "تنبيه", getString(R.string.no_episodes))
                     finish()
                     return@runOnUiThread
                 }
