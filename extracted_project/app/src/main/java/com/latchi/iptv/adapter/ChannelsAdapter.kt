@@ -27,7 +27,6 @@ class ChannelsAdapter(
     private val isFavorite: (Channel) -> Boolean,
     private val onFavoriteClicked: (Channel) -> Unit,
     private val onChannelClicked: (Channel) -> Unit
-    private var selectedStreamUrl: String? = null
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     private val VIEW_TYPE_LIST = 1
@@ -60,13 +59,6 @@ class ChannelsAdapter(
     }
 
     override fun getItemCount(): Int = channels.size
-
-    /** Highlight the currently playing/previewed channel (used by TvLivePreviewActivity) */
-    fun updateSelectedChannel(streamUrl: String) {
-    }
-
-    /** Highlight the currently playing/previewed channel (used by TvLivePreviewActivity) */
-    }
 
     fun updateChannels(newChannels: List<Channel>) {
         val generation = ++updateGeneration

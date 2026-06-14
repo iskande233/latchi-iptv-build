@@ -85,7 +85,7 @@ class MovieDetailActivity : AppCompatActivity() {
             if (profileId != null) {
                 FavoritesPrefs.toggle(this, profileId, channel.streamUrl)
                 updateFavIcon()
-                ErrorOverlayHelper.show(this, "تنبيه", if (favText.text == getString(R.string.add_favorite)) getString(R.string.added_to_favorites) else getString(R.string.removed_from_favorites))
+                Toast.makeText(this, if (favText.text == getString(R.string.add_favorite)) getString(R.string.added_to_favorites) else getString(R.string.removed_from_favorites), Toast.LENGTH_SHORT).show()
             }
         }
     }

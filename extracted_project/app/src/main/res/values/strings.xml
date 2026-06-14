@@ -235,6 +235,9 @@
     <string name="drawer_matches">⚽ جدول المباريات</string>
     <string name="back_to_home_main">العودة للصفحة الرئيسية</string>
     <string name="exit_app">🚪 تسجيل الخروج من التطبيق</string>
+    <string name="confirm_exit_title">تأكيد الخروج</string>
+    <string name="confirm_exit_desc">هل تريد حقاً الخروج من تطبيق LATCHI IPTV VIP؟</string>
+    <string name="press_back_again_exit">اضغط مرة أخرى للخروج</string>
     <string name="theme_settings">إعدادات السِمات</string>
     <string name="general_settings">الإعدادات العامة</string>
     <string name="my_dhikr">أذكاري</string>
@@ -254,8 +257,9 @@
     <string name="match_upcoming">⏳ لم تبدأ</string>
     <string name="weather">حالة الطقس</string>
     <string name="loading_progress">%1$d%%</string>
+
+    <string name="voice_not_understood">لم أفهم الأمر، حاول مرة أخرى</string>
+    <string name="voice_try_again">🤔 أعد المحاولة بوضوح</string>
+    <string name="voice_searching">جاري البحث عن %1$s</string>
+    <string name="search">بحث</string>
 </resources>
-
-    <string name="tv_mode_test">وضع التلفاز (تجريب)</string>
-    <string name="phone_mode_test">وضع الهاتف (تجريب)</string>
-

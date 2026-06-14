@@ -89,7 +89,7 @@ class VerificationActivity : AppCompatActivity() {
                 runOnUiThread {
                     val hasCache = ChannelCache.load(this, profile.id).isNotEmpty()
                     if (hasCache) {
-                        ErrorOverlayHelper.show(this, "تنبيه", getString(R.string.offline_mode))
+                        Toast.makeText(this, getString(R.string.offline_mode), Toast.LENGTH_SHORT).show()
                         finishProgressThen {
                             if (silentVerify) {
                                 goToMain()
@@ -265,7 +265,7 @@ class VerificationActivity : AppCompatActivity() {
             finishAffinity()
         } else {
             backPressedTime = System.currentTimeMillis()
-            ErrorOverlayHelper.show(this, "تنبيه", "اضغط مرة أخرى للخروج")
+            Toast.makeText(this, "اضغط مرة أخرى للخروج", Toast.LENGTH_SHORT).show()
         }
     }
 }

@@ -26,10 +26,6 @@ import com.latchi.iptv.utils.LanguagePrefs
 import com.latchi.iptv.utils.LocaleHelper
 import com.latchi.iptv.utils.PlayerPrefs
 import com.latchi.iptv.utils.SourcePrefs
-import com.latchi.iptv.utils.ServerSyncManager
-import com.latchi.iptv.utils.ServerUpdateOverlayHelper
-import com.latchi.iptv.utils.ErrorOverlayHelper
-import com.latchi.iptv.utils.ServerHealthChecker
 import com.latchi.iptv.utils.ThemeManager
 import com.latchi.iptv.utils.TvUtils
 
@@ -41,7 +37,6 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var languageText: TextView
     private lateinit var playerModeText: TextView
     private lateinit var expiryInfoText: TextView
-    private var serverSyncInfoText: TextView? = null
 
     private val tvPrefs by lazy { getSharedPreferences("latchi_tv_settings", Context.MODE_PRIVATE) }
     private val tvCategoryViews = mutableListOf<TextView>()
@@ -113,7 +108,6 @@ class SettingsActivity : AppCompatActivity() {
                     TvOption("app_language", "Language", "الإعداد القديم للغة محفوظ ومتاح هنا", listOf("العربية", "Français", "English"), LanguagePrefs.getLanguageName(this), "language"),
                     TvOption("theme_color", "Theme Color", "تغيير لون السمة للتلفاز", listOf("Default", "Dark", "Blue", "Gold", "Green", "Red"), tvPrefs.getString("theme_color", "Default") ?: "Default", "theme"),
                     TvOption("clear_cache", "Clear Cache", "مسح التخزين المؤقت مع تأكيد", listOf("اضغط OK"), "اضغط OK", "clear_cache"),
-                    TvOption("server_sync", "Server Sync", "تحديث السيرفر الآن من لوحة التحكم", listOf("اضغط OK"), "اضغط OK", "server_sync"),
                     TvOption("auto_update_app", "Auto Update App", "تحديث تلقائي للتطبيق", listOf("ON", "OFF"), "ON"),
                     TvOption("parental_control", "Parental Control", "تفعيل رقابة أولياء الأمور", listOf("OFF", "ON"), "OFF"),
                     TvOption("parental_pin", "Parental PIN", "تعيين أو تغيير PIN", listOf("اضغط OK"), "اضغط OK", "parental_pin"),
@@ -154,7 +148,6 @@ class SettingsActivity : AppCompatActivity() {
         languageText = findViewById(R.id.languageText)
         playerModeText = findViewById(R.id.playerModeText)
         expiryInfoText = findViewById(R.id.expiryInfoText)
-        serverSyncInfoText = findViewById(R.id.serverSyncInfoText)
 
         findViewById<TextView>(R.id.backButton).setOnClickListener { finish() }
         findViewById<TextView>(R.id.langArabic).setOnClickListener { setLang("ar") }
@@ -177,10 +170,8 @@ class SettingsActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.clearCacheButton).setOnClickListener {
             clearActiveProfileCache(showConfirm = false)
         }
-        findViewById<TextView?>(R.id.serverSyncButton)?.setOnClickListener { forceServerSync() }
         updateLanguageText()
         updatePlayerText()
-        updateSettingsSelections()
         updateExpiryInfo()
     }
 
@@ -409,7 +400,6 @@ class SettingsActivity : AppCompatActivity() {
                 toastSaved()
             }
             "clear_cache" -> clearActiveProfileCache(showConfirm = true)
-            "server_sync" -> forceServerSync()
             "support" -> startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/213798712450")))
             "change_user" -> {
                 startActivity(Intent(this, UserListActivity::class.java).putExtra("show_settings", true))
@@ -502,12 +492,12 @@ class SettingsActivity : AppCompatActivity() {
     private fun clearActiveProfileCache(showConfirm: Boolean) {
         val active = SourcePrefs.getActiveProfile(this)
         if (active == null) {
-            ErrorOverlayHelper.show(this, "تنبيه", getString(R.string.logged_in) + ": -")
+            Toast.makeText(this, getString(R.string.logged_in) + ": -", Toast.LENGTH_SHORT).show()
             return
         }
         val action = {
             ChannelCache.clear(this, active.id)
-            ErrorOverlayHelper.show(this, "✅ تم", getString(R.string.cache_cleared) ?: "تم مسح الكاش")
+            Toast.makeText(this, getString(R.string.cache_cleared), Toast.LENGTH_SHORT).show()
         }
         if (showConfirm) {
             AlertDialog.Builder(this)
@@ -575,13 +565,13 @@ class SettingsActivity : AppCompatActivity() {
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     private fun toastSaved() {
-        ServerUpdateOverlayHelper.show(this) { } // professional overlay
+        Toast.makeText(this, getString(R.string.player_saved), Toast.LENGTH_SHORT).show()
     }
 
     private fun setLang(lang: String) {
         if (LanguagePrefs.getLanguage(this) == lang) return
         LanguagePrefs.setLanguage(this, lang)
-        ServerUpdateOverlayHelper.show(this) { } // replaced with professional overlay
+        Toast.makeText(this, getString(R.string.language_saved), Toast.LENGTH_SHORT).show()
         val intent = Intent(this, MainActivity::class.java)
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(intent)
@@ -595,62 +585,11 @@ class SettingsActivity : AppCompatActivity() {
     private fun setPlayerMode(mode: String) {
         PlayerPrefs.setMode(this, mode)
         updatePlayerText()
-        updateSettingsSelections()
-        ServerUpdateOverlayHelper.show(this) { } // professional overlay
-    }
-
-    private fun updateSettingsSelections() {
-        try {
-            val currentLang = LanguagePrefs.getLanguage(this)
-            markOption(findViewById(R.id.langArabic), currentLang == "ar", "العربية")
-            markOption(findViewById(R.id.langFrench), currentLang == "fr", "Français")
-            markOption(findViewById(R.id.langEnglish), currentLang == "en", "English")
-
-            val currentPlayer = PlayerPrefs.getMode(this)
-            markOption(findViewById(R.id.playerAuto), currentPlayer == PlayerPrefs.MODE_AUTO, "Auto")
-            markOption(findViewById(R.id.playerHls), currentPlayer == PlayerPrefs.MODE_HLS, "HLS")
-            markOption(findViewById(R.id.playerProgressive), currentPlayer == PlayerPrefs.MODE_PROGRESSIVE, "Prog")
-        } catch (_: Exception) {}
-    }
-
-    private fun markOption(view: TextView, selected: Boolean, label: String) {
-        view.text = if (selected) "✓ $label" else label
-        view.setTextColor(if (selected) Color.parseColor("#000000") else Color.WHITE)
-        view.setBackgroundResource(if (selected) R.drawable.bg_gold_btn else R.drawable.bg_panel)
+        Toast.makeText(this, getString(R.string.player_saved), Toast.LENGTH_SHORT).show()
     }
 
     private fun updatePlayerText() {
         playerModeText.text = "${getString(R.string.player_mode)}: ${PlayerPrefs.getModeLabel(this)}"
-    }
-
-    private fun forceServerSync() {
-        // Toast replaced by direct overlay in server sync flow
-        ServerSyncManager.checkForServerUpdate(this, force = true) { result ->
-            updateServerSyncInfo()
-            if (result.changed) {
-                ServerUpdateOverlayHelper.show(this) {
-                    val intent = Intent(this, MainActivity::class.java).apply {
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    }
-                    startActivity(intent)
-                    finish()
-                }
-            } else {
-                ServerUpdateOverlayHelper.show(this) { } // professional already-up-to-date feedback
-            }
-        }
-    }
-
-    private fun updateServerSyncInfo() {
-        val t = ServerSyncManager.lastSyncAt(this)
-        serverSyncInfoText?.text = if (t <= 0L) {
-        // Priority 2: Also show live server health status
-        showServerStatusInSettings()
-            "آخر تحقق من السيرفر: --"
-        } else {
-            val fmt = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
-            "آخر تحقق من السيرفر: ${fmt.format(java.util.Date(t))}"
-        }
     }
 
     private fun updateExpiryInfo() {
@@ -670,7 +609,6 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
         expiryInfoText.text = info
-        updateServerSyncInfo()
     }
 
     override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent?): Boolean {
@@ -678,37 +616,4 @@ class SettingsActivity : AppCompatActivity() {
         return super.onKeyDown(keyCode, event)
     }
 
-}
-
-// === Priority 2 additions: Unified overlays + Server Status (Online/Offline) ===
-
-private fun showServerStatusInSettings() {
-    val active = SourcePrefs.getActiveProfile(this) ?: return
-    val url = active.m3uUrl
-    if (url.isBlank()) {
-        serverSyncInfoText?.text = "لا يوجد سيرفر"
-        return
-    }
-
-    serverSyncInfoText?.text = "جاري فحص حالة السيرفر..."
-
-    ServerHealthChecker.checkPlaylistHealth(this, url) { health ->
-        runOnUiThread {
-            val status = if (health.isOnline) "✅ أونلاين" else "❌ غير متاح"
-            val time = if (health.responseTimeMs > 0) " (${health.responseTimeMs}ms)" else ""
-            serverSyncInfoText?.text = "حالة السيرفر: $status$time\nآخر فحص: ${java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date())}"
-        }
-    }
-}
-
-// Call this after the existing server sync button logic or in onResume of settings
-// Example usage will be wired in the existing server_sync handling below if needed.
-
-// === Priority 2: Helper to mark active option (used in TV settings rendering) ===
-private fun markActiveOption(title: String, currentValue: String, optionValues: List<String>): String {
-    return if (optionValues.contains(currentValue) && title.contains(currentValue, ignoreCase = true)) {
-        "✓ $title"
-    } else {
-        title
-    }
 }

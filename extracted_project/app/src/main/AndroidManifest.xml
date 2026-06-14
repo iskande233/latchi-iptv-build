@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
-
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
@@ -14,30 +12,10 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
-
-    <!-- Automated CI/CD Update System (clean addition on top of stable core) -->
-    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
-    <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" />
-
     <uses-feature android:name="android.software.leanback" android:required="false" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
-
-    <application
-        android:allowBackup="true"
-        android:dataExtractionRules="@xml/data_extraction_rules"
-        android:fullBackupContent="@xml/backup_rules"
-        android:icon="@drawable/ic_tv"
-        android:label="@string/app_name"
-        android:roundIcon="@drawable/ic_tv"
-        android:supportsRtl="true"
-        android:theme="@style/Theme.IPTV"
-        android:usesCleartextTraffic="true"
-        tools:targetApi="31">
-
-        <activity
-            android:name=".screens.VideoSplashActivity"
-            android:exported="true"
-            android:theme="@style/Theme.IPTV.Splash">
+    <application android:allowBackup="true" android:dataExtractionRules="@xml/data_extraction_rules" android:fullBackupContent="@xml/backup_rules" android:icon="@drawable/ic_tv" android:label="@string/app_name" android:roundIcon="@drawable/ic_tv" android:supportsRtl="true" android:theme="@style/Theme.IPTV" android:usesCleartextTraffic="true" tools:targetApi="31">
+        <activity android:name=".screens.VideoSplashActivity" android:exported="true" android:theme="@style/Theme.IPTV.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -62,25 +40,5 @@
         <activity android:name=".screens.MatchesActivity" android:exported="false" />
         <activity android:name=".screens.PricingActivity" android:exported="false" />
         <activity android:name=".screens.ThemeSettingsActivity" android:exported="false" />
-
-        <!-- TV Live Preview Screen (Priority 4 - TV only dedicated preview) -->
-        <activity
-            android:name=".screens.TvLivePreviewActivity"
-            android:exported="false"
-            android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|smallestScreenSize"
-            android:screenOrientation="landscape" />
-
-        <!-- Automated Update System: FileProvider (clean placement) -->
-        <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.fileprovider"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/file_paths" />
-        </provider>
-
     </application>
-
 </manifest>

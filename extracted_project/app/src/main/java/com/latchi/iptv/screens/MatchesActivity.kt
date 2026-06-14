@@ -41,7 +41,7 @@ class MatchesActivity : AppCompatActivity() {
             if (mi.channel != null) {
                 PlayerActivity.start(this, mi.channel)
             } else {
-                ErrorOverlayHelper.show(this, "تنبيه", getString(R.string.channel_not_found))
+                Toast.makeText(this, getString(R.string.channel_not_found), Toast.LENGTH_SHORT).show()
                 val searchIntent = Intent(this, ChannelListActivity::class.java).apply {
                     putExtra("extra_type", "live")
                     putExtra("extra_title", "بحث: ${mi.channelName ?: "قناة"}")

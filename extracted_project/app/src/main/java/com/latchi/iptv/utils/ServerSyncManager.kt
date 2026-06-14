@@ -62,51 +62,6 @@ object ServerSyncManager {
                 val updatedMax = result.maxDevices.takeIf { it > 0 } ?: active.maxDevices
 
                 if (newUrl.isNotBlank() && newUrl != oldUrl) {
-                    // === Priority 1: Health check before adopting new server ===
-                    ServerHealthChecker.checkPlaylistHealth(appContext, newUrl) { health ->
-                        if (health.isOnline) {
-                            SourcePrefs.saveActivatedProfile(
-                                context = appContext,
-                                code = active.activationCode,
-                                name = updatedName,
-                                playlistUrl = newUrl,
-                                expiresAt = updatedExpiry,
-                                maxDevices = updatedMax
-                            )
-                            ChannelCache.clear(appContext, active.id)
-                            prefs.edit()
-                                .putString("last_applied_url_${active.id}", newUrl)
-                                .putLong("last_changed_at_${active.id}", System.currentTimeMillis())
-                                .apply()
-
-                            onMain {
-                                onResult(
-                                    ServerSyncResult(
-                                        changed = true,
-                                        message = "server_changed",
-                                        oldUrl = oldUrl,
-                                        newUrl = newUrl,
-                                        profileId = active.id
-                                    )
-                                )
-                            }
-                        } else {
-                            // Server not healthy — do not switch
-                            onMain {
-                                onResult(
-                                    ServerSyncResult(
-                                        changed = false,
-                                        message = "server_unhealthy:${health.message}",
-                                        oldUrl = oldUrl,
-                                        newUrl = newUrl,
-                                        profileId = active.id
-                                    )
-                                )
-                            }
-                        }
-                    }
-                    return@thread
-                } else {
                     SourcePrefs.saveActivatedProfile(
                         context = appContext,
                         code = active.activationCode,
@@ -131,6 +86,7 @@ object ServerSyncManager {
                             )
                         )
                     }
+                } else {
                     // Keep account metadata fresh without clearing channel cache.
                     if (updatedName != active.name || updatedExpiry != active.expiresAt || updatedMax != active.maxDevices) {
                         SourcePrefs.saveActivatedProfile(

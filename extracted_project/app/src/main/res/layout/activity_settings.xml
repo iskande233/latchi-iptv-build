@@ -85,10 +85,6 @@
         <TextView android:id="@+id/changeUserButton" android:clickable="true" android:focusable="true" android:foreground="@drawable/focus_selector" android:layout_width="match_parent" android:layout_height="58dp" android:layout_marginTop="10dp" android:background="@drawable/bg_panel" android:gravity="center" android:text="@string/change_user" android:textColor="@android:color/white" android:textSize="16sp" android:textStyle="bold" />
         <TextView android:id="@+id/clearCacheButton" android:clickable="true" android:focusable="true" android:foreground="@drawable/focus_selector" android:layout_width="match_parent" android:layout_height="58dp" android:layout_marginTop="10dp" android:background="@drawable/bg_panel" android:gravity="center" android:text="@string/clear_cache" android:textColor="@android:color/white" android:textSize="16sp" android:textStyle="bold" />
 
-
-        <TextView android:id="@+id/serverSyncButton" android:clickable="true" android:focusable="true" android:foreground="@drawable/focus_selector" android:layout_width="match_parent" android:layout_height="58dp" android:layout_marginTop="10dp" android:background="@drawable/bg_gold_btn" android:gravity="center" android:text="تحديث السيرفر الآن ⚡" android:textColor="@color/gold_btn_text" android:textSize="16sp" android:textStyle="bold" />
-        <TextView android:id="@+id/serverSyncInfoText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:gravity="center" android:text="آخر تحقق من السيرفر: --" android:textColor="#C7B7D8" android:textSize="12sp" />
-
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

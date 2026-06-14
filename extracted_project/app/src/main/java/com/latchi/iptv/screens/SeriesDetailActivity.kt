@@ -87,11 +87,11 @@ class SeriesDetailActivity : AppCompatActivity() {
         val creds = XtreamHelper.parseCreds(m3uUrl)
         val seriesId = XtreamHelper.seriesIdFromMarker(series.streamUrl)
         if (creds == null || seriesId == null) {
-            ErrorOverlayHelper.show(this, "تنبيه", getString(R.string.series_not_available))
+            Toast.makeText(this, getString(R.string.series_not_available), Toast.LENGTH_SHORT).show()
             finish()
             return
         }
-        ErrorOverlayHelper.show(this, "تنبيه", getString(R.string.loading_episodes))
+        Toast.makeText(this, getString(R.string.loading_episodes), Toast.LENGTH_SHORT).show()
         Thread {
             val episodes = try {
                 XtreamHelper.fetchEpisodes(creds, seriesId)
@@ -100,7 +100,7 @@ class SeriesDetailActivity : AppCompatActivity() {
             }
             runOnUiThread {
                 if (episodes.isEmpty()) {
-                    ErrorOverlayHelper.show(this, "تنبيه", getString(R.string.no_episodes))
+                    Toast.makeText(this, getString(R.string.no_episodes), Toast.LENGTH_SHORT).show()
                     finish()
                     return@runOnUiThread
                 }

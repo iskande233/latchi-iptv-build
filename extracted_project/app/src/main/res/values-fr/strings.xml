@@ -176,4 +176,9 @@
     <string name="match_upcoming">⏳ À venir</string>
     <string name="weather">Météo</string>
     <string name="loading_progress">%1$d%%</string>
+
+    <string name="voice_not_understood">Je n’ai pas compris, réessayez</string>
+    <string name="voice_try_again">🤔 Réessayez clairement</string>
+    <string name="voice_searching">Recherche de %1$s</string>
+    <string name="search">Recherche</string>
 </resources>

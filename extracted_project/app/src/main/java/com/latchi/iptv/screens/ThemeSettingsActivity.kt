@@ -27,25 +27,25 @@ class ThemeSettingsActivity : AppCompatActivity() {
 
         findViewById<LinearLayout>(R.id.themeDefault).setOnClickListener {
             ThemeManager.setTheme(this, "default")
-            ErrorOverlayHelper.show(this, "تنبيه", getString(R.string.theme_saved))
+            Toast.makeText(this, getString(R.string.theme_saved), Toast.LENGTH_SHORT).show()
             recreate()
         }
 
         findViewById<LinearLayout>(R.id.themeDark).setOnClickListener {
             ThemeManager.setTheme(this, "dark")
-            ErrorOverlayHelper.show(this, "تنبيه", getString(R.string.theme_saved))
+            Toast.makeText(this, getString(R.string.theme_saved), Toast.LENGTH_SHORT).show()
             recreate()
         }
 
         findViewById<LinearLayout>(R.id.themeSpace).setOnClickListener {
             ThemeManager.setTheme(this, "space")
-            ErrorOverlayHelper.show(this, "تنبيه", getString(R.string.theme_saved))
+            Toast.makeText(this, getString(R.string.theme_saved), Toast.LENGTH_SHORT).show()
             recreate()
         }
 
         findViewById<LinearLayout>(R.id.themeNature).setOnClickListener {
             ThemeManager.setTheme(this, "nature")
-            ErrorOverlayHelper.show(this, "تنبيه", getString(R.string.theme_saved))
+            Toast.makeText(this, getString(R.string.theme_saved), Toast.LENGTH_SHORT).show()
             recreate()
         }
 
@@ -66,7 +66,7 @@ class ThemeSettingsActivity : AppCompatActivity() {
         if (requestCode == 2001 && resultCode == RESULT_OK && data?.data != null) {
             val uri = data.data!!.toString()
             ThemeManager.setCustomTheme(this, uri)
-            ErrorOverlayHelper.show(this, "تنبيه", getString(R.string.theme_saved))
+            Toast.makeText(this, getString(R.string.theme_saved), Toast.LENGTH_SHORT).show()
             recreate()
         }
     }

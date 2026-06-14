@@ -102,7 +102,7 @@ class PrayerActivity : AppCompatActivity() {
         if (requestCode == LOCATION_PERMISSION_CODE && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             detectLocationByGPS()
         } else {
-            ErrorOverlayHelper.show(this, "تنبيه", getString(R.string.location_permission_denied))
+            Toast.makeText(this, getString(R.string.location_permission_denied), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -130,16 +130,16 @@ class PrayerActivity : AppCompatActivity() {
                 android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
                     if (progressBar.visibility == View.VISIBLE) {
                         progressBar.visibility = View.GONE
-                        ErrorOverlayHelper.show(this, "تنبيه", getString(R.string.location_not_found))
+                        Toast.makeText(this, getString(R.string.location_not_found), Toast.LENGTH_SHORT).show()
                     }
                 }, 10000)
             } else {
                 progressBar.visibility = View.GONE
-                ErrorOverlayHelper.show(this, "تنبيه", getString(R.string.location_not_found))
+                Toast.makeText(this, getString(R.string.location_not_found), Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
             progressBar.visibility = View.GONE
-            ErrorOverlayHelper.show(this, "تنبيه", getString(R.string.location_error))
+            Toast.makeText(this, getString(R.string.location_error), Toast.LENGTH_SHORT).show()
         }
     }
 

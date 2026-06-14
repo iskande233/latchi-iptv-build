@@ -38,8 +38,6 @@ import com.latchi.iptv.utils.LastWatchedPrefs
 import com.latchi.iptv.utils.SourcePrefs
 import com.latchi.iptv.utils.ServerSyncManager
 import com.latchi.iptv.utils.ServerUpdateOverlayHelper
-import com.latchi.iptv.utils.LiveClockHelper
-import com.latchi.iptv.utils.ServerHealthChecker
 import com.latchi.iptv.utils.UpdateChecker
 import com.latchi.iptv.utils.VoiceCommand
 import com.latchi.iptv.utils.VoiceCommandParser
@@ -133,13 +131,9 @@ class HomeFragment : Fragment() {
         try {
             setupObservers()
             loadCachedOrFetch()
-            // Quick server health indicator (Priority 1/2)
-            checkAndShowServerHealth()
             animateUi(view)
             com.latchi.iptv.utils.TvFocusHelper.setupTree(view)
             startSilentServerSync()
-            // Priority 5: Live clock in Home (updates every second)
-            updatedText?.let { LiveClockHelper.startClock(it, "HH:mm") }
             if (arguments?.getBoolean(MainActivity.EXTRA_OPEN_AI_VOICE, false) == true) {
                 view.postDelayed({ onAIVoiceClicked() }, 650L)
                 arguments?.putBoolean(MainActivity.EXTRA_OPEN_AI_VOICE, false)
@@ -155,8 +149,6 @@ class HomeFragment : Fragment() {
     }
 
     private fun startSilentServerSync() {
-            // Priority 5: Live clock in Home (updates every second)
-            updatedText?.let { LiveClockHelper.startClock(it, "HH:mm") }
         ServerSyncManager.checkForServerUpdate(requireContext(), force = false) { result ->
             if (!isAdded || !result.changed) return@checkForServerUpdate
             ServerUpdateOverlayHelper.show(requireActivity()) {
@@ -257,7 +249,7 @@ class HomeFragment : Fragment() {
             SourcePrefs.getActiveProfile(requireContext())?.let { active ->
                 LastWatchedPrefs.load(requireContext(), active.id)?.let { ch ->
                     PlayerActivity.start(requireContext(), ch)
-                } ?: ErrorOverlayHelper.show(requireContext(), "تنبيه", getString(R.string.no_last_watched))
+                } ?: Toast.makeText(requireContext(), getString(R.string.no_last_watched), Toast.LENGTH_SHORT).show()
             }
         }
         whatsappButton.setOnClickListener {
@@ -282,7 +274,7 @@ class HomeFragment : Fragment() {
         if (requestCode == 2026 && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             voiceHandler?.startListening()
         } else {
-            ErrorOverlayHelper.show(requireContext(), "تنبيه", "صلاحية الميكروفون مطلوبة للبحث الصوتي")
+            Toast.makeText(requireContext(), "صلاحية الميكروفون مطلوبة للبحث الصوتي", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -294,14 +286,14 @@ class HomeFragment : Fragment() {
             is VoiceCommand.Category -> openCategorySearch(command.category)
             is VoiceCommand.PlayerControl -> sendPlayerControl(command.target, command.extra)
             VoiceCommand.Favorites -> openSearchResults("Favorites", "live")
-            VoiceCommand.Home -> ErrorOverlayHelper.show(requireContext(), "تنبيه", getString(R.string.home))
-            VoiceCommand.Unknown -> ErrorOverlayHelper.show(requireContext(), "تنبيه", getString(R.string.voice_not_understood))
+            VoiceCommand.Home -> Toast.makeText(requireContext(), getString(R.string.home), Toast.LENGTH_SHORT).show()
+            VoiceCommand.Unknown -> Toast.makeText(requireContext(), getString(R.string.voice_not_understood), Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun handleGeminiAction(action: GeminiVoiceController.VoiceAction) {
         if (!action.isConfident()) {
-            ErrorOverlayHelper.show(requireContext(), "تنبيه", getString(R.string.voice_try_again))
+            Toast.makeText(requireContext(), getString(R.string.voice_try_again), Toast.LENGTH_SHORT).show()
             return
         }
         when (action.actionType.lowercase()) {
@@ -311,15 +303,15 @@ class HomeFragment : Fragment() {
             "category" -> openCategorySearch(action.target)
             "player_control" -> sendPlayerControl(action.target, action.extra)
             "favorites" -> openSearchResults("Favorites", "live")
-            "home" -> ErrorOverlayHelper.show(requireContext(), "تنبيه", getString(R.string.home))
-            else -> ErrorOverlayHelper.show(requireContext(), "تنبيه", "ℹ️ ${action.target}")
+            "home" -> Toast.makeText(requireContext(), getString(R.string.home), Toast.LENGTH_SHORT).show()
+            else -> Toast.makeText(requireContext(), "ℹ️ ${action.target}", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun playOrSearch(query: String, preferredType: String?) {
         val clean = query.trim()
         if (clean.isBlank()) {
-            ErrorOverlayHelper.show(requireContext(), "تنبيه", getString(R.string.voice_not_understood))
+            Toast.makeText(requireContext(), getString(R.string.voice_not_understood), Toast.LENGTH_SHORT).show()
             return
         }
         val item = VoiceIndex.findChannel(clean, preferredType)
@@ -337,7 +329,7 @@ class HomeFragment : Fragment() {
             "series" -> {
                 val active = SourcePrefs.getActiveProfile(requireContext())
                 if (active != null) SeriesDetailActivity.start(requireContext(), channel, active.m3uUrl)
-                else ErrorOverlayHelper.show(requireContext(), "تنبيه", getString(R.string.series_not_available))
+                else Toast.makeText(requireContext(), getString(R.string.series_not_available), Toast.LENGTH_SHORT).show()
             }
             else -> PlayerActivity.start(requireContext(), channel)
         }
@@ -371,7 +363,7 @@ class HomeFragment : Fragment() {
             putExtra("target", target)
             putExtra("extra", extra)
         })
-        ErrorOverlayHelper.show(requireContext(), "تنبيه", "🎮 $target")
+        Toast.makeText(requireContext(), "🎮 $target", Toast.LENGTH_SHORT).show()
     }
 
     private fun navigateByScreenName(screen: String?) {
@@ -385,7 +377,7 @@ class HomeFragment : Fragment() {
             "pricing" -> navigateTo(VoiceCommand.Screen.PRICING)
             "prayer" -> navigateTo(VoiceCommand.Screen.PRAYER)
             "about" -> navigateTo(VoiceCommand.Screen.ABOUT)
-            else -> ErrorOverlayHelper.show(requireContext(), "تنبيه", getString(R.string.voice_not_understood))
+            else -> Toast.makeText(requireContext(), getString(R.string.voice_not_understood), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -423,7 +415,7 @@ class HomeFragment : Fragment() {
                         Handler(Looper.getMainLooper()).post {
                             try {
                                 updateCacheTime(profileId)
-                                ErrorOverlayHelper.show(appContext, "تنبيه", getString(R.string.playlist_updated))
+                                Toast.makeText(appContext, getString(R.string.playlist_updated), Toast.LENGTH_SHORT).show()
                             } catch (_: Exception) {}
                         }
                     }.start()
@@ -444,8 +436,6 @@ class HomeFragment : Fragment() {
     }
 
     private fun loadCachedOrFetch() {
-            // Quick server health indicator (Priority 1/2)
-            checkAndShowServerHealth()
         try {
             val active = SourcePrefs.getActiveProfile(requireContext())
             if (active == null) { startActivity(Intent(requireContext(), UserListActivity::class.java).putExtra("show_settings", true)); requireActivity().finish(); return }
@@ -611,27 +601,3 @@ class HomeFragment : Fragment() {
         stopAdhkarRotator()
     }
 }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        LiveClockHelper.stopClock()
-    }
-
-
-    private fun checkAndShowServerHealth() {
-        val active = SourcePrefs.getActiveProfile(requireContext()) ?: return
-        if (active.m3uUrl.isBlank()) return
-
-        ServerHealthChecker.checkPlaylistHealth(requireContext(), active.m3uUrl) { health ->
-            if (isAdded) {
-                val status = if (health.isOnline) "🟢" else "🔴"
-                // Append to existing expiry or updated text if available
-                expiryText?.let {
-                    val current = it.text?.toString() ?: ""
-                    if (!current.contains("🟢") && !current.contains("🔴")) {
-                        it.text = "$current  $status"
-                    }
-                }
-            }
-        }
-    }
