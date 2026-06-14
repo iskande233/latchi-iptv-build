@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- General -->
+    <dimen name="padding_default">20dp</dimen>
+    <dimen name="padding_small">10dp</dimen>
+    <dimen name="margin_top_xs">6dp</dimen>
+    <dimen name="margin_top_sm">8dp</dimen>
+    <dimen name="margin_top_md">10dp</dimen>
+    <dimen name="margin_top_lg">12dp</dimen>
+    <dimen name="margin_top_xl">14dp</dimen>
+    <dimen name="margin_top_xxl">16dp</dimen>
+
+    <!-- Header -->
+    <dimen name="header_height">56dp</dimen>
+    <dimen name="header_logo">42dp</dimen>
+    <dimen name="header_text">18sp</dimen>
+    <dimen name="header_icon_text">22sp</dimen>
+    <dimen name="header_label_text">11sp</dimen>
+    <dimen name="header_btn_width">78dp</dimen>
+    <dimen name="header_btn_height">56dp</dimen>
+
+    <!-- Info bars -->
+    <dimen name="info_bar_height">46dp</dimen>
+    <dimen name="info_bar_text">15sp</dimen>
+    <dimen name="expiry_height">42dp</dimen>
+    <dimen name="expiry_text">13sp</dimen>
+
+    <!-- Main Cards -->
+    <dimen name="card_live_height">90dp</dimen>
+    <dimen name="card_media_height">80dp</dimen>
+    <dimen name="card_icon_width">56dp</dimen>
+    <dimen name="card_icon_text">32sp</dimen>
+    <dimen name="card_media_icon_text">28sp</dimen>
+    <dimen name="card_title">20sp</dimen>
+    <dimen name="card_media_title">19sp</dimen>
+    <dimen name="card_count">13sp</dimen>
+    <dimen name="card_padding">14dp</dimen>
+
+    <!-- Action row -->
+    <dimen name="action_row_height">54dp</dimen>
+    <dimen name="action_btn_width">140dp</dimen>
+    <dimen name="action_text">15sp</dimen>
+
+    <!-- Last watched / Whatsapp -->
+    <dimen name="last_watched_height">54dp</dimen>
+    <dimen name="last_watched_text">15sp</dimen>
+    <dimen name="whatsapp_height">56dp</dimen>
+    <dimen name="whatsapp_icon">22sp</dimen>
+    <dimen name="whatsapp_text">16sp</dimen>
+
+    <!-- Footer / Loading -->
+    <dimen name="footer_text">12sp</dimen>
+    <dimen name="loading_size">32dp</dimen>
+    <dimen name="loading_text">14sp</dimen>
+
+    <!-- Channel List -->
+    <dimen name="toolbar_height">54dp</dimen>
+    <dimen name="back_width">70dp</dimen>
+    <dimen name="back_height">46dp</dimen>
+    <dimen name="back_text">15sp</dimen>
+    <dimen name="list_title">20sp</dimen>
+    <dimen name="refresh_size">46dp</dimen>
+    <dimen name="refresh_text">20sp</dimen>
+    <dimen name="search_height">46dp</dimen>
+    <dimen name="search_padding">16dp</dimen>
+    <dimen name="cat_btn_height">44dp</dimen>
+    <dimen name="cat_btn_text">14sp</dimen>
+    <dimen name="progress_size">40dp</dimen>
+    <dimen name="cat_panel_width">320dp</dimen>
+    <dimen name="cat_panel_padding">14dp</dimen>
+    <dimen name="cat_title">20sp</dimen>
+    <dimen name="close_btn_size">48dp</dimen>
+    <dimen name="close_text">28sp</dimen>
+    <dimen name="cat_search_height">44dp</dimen>
+    <dimen name="cat_search_padding">12dp</dimen>
+
+    <!-- Item Channel -->
+    <dimen name="item_height">68dp</dimen>
+    <dimen name="item_margin_bottom">8dp</dimen>
+    <dimen name="item_logo">36dp</dimen>
+    <dimen name="item_logo_padding">6dp</dimen>
+    <dimen name="item_name">14sp</dimen>
+    <dimen name="item_category">11sp</dimen>
+    <dimen name="item_cat_margin_top">4dp</dimen>
+    <dimen name="item_fav_size">44dp</dimen>
+    <dimen name="item_fav_padding">9dp</dimen>
+    <dimen name="item_badge_width">58dp</dimen>
+    <dimen name="item_badge_height">26dp</dimen>
+    <dimen name="item_badge_text">9sp</dimen>
+</resources>

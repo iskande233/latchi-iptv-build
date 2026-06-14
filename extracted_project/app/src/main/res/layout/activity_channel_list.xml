@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/drawerLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_app">
+
+    <!-- Main Content Frame -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <!-- ═══ الشريط العلوي الأنيق ═══ -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/menuButton"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_panel_premium"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="@drawable/focus_selector"
+                    android:gravity="center"
+                    android:text="☰"
+                    android:textColor="#FFFFFF"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <!-- 🌟 Sticky Premium Category Header Bar 🌟 -->
+                <LinearLayout
+                    android:id="@+id/stickyCategoryBar"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="10dp"
+                    android:layout_marginEnd="10dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_button_primary"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="@drawable/focus_selector"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="16dp"
+                    android:elevation="4dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🗂"
+                        android:textSize="22sp"
+                        android:layout_marginEnd="8dp" />
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center">
+
+                        <TextView
+                            android:id="@+id/stickyCatTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:text="كل الباقات"
+                            android:textColor="#FFFFFF"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:duplicateParentState="true" />
+
+                        <TextView
+                            android:id="@+id/stickyCatSubtitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="(اضغط لتغيير الباقة السريع)"
+                            android:textColor="#FFD700"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
+                            android:duplicateParentState="true" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/searchButton"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_panel_premium"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="@drawable/focus_selector"
+                    android:gravity="center"
+                    android:text="🔍"
+                    android:textColor="#FFFFFF"
+                    android:textSize="18sp"
+                    android:layout_marginEnd="8dp" />
+
+                <TextView
+                    android:id="@+id/refreshButton"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_panel_premium"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="@drawable/focus_selector"
+                    android:gravity="center"
+                    android:text="⟳"
+                    android:textColor="#FFFFFF"
+                    android:textSize="20sp" />
+            </LinearLayout>
+
+            <EditText
+                android:id="@+id/searchEditText"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_panel"
+                android:hint="@string/search_hint"
+                android:imeOptions="actionSearch"
+                android:inputType="text"
+                android:paddingHorizontal="16dp"
+                android:singleLine="true"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#B8AFC8"
+                android:textSize="15sp"
+                android:visibility="gone" />
+
+            <ProgressBar
+                android:id="@+id/progressBar"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center"
+                android:layout_marginTop="40dp"
+                android:visibility="gone" />
+
+            <!-- Main Channels Recycler List -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginTop="10dp"
+                android:layout_weight="1"
+                android:clipToPadding="false"
+                android:descendantFocusability="afterDescendants"
+                android:focusable="true"
+                android:paddingBottom="24dp" />
+        </LinearLayout>
+
+        <!-- 🌟 واجهة الفئات المركزية الشبكية (Full-Screen Category Picker) 🌟 -->
+        <FrameLayout
+            android:id="@+id/categoryOverlayGrid"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#DD000000"
+            android:clickable="true"
+            android:focusable="true"
+            android:visibility="gone"
+            android:padding="20dp"
+            android:elevation="10dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_card_admin"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <!-- Header Grid Bar -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingBottom="8dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="اختر الواجهة / الباقة 🗂"
+                        android:textColor="#FFD700"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/btnCloseGrid"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="#3d3d5c"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:text="✕"
+                        android:textColor="#FFFFFF"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#3d3d5c" />
+
+                <EditText
+                    android:id="@+id/categorySearchEditText"
+                    android:layout_width="match_parent"
+                    android:layout_height="46dp"
+                    android:layout_marginTop="10dp"
+                    android:background="#121228"
+                    android:hint="بحث في الفئات..."
+                    android:paddingHorizontal="14dp"
+                    android:singleLine="true"
+                    android:textColor="#FFFFFF"
+                    android:textColorHint="#888888"
+                    android:textSize="14sp" />
+
+                <!-- 3-Column Recycler Grid View -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/catGridRecyclerView"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_marginTop="12dp"
+                    android:layout_weight="1"
+                    android:clipToPadding="false"
+                    android:paddingBottom="20dp" />
+            </LinearLayout>
+        </FrameLayout>
+
+        <!-- Dummy hidden views satisfying all code references -->
+        <TextView android:id="@+id/categoryButton" android:layout_width="wrap_content" android:layout_height="wrap_content" android:visibility="gone" />
+        <LinearLayout android:id="@+id/categoryPanel" android:layout_width="wrap_content" android:layout_height="wrap_content" android:visibility="gone">
+            <TextView android:id="@+id/closeCategoriesButton" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+            <LinearLayout android:id="@+id/categoryContainer" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <!-- Navigation Drawer -->
+    <LinearLayout
+        android:id="@+id/drawerMenu"
+        android:layout_width="280dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="end"
+        android:background="#121228"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:gravity="center"
+            android:text="LATCHI IPTV"
+            android:textColor="#FFD700"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginVertical="16dp"
+            android:background="#2d2d44" />
+
+        <TextView
+            android:id="@+id/drawerTodaysMatches"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/bg_panel_premium_focusable"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="@drawable/focus_selector"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="16dp"
+            android:text="@string/todays_matches"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/drawerSettings"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/bg_panel_premium_focusable"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="@drawable/focus_selector"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="16dp"
+            android:text="@string/drawer_settings"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/drawerLogout"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_panel_premium"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="@drawable/focus_selector"
+            android:gravity="center"
+            android:text="@string/logout"
+            android:textColor="#FF4444"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+</androidx.drawerlayout.widget.DrawerLayout>

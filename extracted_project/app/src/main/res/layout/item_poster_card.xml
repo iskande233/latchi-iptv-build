@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 🎬 بطاقة الفلم/المسلسل العمودية (Poster Card لشبكة 3 أعمدة) -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/cardPosterRoot"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="6dp"
+    android:background="@drawable/bg_panel_premium_focusable"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="@drawable/focus_selector"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:padding="6dp"
+    android:elevation="6dp">
+
+    <!-- 🖼️ Poster Image (Rounded Corners) -->
+    <ImageView
+        android:id="@+id/posterImageView"
+        android:layout_width="match_parent"
+        android:layout_height="146dp"
+        android:background="#121228"
+        android:scaleType="centerCrop"
+        android:src="@drawable/ic_tv" />
+
+    <!-- 📝 Movie / Series Title -->
+    <TextView
+        android:id="@+id/posterNameTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:ellipsize="end"
+        android:gravity="center"
+        android:maxLines="2"
+        android:minLines="2"
+        android:text="اسم الفلم / المسلسل"
+        android:textColor="#FFFFFF"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:lineSpacingExtra="2dp" />
+
+    <TextView
+        android:id="@+id/posterCatTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:background="#3d3d5c"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="2dp"
+        android:text="الفئة"
+        android:textColor="#FFD700"
+        android:textSize="9sp"
+        android:textStyle="bold" />
+</LinearLayout>
