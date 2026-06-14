@@ -78,6 +78,7 @@ class ChannelListActivity : AppCompatActivity() {
     private var activeSourceUrl = ""
     private var xtreamCategories: List<ChannelCategory> = emptyList()
     private var firstCategorySelected = false
+    private var focusMode = "channels"
 
     companion object {
         private const val EXTRA_TYPE = "extra_type"
@@ -153,7 +154,11 @@ class ChannelListActivity : AppCompatActivity() {
                         MovieDetailActivity.start(this, channel)
                     }
                     else -> {
-                        PlayerActivity.start(this, channel)
+                        if (TvUtils.isTv(this) && contentType == "live") {
+                            TvLivePreviewActivity.start(this, channel, currentCategory)
+                        } else {
+                            PlayerActivity.start(this, channel)
+                        }
                     }
                 }
             }
@@ -246,7 +251,11 @@ class ChannelListActivity : AppCompatActivity() {
     private fun activeId(): String? = SourcePrefs.getActiveProfile(this)?.id
 
     private fun openCategoryGrid() {
+        focusMode = "categories"
         categoryOverlayGrid.visibility = View.VISIBLE
+        recyclerView.isFocusable = false
+        recyclerView.descendantFocusability = android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS
+        catGridRecyclerView.isFocusable = true
         buildCategories(lastChannels)
         catGridRecyclerView.postDelayed({
             catGridRecyclerView.requestFocus()
@@ -255,7 +264,11 @@ class ChannelListActivity : AppCompatActivity() {
     }
 
     private fun closeCategoryGrid() {
+        focusMode = "channels"
         categoryOverlayGrid.visibility = View.GONE
+        recyclerView.isFocusable = true
+        recyclerView.descendantFocusability = android.view.ViewGroup.FOCUS_AFTER_DESCENDANTS
+        catGridRecyclerView.clearFocus()
         recyclerView.postDelayed({
             recyclerView.requestFocus()
             recyclerView.findViewHolderForAdapterPosition(0)?.itemView?.requestFocus()
@@ -484,6 +497,10 @@ class ChannelListActivity : AppCompatActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent?): Boolean {
+        if (focusMode == "categories" && categoryOverlayGrid.visibility == View.VISIBLE) {
+            if (keyCode == android.view.KeyEvent.KEYCODE_BACK && event?.action == android.view.KeyEvent.ACTION_DOWN) { closeCategoryGrid(); return true }
+            return super.onKeyDown(keyCode, event)
+        }
         if (com.latchi.iptv.utils.TvFocusHelper.handleKey(this, keyCode, event)) return true
         return super.onKeyDown(keyCode, event)
     }

@@ -66,7 +66,7 @@ object ActivationValidator {
 
         val playlist = ActivationConfig.extractPlaylistUrl(json, existingProfile?.m3uUrl ?: "")
         if (playlist.isBlank()) {
-            return ActivationValidationResult(false, "Empty playlist_url from Google Sheet")
+            return ActivationValidationResult(false, "Empty source from Google Sheet")
         }
 
         return ActivationValidationResult(

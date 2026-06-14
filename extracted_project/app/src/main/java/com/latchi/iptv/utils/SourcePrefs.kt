@@ -124,6 +124,7 @@ object SourcePrefs {
         saveProfiles(context, profiles)
         ChannelCache.clear(context, id)
         FavoritesPrefs.clearProfile(context, id)
+        context.getSharedPreferences("verification_prefs", Context.MODE_PRIVATE).edit().remove("is_verified_$id").apply()
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val activeId = prefs.getString(KEY_ACTIVE_ID, "") ?: ""
         if (activeId == id) prefs.edit().putString(KEY_ACTIVE_ID, profiles.firstOrNull()?.id ?: "").apply()

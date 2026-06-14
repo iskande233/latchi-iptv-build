@@ -26,6 +26,9 @@ import com.latchi.iptv.utils.LanguagePrefs
 import com.latchi.iptv.utils.LocaleHelper
 import com.latchi.iptv.utils.PlayerPrefs
 import com.latchi.iptv.utils.SourcePrefs
+import com.latchi.iptv.utils.ServerSyncManager
+import com.latchi.iptv.utils.ServerUpdateOverlayHelper
+import com.latchi.iptv.utils.ServerHealthChecker
 import com.latchi.iptv.utils.ThemeManager
 import com.latchi.iptv.utils.TvUtils
 
@@ -37,6 +40,8 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var languageText: TextView
     private lateinit var playerModeText: TextView
     private lateinit var expiryInfoText: TextView
+    private var lastSyncText: TextView? = null
+    private var serverStatusText: TextView? = null
 
     private val tvPrefs by lazy { getSharedPreferences("latchi_tv_settings", Context.MODE_PRIVATE) }
     private val tvCategoryViews = mutableListOf<TextView>()
@@ -109,6 +114,7 @@ class SettingsActivity : AppCompatActivity() {
                     TvOption("theme_color", "Theme Color", "تغيير لون السمة للتلفاز", listOf("Default", "Dark", "Blue", "Gold", "Green", "Red"), tvPrefs.getString("theme_color", "Default") ?: "Default", "theme"),
                     TvOption("clear_cache", "Clear Cache", "مسح التخزين المؤقت مع تأكيد", listOf("اضغط OK"), "اضغط OK", "clear_cache"),
                     TvOption("auto_update_app", "Auto Update App", "تحديث تلقائي للتطبيق", listOf("ON", "OFF"), "ON"),
+                    TvOption("server_sync", "Server Sync", "تحديث السيرفر الآن + عرض آخر تحقق", listOf("اضغط OK"), "اضغط OK", "server_sync"),
                     TvOption("parental_control", "Parental Control", "تفعيل رقابة أولياء الأمور", listOf("OFF", "ON"), "OFF"),
                     TvOption("parental_pin", "Parental PIN", "تعيين أو تغيير PIN", listOf("اضغط OK"), "اضغط OK", "parental_pin"),
                     TvOption("support", "WhatsApp Support", "الإعداد/الزر القديم للدعم محفوظ", listOf("اضغط OK"), "اضغط OK", "support"),
@@ -170,9 +176,12 @@ class SettingsActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.clearCacheButton).setOnClickListener {
             clearActiveProfileCache(showConfirm = false)
         }
+        addServerSyncSection()
         updateLanguageText()
         updatePlayerText()
         updateExpiryInfo()
+        updatePhoneOptionMarks()
+        refreshServerInfoTexts()
     }
 
     private fun setupTvSettings() {
@@ -406,6 +415,7 @@ class SettingsActivity : AppCompatActivity() {
                 finish()
             }
             "manual_source" -> startActivity(Intent(this, ManualSourceActivity::class.java))
+            "server_sync" -> forceServerSyncFromSettings()
             else -> changeTvOption(option, valueView, 1)
         }
     }
@@ -568,6 +578,94 @@ class SettingsActivity : AppCompatActivity() {
         Toast.makeText(this, getString(R.string.player_saved), Toast.LENGTH_SHORT).show()
     }
 
+    private fun addServerSyncSection() {
+        val content = findViewById<android.view.ViewGroup>(android.R.id.content)
+        val root = ((content.getChildAt(0) as? ScrollView)?.getChildAt(0) as? LinearLayout) ?: return
+
+        serverStatusText = TextView(this).apply {
+            text = "حالة السيرفر: --"
+            setTextColor(Color.WHITE)
+            textSize = 15f
+            gravity = Gravity.CENTER
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+            background = rounded(0xAA101024.toInt(), 0x44FFD700, dp(1))
+        }
+        root.addView(serverStatusText, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(10) })
+
+        lastSyncText = TextView(this).apply {
+            text = "آخر تحقق من السيرفر: --"
+            setTextColor(0xFFFFD700.toInt())
+            textSize = 14f
+            gravity = Gravity.CENTER
+            setPadding(dp(12), dp(8), dp(12), dp(8))
+            background = rounded(0x663B2752, 0x33FFFFFF, dp(1))
+        }
+        root.addView(lastSyncText, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(8) })
+
+        val syncButton = TextView(this).apply {
+            text = "⚡ تحديث السيرفر الآن"
+            setTextColor(Color.WHITE)
+            textSize = 16f
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+            isClickable = true
+            isFocusable = true
+            foreground = getDrawable(R.drawable.focus_selector)
+            setPadding(dp(12), 0, dp(12), 0)
+            background = rounded(0xFF8B5CF6.toInt(), 0xFFFFD700.toInt(), dp(2))
+            setOnClickListener { forceServerSyncFromSettings() }
+        }
+        root.addView(syncButton, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(56)).apply { topMargin = dp(10) })
+    }
+
+    private fun forceServerSyncFromSettings() {
+        Toast.makeText(this, "جاري التحقق من السيرفر...", Toast.LENGTH_SHORT).show()
+        ServerSyncManager.checkForServerUpdate(this, force = true) { result ->
+            refreshServerInfoTexts()
+            if (result.changed) {
+                ServerUpdateOverlayHelper.show(this) {
+                    val intent = Intent(this, MainActivity::class.java).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK }
+                    startActivity(intent)
+                    finish()
+                }
+            } else {
+                val msg = if (result.message.startsWith("server_offline")) "السيرفر الجديد غير متاح، لم يتم التبديل" else "السيرفر محدث بالفعل ✓"
+                Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun refreshServerInfoTexts() {
+        val last = ServerSyncManager.lastSyncAt(this)
+        lastSyncText?.text = "آخر تحقق من السيرفر: " + if (last == 0L) "--" else java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date(last))
+        val active = SourcePrefs.getActiveProfile(this)
+        if (active == null || active.m3uUrl.isBlank()) {
+            serverStatusText?.text = "حالة السيرفر: --"
+            return
+        }
+        Thread {
+            val h = ServerHealthChecker.check(active.m3uUrl)
+            runOnUiThread { serverStatusText?.text = if (h.online) "حالة السيرفر: ✅ أونلاين ${if (h.responseMs > 0) "(${h.responseMs}ms)" else ""}" else "حالة السيرفر: ❌ غير متاح" }
+        }.start()
+    }
+
+    private fun updatePhoneOptionMarks() {
+        val lang = LanguagePrefs.getLanguage(this)
+        markText(findViewById(R.id.langArabic), lang == "ar", "✓ العربية", "العربية")
+        markText(findViewById(R.id.langFrench), lang == "fr", "✓ Français", "Français")
+        markText(findViewById(R.id.langEnglish), lang == "en", "✓ English", "English")
+        val mode = PlayerPrefs.getMode(this)
+        markText(findViewById(R.id.playerAuto), mode == PlayerPrefs.MODE_AUTO, "✓ Auto", "Auto")
+        markText(findViewById(R.id.playerHls), mode == PlayerPrefs.MODE_HLS, "✓ HLS", "HLS")
+        markText(findViewById(R.id.playerProgressive), mode == PlayerPrefs.MODE_PROGRESSIVE, "✓ Prog", "Prog")
+    }
+
+    private fun markText(view: TextView, active: Boolean, activeText: String, normalText: String) {
+        view.text = if (active) activeText else normalText
+        view.setTextColor(if (active) 0xFFFFD700.toInt() else Color.WHITE)
+        view.setBackgroundResource(if (active) R.drawable.bg_button_primary else R.drawable.bg_panel)
+    }
+
     private fun setLang(lang: String) {
         if (LanguagePrefs.getLanguage(this) == lang) return
         LanguagePrefs.setLanguage(this, lang)
@@ -585,6 +683,7 @@ class SettingsActivity : AppCompatActivity() {
     private fun setPlayerMode(mode: String) {
         PlayerPrefs.setMode(this, mode)
         updatePlayerText()
+        updatePhoneOptionMarks()
         Toast.makeText(this, getString(R.string.player_saved), Toast.LENGTH_SHORT).show()
     }
 

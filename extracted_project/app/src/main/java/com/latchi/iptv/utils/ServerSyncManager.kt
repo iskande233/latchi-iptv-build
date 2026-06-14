@@ -16,6 +16,7 @@ data class ServerSyncResult(
 object ServerSyncManager {
     private const val PREFS = "server_sync_prefs"
     private const val KEY_LAST_SYNC_AT = "last_sync_at"
+    private const val KEY_LAST_STATUS = "last_status"
     private const val MIN_SYNC_INTERVAL_MS = 60_000L
 
     @Volatile
@@ -62,6 +63,12 @@ object ServerSyncManager {
                 val updatedMax = result.maxDevices.takeIf { it > 0 } ?: active.maxDevices
 
                 if (newUrl.isNotBlank() && newUrl != oldUrl) {
+                    val health = ServerHealthChecker.check(newUrl)
+                    prefs.edit().putString(KEY_LAST_STATUS, if (health.online) "online:${health.responseMs}" else "offline:${health.message}").apply()
+                    if (!health.online) {
+                        onMain { onResult(ServerSyncResult(false, "server_offline:${health.message}", profileId = active.id)) }
+                        return@thread
+                    }
                     SourcePrefs.saveActivatedProfile(
                         context = appContext,
                         code = active.activationCode,
@@ -110,6 +117,10 @@ object ServerSyncManager {
 
     fun lastSyncAt(context: Context): Long {
         return context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getLong(KEY_LAST_SYNC_AT, 0L)
+    }
+
+    fun lastStatus(context: Context): String {
+        return context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_LAST_STATUS, "") ?: ""
     }
 
     private fun normalizeUrl(value: String): String = value.trim().replace("&amp;", "&")

@@ -101,6 +101,9 @@ class HomeFragment : Fragment() {
             drawerLayout = view.findViewById(R.id.drawerLayout)
 
             cardAIVoice = view.findViewById(R.id.cardAIVoice)
+            if (com.latchi.iptv.utils.TvUtils.isTv(requireContext())) {
+                cardAIVoice?.visibility = View.GONE
+            }
             voiceOverlay = view.findViewById(R.id.voiceOverlay)
 
             setupDrawer(view)
@@ -589,7 +592,7 @@ class HomeFragment : Fragment() {
             override fun onUpdateAvailable(versionName: String, notes: String, url: String) {
                 badge.visibility = View.VISIBLE
                 badge.text = "🔄 ${getString(R.string.update_available)} $versionName"
-                badge.setOnClickListener { try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) } catch (_: Exception) {} }
+                badge.setOnClickListener { UpdateChecker.downloadAndInstall(requireActivity(), url, versionName) }
             }
         })
     }

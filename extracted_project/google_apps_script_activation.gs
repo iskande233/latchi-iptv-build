@@ -1,27 +1,43 @@
 /**
- * Latchi IPTV - Google Sheet API v3 FULL
+ * Latchi IPTV - Google Sheet API v3 FULL + App Update + MAC/Stalker Support
  *
- * هذا سكريبت واحد يخدم التطبيقين معاً:
- * 1) تطبيق المشاهدة: التحقق بالكود وجلب playlist_url
- * 2) تطبيق التحكم Dashboard: إضافة أكواد، رابط موحد لكل المستخدمين، قائمة المستخدمين، تعديل/تجديد/حذف
+ * يخدم:
+ * 1) تطبيق المشاهدة: validate code + playlist_url / xtream / mac portal
+ * 2) Dashboard: إدارة المستخدمين + تحديث السيرفر + تحديث APK
  *
- * يدعم جدولك الحالي:
- * code | status | max_devices | devices | expires_at | playlist_url | name
+ * جدول codes يدعم هذه الأعمدة:
+ * code | status | max_devices | devices | expires_at | playlist_url | name | source_type | portal_url | mac_address | server | username | password
  *
- * مهم بعد لصق السكريبت:
- * Deploy > Manage deployments > Edit > New version > Deploy
+ * source_type:
+ * - m3u
+ * - xtream
+ * - mac
+ *
+ * ملاحظة مهمة:
+ * MAC/Stalker لا يتحول دائماً إلى M3U من السكريبت وحدو. السكريبت يرجع portal_url + mac_address للتطبيق.
+ * لازم التطبيق يدعم Stalker/MAC باش يشغل القنوات.
  */
 
 const SPREADSHEET_ID = ''; // اتركه فارغ إذا السكريبت مربوط بنفس Google Sheet
 const ADMIN_SECRET = 'LatchiAdmin2026';
+
 const CODES_SHEET_NAMES = ['codes', 'Codes', 'CODES'];
 const CONFIG_SHEET_NAMES = ['Config', 'config', 'CONFIG'];
-const DEFAULT_HEADERS = ['code', 'status', 'max_devices', 'devices', 'expires_at', 'playlist_url', 'name'];
+
+const DEFAULT_HEADERS = [
+  'code', 'status', 'max_devices', 'devices', 'expires_at', 'playlist_url', 'name',
+  'source_type', 'portal_url', 'mac_address', 'server', 'username', 'password'
+];
 
 function doGet(e) {
   try {
     const p = (e && e.parameter) ? e.parameter : {};
     const action = String(p.action || '').trim();
+
+    if (action === 'get_app_update' || action === 'check_app_update') {
+      return handleGetAppUpdate_(p);
+    }
+
     if (action) return handleAdminAction_(action, p);
     return handleValidateCode_(p);
   } catch (err) {
@@ -31,7 +47,7 @@ function doGet(e) {
 
 /* =========================================================
  * تطبيق المشاهدة: ?code=XXXX&device_id=YYYY
- * =======================================================*/
+ * ======================================================= */
 function handleValidateCode_(p) {
   const code = String(p.code || '').trim();
   const deviceId = String(p.device_id || p.device || '').trim();
@@ -73,9 +89,14 @@ function handleValidateCode_(p) {
     setCellByKey_(ctx.sh, found, ctx.col, 'devices', devices.join(','));
   }
 
-  const playlistUrl = getEffectivePlaylistUrl_(row, ctx.values, ctx.col);
-  if (!playlistUrl) {
-    return jsonOut({ success: false, message: 'playlist_url empty' });
+  const source = getEffectiveSource_(row, ctx.values, ctx.col);
+
+  if (!source.playlist_url && source.source_type !== 'mac') {
+    return jsonOut({ success: false, message: 'source empty: playlist_url / xtream / mac not configured' });
+  }
+
+  if (source.source_type === 'mac' && (!source.portal_url || !source.mac_address)) {
+    return jsonOut({ success: false, message: 'MAC source requires portal_url and mac_address' });
   }
 
   return jsonOut({
@@ -84,16 +105,58 @@ function handleValidateCode_(p) {
     code: code,
     status: 'active',
     name: getCell_(row, ctx.col, 'name', 'User ' + code),
-    playlist_url: playlistUrl,
     expires_at: expiresAt,
     max_devices: maxDevices,
-    devices_count: devices.length
+    devices_count: devices.length,
+
+    // القديم باش ما نكسرش التطبيق الحالي
+    playlist_url: source.playlist_url,
+
+    // الجديد
+    source_type: source.source_type,
+    sourceType: source.source_type,
+    portal_url: source.portal_url,
+    portalUrl: source.portal_url,
+    mac_address: source.mac_address,
+    macAddress: source.mac_address,
+    server: source.server,
+    username: source.username,
+    password: source.password
   });
 }
 
 /* =========================================================
- * تطبيق التحكم Dashboard: ?action=...&secret=...
- * =======================================================*/
+ * Public App Update: ?action=get_app_update&version_code=123
+ * ======================================================= */
+function handleGetAppUpdate_(p) {
+  const latestCode = positiveInt_(getConfigValue_('app_update_version_code'), 0);
+  const currentCode = positiveInt_(p.version_code || p.current_version_code || '0', 0);
+  const latestName = getConfigValue_('app_update_version_name') || '';
+  const apkUrl = cleanUrl_(getConfigValue_('app_update_apk_url'));
+  const forceUpdate = isTruthy_(getConfigValue_('app_update_force'));
+
+  const notes = {
+    ar: getConfigValue_('app_update_notes_ar') || 'تحديث جديد متوفر لتطبيق LATCHI IPTV.',
+    fr: getConfigValue_('app_update_notes_fr') || 'Nouvelle mise à jour disponible pour LATCHI IPTV.',
+    en: getConfigValue_('app_update_notes_en') || 'A new update is available for LATCHI IPTV.'
+  };
+
+  return jsonOut({
+    success: true,
+    update_available: latestCode > currentCode && !!apkUrl,
+    versionCode: latestCode,
+    versionName: latestName,
+    apkUrl: apkUrl,
+    url: apkUrl,
+    forceUpdate: forceUpdate,
+    notes: notes,
+    releaseNotes: notes
+  });
+}
+
+/* =========================================================
+ * Dashboard Admin
+ * ======================================================= */
 function handleAdminAction_(action, p) {
   const secret = String(p.secret || '').trim();
   if (secret !== ADMIN_SECRET) {
@@ -108,6 +171,9 @@ function handleAdminAction_(action, p) {
     case 'update_master_url':
     case 'set_default_playlist':
       return adminUpdateMasterUrl_(ctx, p);
+    case 'update_master_mac':
+    case 'set_default_mac':
+      return adminUpdateMasterMac_(ctx, p);
     case 'get_all_users':
       return adminGetAllUsers_(ctx);
     case 'update_status':
@@ -120,6 +186,9 @@ function handleAdminAction_(action, p) {
       return adminDeleteUser_(ctx, p);
     case 'reset_devices':
       return adminResetDevices_(ctx, p);
+    case 'set_app_update':
+    case 'update_app_update':
+      return adminSetAppUpdate_(p);
     default:
       return jsonOut({ success: false, message: 'Unknown action: ' + action });
   }
@@ -128,7 +197,15 @@ function handleAdminAction_(action, p) {
 function adminAddCode_(ctx, p) {
   const code = String(p.code || '').trim();
   const name = String(p.name || ('User ' + code)).trim();
-  const playlist = cleanPlaylistUrl_(p.playlist_url || p.m3u_url || p.url || '');
+
+  const sourceType = normalizeSourceType_(p.source_type || p.sourceType || '');
+  const playlist = cleanUrl_(p.playlist_url || p.m3u_url || p.url || '');
+  const portalUrl = cleanPortalUrl_(p.portal_url || p.portal || p.stalker_portal || '');
+  const macAddress = normalizeMac_(p.mac_address || p.mac || p.mac_code || '');
+  const server = cleanPortalUrl_(p.server || p.server_url || '');
+  const username = String(p.username || p.user || '').trim();
+  const password = String(p.password || p.pass || '').trim();
+
   const expiresAt = normalizeDate_(p.expires_at || '');
   const maxDevices = positiveInt_(p.max_devices || '1', 1);
 
@@ -137,48 +214,86 @@ function adminAddCode_(ctx, p) {
     return jsonOut({ success: false, message: 'Code already exists' });
   }
 
+  const finalSourceType = decideSourceType_(sourceType, playlist, portalUrl, macAddress, server, username, password);
+
+  if (finalSourceType === 'mac' && (!portalUrl || !macAddress)) {
+    return jsonOut({ success: false, message: 'MAC requires portal_url and mac_address' });
+  }
+
   const row = new Array(ctx.sh.getLastColumn()).fill('');
   row[ctx.col.code] = code;
   row[ctx.col.status] = 'active';
   row[ctx.col.max_devices] = maxDevices;
   row[ctx.col.devices] = '';
   row[ctx.col.expires_at] = expiresAt;
-  row[ctx.col.playlist_url] = playlist; // إذا فارغ يستعمل default_playlist_url من Config عند التحقق
+  row[ctx.col.playlist_url] = playlist;
   row[ctx.col.name] = name;
+  row[ctx.col.source_type] = finalSourceType;
+  row[ctx.col.portal_url] = portalUrl;
+  row[ctx.col.mac_address] = macAddress;
+  row[ctx.col.server] = server;
+  row[ctx.col.username] = username;
+  row[ctx.col.password] = password;
 
   ctx.sh.appendRow(row);
   return jsonOut({
     success: true,
-    message: playlist ? 'Code added with custom playlist_url' : 'Code added; will use default/master playlist_url',
+    message: 'Code added',
     code: code,
     name: name,
+    source_type: finalSourceType,
     playlist_url: playlist,
+    portal_url: portalUrl,
+    mac_address: macAddress,
+    server: server,
+    username: username,
     expires_at: expiresAt,
     max_devices: maxDevices
   });
 }
 
 function adminUpdateMasterUrl_(ctx, p) {
-  const masterUrl = cleanPlaylistUrl_(p.master_url || p.playlist_url || p.url || '');
+  const masterUrl = cleanUrl_(p.master_url || p.playlist_url || p.url || '');
   if (!masterUrl) return jsonOut({ success: false, message: 'master_url required' });
 
   setConfigValue_('default_playlist_url', masterUrl);
+  setConfigValue_('default_source_type', 'm3u');
 
-  // بما أنك تريد سيرفر واحد لكل المستخدمين: نحدّث كل صف فيه code أيضاً.
   let updated = 0;
   for (let i = 1; i < ctx.values.length; i++) {
     const code = getCell_(ctx.values[i], ctx.col, 'code', '');
     if (!code) continue;
     setCellByKey_(ctx.sh, i, ctx.col, 'playlist_url', masterUrl);
+    setCellByKey_(ctx.sh, i, ctx.col, 'source_type', 'm3u');
     updated++;
   }
 
-  return jsonOut({
-    success: true,
-    message: 'Master URL updated for all users',
-    playlist_url: masterUrl,
-    updated_users: updated
-  });
+  return jsonOut({ success: true, message: 'Master M3U URL updated for all users', playlist_url: masterUrl, updated_users: updated });
+}
+
+function adminUpdateMasterMac_(ctx, p) {
+  const portalUrl = cleanPortalUrl_(p.portal_url || p.portal || p.stalker_portal || p.url || '');
+  const macAddress = normalizeMac_(p.mac_address || p.mac || p.mac_code || '');
+
+  if (!portalUrl) return jsonOut({ success: false, message: 'portal_url required' });
+  if (!macAddress) return jsonOut({ success: false, message: 'mac_address required' });
+
+  setConfigValue_('default_source_type', 'mac');
+  setConfigValue_('default_portal_url', portalUrl);
+  setConfigValue_('default_mac_address', macAddress);
+
+  let updated = 0;
+  for (let i = 1; i < ctx.values.length; i++) {
+    const code = getCell_(ctx.values[i], ctx.col, 'code', '');
+    if (!code) continue;
+    setCellByKey_(ctx.sh, i, ctx.col, 'source_type', 'mac');
+    setCellByKey_(ctx.sh, i, ctx.col, 'portal_url', portalUrl);
+    setCellByKey_(ctx.sh, i, ctx.col, 'mac_address', macAddress);
+    setCellByKey_(ctx.sh, i, ctx.col, 'playlist_url', '');
+    updated++;
+  }
+
+  return jsonOut({ success: true, message: 'Master MAC portal updated for all users', portal_url: portalUrl, mac_address: macAddress, updated_users: updated });
 }
 
 function adminGetAllUsers_(ctx) {
@@ -189,12 +304,21 @@ function adminGetAllUsers_(ctx) {
     if (!code) continue;
 
     const rawStatus = getCell_(row, ctx.col, 'status', 'active');
+    const source = getEffectiveSource_(row, ctx.values, ctx.col);
     users.push({
       rowIdx: i + 1,
       code: code,
       name: getCell_(row, ctx.col, 'name', 'User ' + code),
-      playlistUrl: getEffectivePlaylistUrl_(row, ctx.values, ctx.col),
-      rawPlaylistUrl: cleanPlaylistUrl_(getCell_(row, ctx.col, 'playlist_url', '')),
+      sourceType: source.source_type,
+      source_type: source.source_type,
+      playlistUrl: source.playlist_url,
+      playlist_url: source.playlist_url,
+      portalUrl: source.portal_url,
+      portal_url: source.portal_url,
+      macAddress: source.mac_address,
+      mac_address: source.mac_address,
+      server: source.server,
+      username: source.username,
       expiresAt: normalizeDate_(getCell_(row, ctx.col, 'expires_at', '')),
       maxDevices: positiveInt_(getCell_(row, ctx.col, 'max_devices', '1'), 1),
       status: isActive_(rawStatus) ? 'Active' : 'Inactive',
@@ -227,7 +351,14 @@ function adminEditUser_(ctx, p) {
   if (p.name != null) setCellByKey_(ctx.sh, rowIdx, ctx.col, 'name', String(p.name).trim());
   if (p.max_devices != null) setCellByKey_(ctx.sh, rowIdx, ctx.col, 'max_devices', positiveInt_(p.max_devices, 1));
   if (p.expires_at != null) setCellByKey_(ctx.sh, rowIdx, ctx.col, 'expires_at', normalizeDate_(p.expires_at));
-  if (p.playlist_url != null) setCellByKey_(ctx.sh, rowIdx, ctx.col, 'playlist_url', cleanPlaylistUrl_(p.playlist_url));
+
+  if (p.source_type != null || p.sourceType != null) setCellByKey_(ctx.sh, rowIdx, ctx.col, 'source_type', normalizeSourceType_(p.source_type || p.sourceType));
+  if (p.playlist_url != null || p.m3u_url != null || p.url != null) setCellByKey_(ctx.sh, rowIdx, ctx.col, 'playlist_url', cleanUrl_(p.playlist_url || p.m3u_url || p.url || ''));
+  if (p.portal_url != null || p.portal != null || p.stalker_portal != null) setCellByKey_(ctx.sh, rowIdx, ctx.col, 'portal_url', cleanPortalUrl_(p.portal_url || p.portal || p.stalker_portal || ''));
+  if (p.mac_address != null || p.mac != null || p.mac_code != null) setCellByKey_(ctx.sh, rowIdx, ctx.col, 'mac_address', normalizeMac_(p.mac_address || p.mac || p.mac_code || ''));
+  if (p.server != null || p.server_url != null) setCellByKey_(ctx.sh, rowIdx, ctx.col, 'server', cleanPortalUrl_(p.server || p.server_url || ''));
+  if (p.username != null || p.user != null) setCellByKey_(ctx.sh, rowIdx, ctx.col, 'username', String(p.username || p.user || '').trim());
+  if (p.password != null || p.pass != null) setCellByKey_(ctx.sh, rowIdx, ctx.col, 'password', String(p.password || p.pass || '').trim());
 
   return jsonOut({ success: true, message: 'User updated', code: code });
 }
@@ -273,9 +404,102 @@ function adminResetDevices_(ctx, p) {
   return jsonOut({ success: true, message: 'Devices reset', code: code });
 }
 
+function adminSetAppUpdate_(p) {
+  const versionCode = positiveInt_(p.version_code || p.versionCode || '0', 0);
+  const versionName = String(p.version_name || p.versionName || '').trim();
+  const apkUrl = cleanUrl_(p.apk_url || p.apkUrl || p.url || '');
+  const forceUpdate = isTruthy_(p.force_update || p.forceUpdate || 'false');
+
+  if (versionCode <= 0) return jsonOut({ success: false, message: 'version_code required' });
+  if (!apkUrl) return jsonOut({ success: false, message: 'apk_url required' });
+
+  setConfigValue_('app_update_version_code', String(versionCode));
+  setConfigValue_('app_update_version_name', versionName);
+  setConfigValue_('app_update_apk_url', apkUrl);
+  setConfigValue_('app_update_force', forceUpdate ? 'true' : 'false');
+  if (p.notes_ar != null) setConfigValue_('app_update_notes_ar', String(p.notes_ar));
+  if (p.notes_fr != null) setConfigValue_('app_update_notes_fr', String(p.notes_fr));
+  if (p.notes_en != null) setConfigValue_('app_update_notes_en', String(p.notes_en));
+
+  return jsonOut({ success: true, message: 'App update info saved', versionCode: versionCode, versionName: versionName, apkUrl: apkUrl, forceUpdate: forceUpdate });
+}
+
 /* =========================================================
- * Helpers
- * =======================================================*/
+ * Source Helpers
+ * ======================================================= */
+function getEffectiveSource_(row, values, col) {
+  const explicitType = normalizeSourceType_(getCell_(row, col, 'source_type', ''));
+  let playlistUrl = cleanUrl_(getCell_(row, col, 'playlist_url', ''));
+  let portalUrl = cleanPortalUrl_(getCell_(row, col, 'portal_url', ''));
+  let macAddress = normalizeMac_(getCell_(row, col, 'mac_address', ''));
+  let server = cleanPortalUrl_(getCell_(row, col, 'server', ''));
+  let username = getCell_(row, col, 'username', '');
+  let password = getCell_(row, col, 'password', '');
+
+  if (!playlistUrl) playlistUrl = cleanUrl_(getConfigValue_('default_playlist_url'));
+  if (!portalUrl) portalUrl = cleanPortalUrl_(getConfigValue_('default_portal_url'));
+  if (!macAddress) macAddress = normalizeMac_(getConfigValue_('default_mac_address'));
+  if (!playlistUrl) playlistUrl = cleanUrl_(findBlankCodeDefaultPlaylist_(values, col));
+
+  if (!playlistUrl && server && username && password) {
+    playlistUrl = buildM3uUrl_(server, username, password);
+  }
+
+  const sourceType = decideSourceType_(explicitType || normalizeSourceType_(getConfigValue_('default_source_type')), playlistUrl, portalUrl, macAddress, server, username, password);
+
+  return {
+    source_type: sourceType,
+    playlist_url: playlistUrl,
+    portal_url: portalUrl,
+    mac_address: macAddress,
+    server: server,
+    username: username,
+    password: password
+  };
+}
+
+function decideSourceType_(explicitType, playlistUrl, portalUrl, macAddress, server, username, password) {
+  if (explicitType) return explicitType;
+  if (portalUrl && macAddress) return 'mac';
+  if (server && username && password) return 'xtream';
+  if (playlistUrl) return 'm3u';
+  return 'm3u';
+}
+
+function normalizeSourceType_(value) {
+  const s = String(value || '').trim().toLowerCase();
+  if (['mac', 'stalker', 'portal', 'mag'].indexOf(s) >= 0) return 'mac';
+  if (['xtream', 'xc', 'xstream'].indexOf(s) >= 0) return 'xtream';
+  if (['m3u', 'playlist', 'url'].indexOf(s) >= 0) return 'm3u';
+  return '';
+}
+
+function normalizeMac_(value) {
+  let s = String(value || '').trim().toUpperCase();
+  if (!s) return '';
+  s = s.replace(/-/g, ':').replace(/\s+/g, '');
+
+  // إذا دخلها بلا : نحاول نقسمها كل زوج حروف
+  const compact = s.replace(/:/g, '');
+  if (/^[0-9A-F]{12}$/.test(compact)) {
+    return compact.match(/.{1,2}/g).join(':');
+  }
+
+  // نقبل الشكل العادي. إذا فيه حروف خارج HEX نرجعه كما هو باش ما نضيعش إدخال المستخدم.
+  if (/^([0-9A-F]{2}:){5}[0-9A-F]{2}$/.test(s)) return s;
+  return s;
+}
+
+function cleanPortalUrl_(value) {
+  let s = cleanUrl_(value);
+  if (!s) return '';
+  s = s.replace(/\/+$/, '');
+  return s;
+}
+
+/* =========================================================
+ * Sheet Helpers
+ * ======================================================= */
 function getSpreadsheet_() {
   if (SPREADSHEET_ID && SPREADSHEET_ID.trim()) return SpreadsheetApp.openById(SPREADSHEET_ID.trim());
   return SpreadsheetApp.getActiveSpreadsheet();
@@ -307,7 +531,6 @@ function getCodesContext_() {
   let headers = values[0].map(h => normalizeHeader_(h));
   let col = indexMap_(headers);
 
-  // إذا أعمدة ناقصة نضيفها بدون ما نخرب ترتيب جدولك الحالي
   const required = {
     code: 'code',
     status: 'status',
@@ -315,8 +538,15 @@ function getCodesContext_() {
     devices: 'devices',
     expires_at: 'expires_at',
     playlist_url: 'playlist_url',
-    name: 'name'
+    name: 'name',
+    source_type: 'source_type',
+    portal_url: 'portal_url',
+    mac_address: 'mac_address',
+    server: 'server',
+    username: 'username',
+    password: 'password'
   };
+
   Object.keys(required).forEach(key => {
     if (col[key] == null) {
       const newCol = sh.getLastColumn() + 1;
@@ -344,7 +574,10 @@ function indexMap_(headers) {
     expires_at: ['expires_at', 'expiry', 'expire', 'end_date', 'valid_until'],
     playlist_url: ['playlist_url', 'm3u_url', 'm3u', 'url', 'playlist', 'link', 'server_link'],
     name: ['name', 'user_name', 'client', 'customer', 'title'],
-    server: ['server', 'server_url', 'host', 'portal'],
+    source_type: ['source_type', 'type', 'source', 'account_type'],
+    portal_url: ['portal_url', 'portal', 'stalker_portal', 'mag_portal'],
+    mac_address: ['mac_address', 'mac', 'mac_code', 'device_mac'],
+    server: ['server', 'server_url', 'host', 'portal_host'],
     username: ['username', 'user', 'login'],
     password: ['password', 'pass']
   };
@@ -382,10 +615,7 @@ function setCellByKey_(sh, rowIndex0, col, key, value) {
 }
 
 function splitDevices_(value) {
-  return String(value || '')
-    .split(',')
-    .map(s => s.trim())
-    .filter(Boolean);
+  return String(value || '').split(',').map(s => s.trim()).filter(Boolean);
 }
 
 function isActive_(value) {
@@ -393,9 +623,14 @@ function isActive_(value) {
   return s === '' || s === 'active' || s === 'true' || s === '1' || s === 'yes' || s === 'ok' || s === 'success';
 }
 
+function isTruthy_(value) {
+  const s = String(value || '').trim().toLowerCase();
+  return s === 'true' || s === '1' || s === 'yes' || s === 'on' || s === 'force';
+}
+
 function positiveInt_(value, fallback) {
   const n = parseInt(String(value || '').trim(), 10);
-  return (isNaN(n) || n <= 0) ? fallback : n;
+  return (isNaN(n) || n < 0) ? fallback : n;
 }
 
 function normalizeDate_(value) {
@@ -405,10 +640,10 @@ function normalizeDate_(value) {
   }
 
   const s = String(value).trim();
-  let m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/); // dd-MM-yyyy
+  let m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
   if (m) return `${m[3]}-${pad2_(m[2])}-${pad2_(m[1])}`;
 
-  m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/); // yyyy-MM-dd
+  m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
   if (m) return `${m[1]}-${pad2_(m[2])}-${pad2_(m[3])}`;
 
   return s;
@@ -435,31 +670,18 @@ function formatDate_(date) {
   return Utilities.formatDate(date, Session.getScriptTimeZone(), 'yyyy-MM-dd');
 }
 
-function cleanPlaylistUrl_(value) {
+function cleanUrl_(value) {
   if (!value) return '';
   const lines = String(value)
     .replace(/&amp;/g, '&')
     .split(/\r?\n/)
     .map(s => s.trim())
     .filter(Boolean);
+
   for (const line of lines) {
     if (/^https?:\/\//i.test(line)) return line;
   }
   return lines[0] || '';
-}
-
-function getEffectivePlaylistUrl_(row, values, col) {
-  let playlistUrl = cleanPlaylistUrl_(getCell_(row, col, 'playlist_url', ''));
-  if (!playlistUrl) playlistUrl = cleanPlaylistUrl_(getConfigValue_('default_playlist_url'));
-  if (!playlistUrl) playlistUrl = cleanPlaylistUrl_(findBlankCodeDefaultPlaylist_(values, col));
-
-  if (!playlistUrl) {
-    const server = getCell_(row, col, 'server', '');
-    const username = getCell_(row, col, 'username', '');
-    const password = getCell_(row, col, 'password', '');
-    if (server && username && password) playlistUrl = buildM3uUrl_(server, username, password);
-  }
-  return playlistUrl;
 }
 
 function getConfigSheet_() {
@@ -515,7 +737,5 @@ function buildM3uUrl_(server, username, password) {
 }
 
 function jsonOut(obj) {
-  return ContentService
-    .createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }

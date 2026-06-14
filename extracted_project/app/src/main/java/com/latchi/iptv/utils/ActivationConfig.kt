@@ -1,7 +1,7 @@
 package com.latchi.iptv.utils
 
 object ActivationConfig {
-    const val ACTIVATION_API_URL = "https://script.google.com/macros/s/AKfycbzjNXSTwzkRZTwh1PdMaAsY5YOoAwCA8hzr6_dlGU4XocvWgUiD_wfFsKDRHcBo0eXJ/exec"
+    const val ACTIVATION_API_URL = "https://script.google.com/macros/s/AKfycbzlzc-Ipjq7E9KPjpioJcNSV2OMle7Ma17GruKxqBJxk0k7ktNoM5C3Ko9st7yMS1p1/exec"
 
     // When Google validates a code successfully, use the locked provider endpoint below.
     // It is intentionally assembled at runtime so it is not shown in the UI or stored in plain settings before activation.
@@ -23,14 +23,25 @@ object ActivationConfig {
     }
 
     /**
-     * تقبل أكثر من اسم عمود من Google Sheet:
-     * playlist_url / m3u_url / m3u / url / playlist / link
-     * أو بيانات Xtream منفصلة: server + username + password.
+     * تقبل أكثر من نوع مصدر من Google Sheet:
+     * - M3U: playlist_url / m3u_url / url
+     * - Xtream: server + username + password
+     * - MAC/Stalker: source_type=mac + portal_url + mac_address
+     *
+     * ملاحظة: MAC يرجع داخلياً كرابط mac:// باش التطبيق يعرف يحمّل Stalker.
      */
     fun extractPlaylistUrl(json: org.json.JSONObject, fallback: String = ""): String {
+        val sourceType = firstString(json, listOf("source_type", "sourceType", "type", "source", "account_type")).lowercase()
+        val portal = firstString(json, listOf("portal_url", "portalUrl", "portal", "stalker_portal", "mag_portal"))
+        val mac = firstString(json, listOf("mac_address", "macAddress", "mac", "mac_code", "device_mac")).uppercase()
+
+        if ((sourceType == "mac" || sourceType == "stalker" || sourceType == "portal" || sourceType == "mag") && portal.isNotBlank() && mac.isNotBlank()) {
+            return "mac://stalker?portal=${urlEncode(portal)}&mac=${urlEncode(mac)}"
+        }
+
         var raw = firstString(json, listOf("playlist_url", "m3u_url", "m3u", "url", "playlist", "link", "server_link"))
         if (raw.isBlank()) {
-            val server = firstString(json, listOf("server", "server_url", "host", "portal"))
+            val server = firstString(json, listOf("server", "server_url", "host", "portal_host"))
             val username = firstString(json, listOf("username", "user", "login"))
             val password = firstString(json, listOf("password", "pass"))
             if (server.isNotBlank() && username.isNotBlank() && password.isNotBlank()) {
@@ -42,6 +53,8 @@ object ActivationConfig {
         }
         return resolvePlaylistUrlFromGoogle(raw.ifBlank { fallback })
     }
+
+    fun isMacSource(url: String): Boolean = url.trim().startsWith("mac://", ignoreCase = true)
 
     fun extractSuccess(json: org.json.JSONObject): Boolean {
         if (json.has("success")) return json.optBoolean("success", false)

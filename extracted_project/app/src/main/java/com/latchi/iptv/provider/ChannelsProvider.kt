@@ -5,6 +5,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.latchi.iptv.model.Channel
+import com.latchi.iptv.utils.StalkerHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -70,6 +71,19 @@ class ChannelsProvider : ViewModel() {
         fetchJob = viewModelScope.launch(Dispatchers.IO) {
             var lastError: String? = null
             try {
+                if (StalkerHelper.isMacSource(sourceUrl)) {
+                    val macChannels = StalkerHelper.fetchChannels(sourceUrl)
+                    withContext(Dispatchers.Main) {
+                        if (macChannels.isNotEmpty()) {
+                            _channels.value = curateForArabicAudience(macChannels)
+                            _error.value = null
+                        } else {
+                            _error.value = "فشل تحميل قنوات MAC/Stalker أو الحساب غير مدعوم"
+                        }
+                    }
+                    return@launch
+                }
+
                 try {
                     val apiChannels = tryXtreamApi(sourceUrl)
                     if (apiChannels.isNotEmpty()) {
@@ -115,7 +129,7 @@ class ChannelsProvider : ViewModel() {
     }
 
 
-    fun isXtreamSource(sourceUrl: String): Boolean = parseXtreamInfo(sourceUrl) != null
+    fun isXtreamSource(sourceUrl: String): Boolean = !StalkerHelper.isMacSource(sourceUrl) && parseXtreamInfo(sourceUrl) != null
 
     fun fetchXtreamCategoriesAndFirst(sourceUrl: String, contentType: String) {
         fetchJob?.cancel()

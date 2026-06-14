@@ -25,7 +25,6 @@ object FloatingBackHelper {
             val regularBack = activity.findViewById<View?>(R.id.backButton)
             if (regularBack != null) {
                 styleRegularBackButton(activity, regularBack)
-                addFloatingAiButton(activity)
                 TvFocusHelper.setup(activity)
                 return
             }
@@ -42,7 +41,6 @@ object FloatingBackHelper {
             } else {
                 addProfessionalBottomBack(activity)
             }
-            addFloatingAiButton(activity)
             TvFocusHelper.setup(activity)
         } catch (_: Exception) {}
     }
@@ -139,37 +137,8 @@ object FloatingBackHelper {
     }
 
     private fun addFloatingAiButton(activity: Activity) {
-        val root = activity.findViewById<FrameLayout?>(android.R.id.content) ?: return
-        if (root.findViewWithTag<View>("latchi_ai_voice_floating_button") != null) return
-        val button = TextView(activity).apply {
-            tag = "latchi_ai_voice_floating_button"
-            text = "✦"
-            textSize = 24f
-            setTextColor(Color.BLACK)
-            gravity = Gravity.CENTER
-            isClickable = true
-            isFocusable = true
-            setBackgroundResource(R.drawable.bg_ai_circle)
-            elevation = dp(activity, 16).toFloat()
-            alpha = ACTIVE_ALPHA
-            contentDescription = "Gemini AI"
-            setOnClickListener {
-                try {
-                    val intent = Intent(activity, com.latchi.iptv.MainActivity::class.java).apply {
-                        putExtra(com.latchi.iptv.MainActivity.EXTRA_OPEN_AI_VOICE, true)
-                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                    }
-                    activity.startActivity(intent)
-                } catch (_: Exception) {}
-            }
-        }
-        styleFloatingButton(activity, button)
-        val params = FrameLayout.LayoutParams(dp(activity, 56), dp(activity, 56)).apply {
-            gravity = Gravity.TOP or Gravity.END
-            marginEnd = dp(activity, 126)
-            topMargin = dp(activity, 20)
-        }
-        root.addView(button, params)
+        // Gemini لا يكون عائم عام. يظهر فقط في Home الهاتف.
+        return
     }
 
     private fun animateFocus(v: View, hasFocus: Boolean) {

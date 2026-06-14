@@ -35,6 +35,7 @@ import com.latchi.iptv.model.Channel
 import com.latchi.iptv.utils.LastWatchedPrefs
 import com.latchi.iptv.utils.SourcePrefs
 import com.latchi.iptv.utils.PlayerPrefs
+import com.latchi.iptv.utils.PlayerServerSyncHelper
 
 class PlayerActivity : AppCompatActivity() {
     override fun attachBaseContext(newBase: android.content.Context) {
@@ -363,7 +364,12 @@ class PlayerActivity : AppCompatActivity() {
     override fun onConfigurationChanged(newConfig: Configuration) { super.onConfigurationChanged(newConfig); hideSystemUi() }
     override fun onSaveInstanceState(outState: Bundle) { super.onSaveInstanceState(outState); player?.let { playbackPosition = it.currentPosition }; outState.putParcelable("channel", channel); outState.putLong("playbackPosition", playbackPosition) }
     override fun onStart() { super.onStart(); if (Util.SDK_INT > 23) player?.playWhenReady = true }
-    override fun onResume() { super.onResume(); hideSystemUi(); if (Util.SDK_INT <= 23 || !isPlayerReady) player?.playWhenReady = true }
+    override fun onResume() {
+        super.onResume()
+        hideSystemUi()
+        if (Util.SDK_INT <= 23 || !isPlayerReady) player?.playWhenReady = true
+        PlayerServerSyncHelper.checkDuringPlayback(this)
+    }
     override fun onPause() { super.onPause(); if (Util.SDK_INT <= 23) player?.let { playbackPosition = it.currentPosition; it.playWhenReady = false } }
     private fun saveResumePosition() {
         if (channel.contentType == "movie" || channel.contentType == "series") {

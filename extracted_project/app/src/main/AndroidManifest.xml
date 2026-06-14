@@ -8,6 +8,7 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
@@ -31,6 +32,7 @@
         <activity android:name=".screens.ExpiredActivity" android:exported="false" />
         <activity android:name=".screens.SettingsActivity" android:exported="false" />
         <activity android:name=".screens.ChannelListActivity" android:exported="false" android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|smallestScreenSize" />
+        <activity android:name=".screens.TvLivePreviewActivity" android:exported="false" android:screenOrientation="landscape" android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|smallestScreenSize" />
         <activity android:name=".screens.SeriesDetailActivity" android:exported="false" android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|smallestScreenSize" />
         <activity android:name=".screens.MovieDetailActivity" android:exported="false" android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|smallestScreenSize" />
         <activity android:name=".InternetSpeed.InternetSpeedActivity" android:exported="false" />
