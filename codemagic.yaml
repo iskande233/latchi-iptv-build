@@ -90,6 +90,10 @@ workflows:
             exit 1
           fi
           echo "APK found: $APK"
+          mkdir -p "$CM_BUILD_DIR/artifacts"
+          cp "$APK" "$CM_BUILD_DIR/artifacts/app-debug.apk"
+          ls -la "$CM_BUILD_DIR/artifacts"
 
     artifacts:
-      - build_project/app/build/outputs/**/*.apk
+      - artifacts/*.apk
+      - build_project/**/*.apk
