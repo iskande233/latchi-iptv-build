@@ -223,7 +223,7 @@
                     android:textColor="#C7B7D8"
                     android:textSize="12sp" />
 
-                <!-- ===== Grid Row 1: البث المباشر | الأفلام | المسلسلات | المباريات ===== -->
+                <!-- ===== TV VIP Card Images: LIVE | FILMS | SERIES | MATCHES ===== -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -231,171 +231,101 @@
                     android:baselineAligned="false"
                     android:orientation="horizontal">
 
-                    <!-- البث المباشر -->
                     <LinearLayout
                         android:id="@+id/cardLive"
                         android:layout_width="0dp"
-                        android:layout_height="120dp"
+                        android:layout_height="150dp"
                         android:layout_weight="1"
-                        android:layout_marginEnd="6dp"
-                        android:background="@drawable/bg_vip_grid_card"
+                        android:layout_margin="8dp"
+                        android:background="@drawable/tv_card_live"
                         android:clickable="true"
+                        android:contentDescription="البث المباشر"
                         android:focusable="true"
                         android:foreground="@drawable/focus_ring_vip"
                         android:gravity="center"
-                        android:nextFocusUp="@id/menuButton"
-                        android:nextFocusDown="@id/cardMovies"
-                        android:orientation="vertical"
-                        android:padding="10dp">
-
-                        <ImageView
-                            android:layout_width="36dp"
-                            android:layout_height="36dp"
-                            android:src="@drawable/ic_live_tv_vip"
-                            android:contentDescription="البث المباشر" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:text="@string/live_tv"
-                            android:textColor="@android:color/white"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
+                        android:nextFocusRight="@id/cardMovies"
+                        android:nextFocusDown="@id/cardBeInSports"
+                        android:orientation="vertical">
 
                         <TextView
                             android:id="@+id/liveCount"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
+                            android:layout_width="1dp"
+                            android:layout_height="1dp"
+                            android:importantForAccessibility="no"
                             android:text="0"
-                            android:textColor="#7FE6FF"
-                            android:textSize="10sp" />
+                            android:visibility="invisible" />
                     </LinearLayout>
 
-                    <!-- الأفلام -->
                     <LinearLayout
                         android:id="@+id/cardMovies"
                         android:layout_width="0dp"
-                        android:layout_height="120dp"
+                        android:layout_height="150dp"
                         android:layout_weight="1"
-                        android:layout_marginHorizontal="3dp"
-                        android:background="@drawable/bg_vip_grid_card"
+                        android:layout_margin="8dp"
+                        android:background="@drawable/tv_card_films"
                         android:clickable="true"
+                        android:contentDescription="الأفلام"
                         android:focusable="true"
                         android:foreground="@drawable/focus_ring_vip"
                         android:gravity="center"
-                        android:nextFocusUp="@id/cardLive"
-                        android:nextFocusDown="@id/cardSeries"
-                        android:orientation="vertical"
-                        android:padding="10dp">
-
-                        <ImageView
-                            android:layout_width="36dp"
-                            android:layout_height="36dp"
-                            android:src="@drawable/ic_movies_vip"
-                            android:contentDescription="الأفلام" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:text="@string/movies"
-                            android:textColor="@android:color/white"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
+                        android:nextFocusLeft="@id/cardLive"
+                        android:nextFocusRight="@id/cardSeries"
+                        android:nextFocusDown="@id/cardSettings"
+                        android:orientation="vertical">
 
                         <TextView
                             android:id="@+id/movieCount"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
+                            android:layout_width="1dp"
+                            android:layout_height="1dp"
+                            android:importantForAccessibility="no"
                             android:text="0"
-                            android:textColor="#A06BFF"
-                            android:textSize="10sp" />
+                            android:visibility="invisible" />
                     </LinearLayout>
 
-                    <!-- المسلسلات -->
                     <LinearLayout
                         android:id="@+id/cardSeries"
                         android:layout_width="0dp"
-                        android:layout_height="120dp"
+                        android:layout_height="150dp"
                         android:layout_weight="1"
-                        android:layout_marginHorizontal="3dp"
-                        android:background="@drawable/bg_vip_grid_card"
+                        android:layout_margin="8dp"
+                        android:background="@drawable/tv_card_series"
                         android:clickable="true"
+                        android:contentDescription="المسلسلات"
                         android:focusable="true"
                         android:foreground="@drawable/focus_ring_vip"
                         android:gravity="center"
-                        android:nextFocusUp="@id/cardMovies"
-                        android:nextFocusDown="@id/cardMatches"
-                        android:orientation="vertical"
-                        android:padding="10dp">
-
-                        <ImageView
-                            android:layout_width="36dp"
-                            android:layout_height="36dp"
-                            android:src="@drawable/ic_series_vip"
-                            android:contentDescription="المسلسلات" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:text="@string/series"
-                            android:textColor="@android:color/white"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
+                        android:nextFocusLeft="@id/cardMovies"
+                        android:nextFocusRight="@id/cardMatches"
+                        android:nextFocusDown="@id/cardAccounts"
+                        android:orientation="vertical">
 
                         <TextView
                             android:id="@+id/seriesCount"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
+                            android:layout_width="1dp"
+                            android:layout_height="1dp"
+                            android:importantForAccessibility="no"
                             android:text="0"
-                            android:textColor="#39FF8B"
-                            android:textSize="10sp" />
+                            android:visibility="invisible" />
                     </LinearLayout>
 
-                    <!-- المباريات -->
                     <LinearLayout
                         android:id="@+id/cardMatches"
                         android:layout_width="0dp"
-                        android:layout_height="120dp"
+                        android:layout_height="150dp"
                         android:layout_weight="1"
-                        android:layout_marginStart="6dp"
-                        android:background="@drawable/bg_vip_grid_card"
+                        android:layout_margin="8dp"
+                        android:background="@drawable/tv_card_matches"
                         android:clickable="true"
+                        android:contentDescription="جدول المباريات"
                         android:focusable="true"
                         android:foreground="@drawable/focus_ring_vip"
                         android:gravity="center"
-                        android:nextFocusUp="@id/cardSeries"
-                        android:nextFocusDown="@id/cardBeInSports"
-                        android:orientation="vertical"
-                        android:padding="10dp">
-
-                        <ImageView
-                            android:layout_width="36dp"
-                            android:layout_height="36dp"
-                            android:src="@drawable/ic_matches_vip"
-                            android:contentDescription="المباريات" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:text="@string/matches_title"
-                            android:textColor="@android:color/white"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/todays_matches"
-                            android:textColor="#FFD700"
-                            android:textSize="10sp" />
-                    </LinearLayout>
+                        android:nextFocusLeft="@id/cardSeries"
+                        android:nextFocusDown="@id/cardAccounts"
+                        android:orientation="vertical" />
                 </LinearLayout>
 
-                <!-- ===== Grid Row 2: بي ان سبورت | الإعدادات | الحسابات ===== -->
+                <!-- ===== TV VIP Card Images: beIN SPORTS | SETTINGS | ACCOUNTS ===== -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -404,124 +334,60 @@
                     android:gravity="center_horizontal"
                     android:orientation="horizontal">
 
-                    <!-- بي ان سبورت -->
                     <LinearLayout
                         android:id="@+id/cardBeInSports"
                         android:layout_width="0dp"
-                        android:layout_height="120dp"
+                        android:layout_height="150dp"
                         android:layout_weight="1"
-                        android:layout_marginEnd="6dp"
-                        android:background="@drawable/bg_vip_bein_card"
+                        android:layout_margin="8dp"
+                        android:background="@drawable/tv_card_bein"
                         android:clickable="true"
+                        android:contentDescription="بي إن سبورت"
                         android:focusable="true"
                         android:foreground="@drawable/focus_ring_vip"
                         android:gravity="center"
-                        android:nextFocusUp="@id/cardMatches"
-                        android:nextFocusDown="@id/cardSettings"
-                        android:orientation="vertical"
-                        android:padding="10dp">
+                        android:nextFocusUp="@id/cardLive"
+                        android:nextFocusRight="@id/cardSettings"
+                        android:orientation="vertical" />
 
-                        <ImageView
-                            android:layout_width="38dp"
-                            android:layout_height="38dp"
-                            android:src="@drawable/ic_bein_sports"
-                            android:contentDescription="بي ان سبورت" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:text="بي ان سبورت"
-                            android:textColor="#FFD700"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="beIN Sports"
-                            android:textColor="#E8D58C"
-                            android:textSize="9sp" />
-                    </LinearLayout>
-
-                    <!-- الإعدادات -->
                     <LinearLayout
                         android:id="@+id/cardSettings"
                         android:layout_width="0dp"
-                        android:layout_height="120dp"
+                        android:layout_height="150dp"
                         android:layout_weight="1"
-                        android:layout_marginHorizontal="6dp"
-                        android:background="@drawable/bg_vip_grid_card"
+                        android:layout_margin="8dp"
+                        android:background="@drawable/tv_card_settings"
                         android:clickable="true"
+                        android:contentDescription="الإعدادات"
                         android:focusable="true"
                         android:foreground="@drawable/focus_ring_vip"
                         android:gravity="center"
-                        android:nextFocusUp="@id/cardBeInSports"
-                        android:nextFocusDown="@id/cardAccounts"
-                        android:orientation="vertical"
-                        android:padding="10dp">
+                        android:nextFocusLeft="@id/cardBeInSports"
+                        android:nextFocusRight="@id/cardAccounts"
+                        android:nextFocusUp="@id/cardMovies"
+                        android:orientation="vertical" />
 
-                        <ImageView
-                            android:layout_width="36dp"
-                            android:layout_height="36dp"
-                            android:src="@drawable/ic_settings_vip"
-                            android:contentDescription="الإعدادات" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:text="@string/settings_btn"
-                            android:textColor="@android:color/white"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Settings"
-                            android:textColor="#7FE6FF"
-                            android:textSize="9sp" />
-                    </LinearLayout>
-
-                    <!-- الحسابات -->
                     <LinearLayout
                         android:id="@+id/cardAccounts"
                         android:layout_width="0dp"
-                        android:layout_height="120dp"
+                        android:layout_height="150dp"
                         android:layout_weight="1"
-                        android:layout_marginStart="6dp"
-                        android:background="@drawable/bg_vip_accounts_card"
+                        android:layout_margin="8dp"
+                        android:background="@drawable/tv_card_accounts"
                         android:clickable="true"
+                        android:contentDescription="الحسابات"
                         android:focusable="true"
                         android:foreground="@drawable/focus_ring_vip"
                         android:gravity="center"
-                        android:nextFocusUp="@id/cardSettings"
-                        android:orientation="vertical"
-                        android:padding="10dp">
+                        android:nextFocusLeft="@id/cardSettings"
+                        android:nextFocusUp="@id/cardSeries"
+                        android:orientation="vertical" />
 
-                        <ImageView
-                            android:layout_width="38dp"
-                            android:layout_height="38dp"
-                            android:src="@drawable/ic_accounts_vip"
-                            android:contentDescription="الحسابات" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:text="الحسابات"
-                            android:textColor="#39FF8B"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Activation Codes"
-                            android:textColor="#B8E0CB"
-                            android:textSize="9sp" />
-                    </LinearLayout>
+                    <Space
+                        android:layout_width="0dp"
+                        android:layout_height="150dp"
+                        android:layout_weight="1"
+                        android:layout_margin="8dp" />
                 </LinearLayout>
 
                 <!-- ===== Footer ===== -->
