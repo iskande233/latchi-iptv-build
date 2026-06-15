@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_app"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:id="@+id/backButton" android:clickable="true" android:focusable="true" android:foreground="@drawable/focus_selector"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:gravity="center_vertical"
+            android:text="@string/settings"
+            android:textColor="@android:color/white"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <!-- Expiry Info -->
+        <TextView
+            android:id="@+id/expiryInfoText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/bg_panel_premium"
+            android:gravity="center"
+            android:padding="14dp"
+            android:text="--"
+            android:textColor="#FFD700"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/languageText"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/bg_panel"
+            android:gravity="center"
+            android:text="@string/language"
+            android:textColor="@android:color/white"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="54dp"
+            android:layout_marginTop="10dp"
+            android:orientation="horizontal">
+            <TextView android:id="@+id/langArabic" android:clickable="true" android:focusable="true" android:foreground="@drawable/focus_selector" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginEnd="6dp" android:background="@drawable/bg_button_primary" android:gravity="center" android:text="العربية" android:textColor="@android:color/white" android:textStyle="bold" />
+            <TextView android:id="@+id/langFrench" android:clickable="true" android:focusable="true" android:foreground="@drawable/focus_selector" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginEnd="6dp" android:background="@drawable/bg_panel" android:gravity="center" android:text="Français" android:textColor="@android:color/white" android:textStyle="bold" />
+            <TextView android:id="@+id/langEnglish" android:clickable="true" android:focusable="true" android:foreground="@drawable/focus_selector" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:background="@drawable/bg_panel" android:gravity="center" android:text="English" android:textColor="@android:color/white" android:textStyle="bold" />
+        </LinearLayout>
+
+
+        <TextView
+            android:id="@+id/playerModeText"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="14dp"
+            android:background="@drawable/bg_panel"
+            android:gravity="center"
+            android:text="Player: Auto"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal">
+            <TextView android:id="@+id/playerAuto" android:clickable="true" android:focusable="true" android:foreground="@drawable/focus_selector" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginEnd="6dp" android:background="@drawable/bg_button_primary" android:gravity="center" android:text="Auto" android:textColor="@android:color/white" android:textStyle="bold" />
+            <TextView android:id="@+id/playerHls" android:clickable="true" android:focusable="true" android:foreground="@drawable/focus_selector" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginEnd="6dp" android:background="@drawable/bg_panel" android:gravity="center" android:text="HLS" android:textColor="@android:color/white" android:textStyle="bold" />
+            <TextView android:id="@+id/playerProgressive" android:clickable="true" android:focusable="true" android:foreground="@drawable/focus_selector" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginEnd="6dp" android:background="@drawable/bg_panel" android:gravity="center" android:text="Prog" android:textColor="@android:color/white" android:textStyle="bold" />
+        </LinearLayout>
+
+        <TextView android:id="@+id/supportButton" android:clickable="true" android:focusable="true" android:foreground="@drawable/focus_selector" android:layout_width="match_parent" android:layout_height="58dp" android:layout_marginTop="14dp" android:background="@drawable/bg_panel" android:gravity="center" android:text="@string/whatsapp_support" android:textColor="@android:color/white" android:textSize="16sp" android:textStyle="bold" />
+        <TextView android:id="@+id/manualButton" android:clickable="true" android:focusable="true" android:foreground="@drawable/focus_selector" android:layout_width="match_parent" android:layout_height="58dp" android:layout_marginTop="10dp" android:background="@drawable/bg_panel" android:gravity="center" android:text="@string/manual_source" android:textColor="@android:color/white" android:textSize="16sp" android:textStyle="bold" />
+        <TextView android:id="@+id/changeUserButton" android:clickable="true" android:focusable="true" android:foreground="@drawable/focus_selector" android:layout_width="match_parent" android:layout_height="58dp" android:layout_marginTop="10dp" android:background="@drawable/bg_panel" android:gravity="center" android:text="@string/change_user" android:textColor="@android:color/white" android:textSize="16sp" android:textStyle="bold" />
+        <TextView android:id="@+id/clearCacheButton" android:clickable="true" android:focusable="true" android:foreground="@drawable/focus_selector" android:layout_width="match_parent" android:layout_height="58dp" android:layout_marginTop="10dp" android:background="@drawable/bg_panel" android:gravity="center" android:text="@string/clear_cache" android:textColor="@android:color/white" android:textSize="16sp" android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:gravity="center"
+            android:text="@string/developed_by"
+            android:textColor="#C7B7D8"
+            android:textSize="14sp" />
+    </LinearLayout>
+</ScrollView>

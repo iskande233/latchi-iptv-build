@@ -1,0 +1,29 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.IPTV" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Customize your light theme here. -->
+        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="android:statusBarColor">@color/bg_color</item>
+        <item name="android:windowAnimationStyle">@style/IptvActivityAnimation</item>
+    </style>
+
+    <!-- Smooth fade transitions between activities -->
+    <style name="IptvActivityAnimation" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/fade_in</item>
+        <item name="android:activityOpenExitAnimation">@anim/fade_out</item>
+        <item name="android:activityCloseEnterAnimation">@anim/fade_in</item>
+        <item name="android:activityCloseExitAnimation">@anim/fade_out</item>
+    </style>
+
+    <style name="Theme.IPTV" parent="Base.Theme.IPTV" />
+
+    <!-- Splash theme: makes the Android 12+ system splash blend in (dark bg, no white icon flash) -->
+    <style name="Theme.IPTV.Splash" parent="Theme.IPTV">
+        <item name="android:windowBackground">@color/splash_bg</item>
+        <item name="android:statusBarColor">@color/splash_bg</item>
+        <item name="android:navigationBarColor">@color/splash_bg</item>
+        <item name="android:windowFullscreen">true</item>
+        <!-- Android 12+ system splash: dark background instead of white icon flash -->
+        <item name="android:windowSplashScreenBackground" tools:targetApi="s">@color/splash_bg</item>
+    </style>
+</resources>

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/cardPosterRoot"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="3dp"
+    android:background="@drawable/bg_panel_premium_focusable"
+    android:clickable="true"
+    android:focusable="true"
+    android:focusableInTouchMode="false"
+    android:foreground="@drawable/focus_selector"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:padding="4dp"
+    android:elevation="6dp">
+
+    <ImageView
+        android:id="@+id/posterImageView"
+        android:layout_width="match_parent"
+        android:layout_height="104dp"
+        android:background="#121228"
+        android:scaleType="centerCrop"
+        android:src="@drawable/ic_tv" />
+
+    <TextView
+        android:id="@+id/posterNameTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:ellipsize="end"
+        android:gravity="center"
+        android:maxLines="2"
+        android:minLines="2"
+        android:text="Movie / Series"
+        android:textColor="#FFFFFF"
+        android:textSize="9sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/posterCatTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:background="#3d3d5c"
+        android:paddingHorizontal="5dp"
+        android:paddingVertical="1dp"
+        android:text="Category"
+        android:textColor="#FFD700"
+        android:textSize="7sp"
+        android:textStyle="bold" />
+</LinearLayout>

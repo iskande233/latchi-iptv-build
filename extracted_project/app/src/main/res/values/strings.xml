@@ -1,0 +1,284 @@
+<resources>
+    <string name="app_name">IPTV LATCHI DZ</string>
+    <string name="interstitial_android">Interstitial_Android</string>
+    <string name="game_id">5757725</string>
+    <string name="about">حول</string>
+    <string name="home">الرئيسية</string>
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="share_app">مشاركة التطبيق</string>
+
+    <string name="region">المنطقة</string>
+    <string name="city">المدينة</string>
+    <string name="country">الدولة</string>
+    <string name="speed_test">اختبار السرعة</string>
+    <string name="latency">زمن الاستجابة</string>
+    <string name="start">ابدأ</string>
+    <string name="server">الخادم</string>
+    <string name="time">الوقت</string>
+    <string name="tap_to_start">اضغط للبدء</string>
+
+    <!-- Home / general -->
+    <string name="live_tv">البث المباشر</string>
+    <string name="movies">الأفلام</string>
+    <string name="series">المسلسلات</string>
+    <string name="users">تحديث</string>
+    <string name="users_btn">🔄 تحديث</string>
+    <string name="settings">الإعدادات</string>
+    <string name="settings_btn">⚙️ الإعدادات</string>
+    <string name="logged_in">اسم المستخدم</string>
+    <string name="expiry">انتهاء الاشتراك</string>
+    <string name="last_update">آخر تحديث</string>
+    <string name="update">تحديث</string>
+    <string name="continue_watching">متابعة المشاهدة</string>
+    <string name="developed_by">تطوير ISKANDER KHANTOUCHE</string>
+    <string name="whatsapp_contact">📞 اتصل بالدعم</string>
+
+    <string name="channels_suffix">قناة</string>
+    <string name="movies_suffix">فيلم</string>
+    <string name="series_suffix">مسلسل</string>
+
+    <!-- Channel list -->
+    <string name="back">رجوع</string>
+    <string name="search_hint">بحث...</string>
+    <string name="categories">الفئات</string>
+    <string name="categories_button">☰ الفئات</string>
+    <string name="search_categories">بحث في الفئات</string>
+    <string name="all">الكل</string>
+    <string name="favorites">المفضلة</string>
+    <string name="added_to_favorites">❤️ تمت الإضافة إلى المفضلة</string>
+    <string name="removed_from_favorites">💔 تمت الإزالة من المفضلة</string>
+    <string name="close">إغلاق</string>
+    <string name="loading_episodes">جارٍ تحميل الحلقات...</string>
+    <string name="no_episodes">لا توجد حلقات</string>
+    <string name="season_prefix">الموسم</string>
+    <string name="episode_prefix">الحلقة</string>
+    <string name="choose_season">اختر الموسم</string>
+    <string name="seasons">المواسم</string>
+    <string name="episodes">الحلقات</string>
+    <string name="series_not_available">المسلسلات غير متوفرة لهذا المصدر</string>
+    <string name="watch_now">▶ شاهد الآن</string>
+    <string name="back_to_home">🏠 العودة للرئيسية</string>
+    <string name="add_favorite">أضف إلى المفضلة</string>
+    <string name="in_favorites">محفوظ في المفضلة</string>
+    <string name="movie_description">الفئة: %1$s\n\nاضغط \'شاهد الآن\' للبدء في المشاهدة.</string>
+    <string name="series_description">الفئة: %1$s</string>
+
+    <!-- Loading / status -->
+    <string name="checking_subscription">جارٍ التحقق من الاشتراك...</string>
+    <string name="identifying_subscription">جارٍ التعرّف على الاشتراك...</string>
+    <string name="subscription_verified">تم التحقق من اشتراكك ✓</string>
+    <string name="loading_dots">جارٍ التحميل...</string>
+    <string name="offline_mode">وضع عدم الاتصال: استخدام القائمة المحفوظة</string>
+    <string name="no_internet">لا يوجد اتصال بالإنترنت</string>
+    <string name="check_connection">يرجى التحقق من اتصالك والمحاولة مرة أخرى.</string>
+    <string name="retry">إعادة المحاولة</string>
+    <string name="no_last_watched">لا توجد قناة تمت مشاهدتها مؤخراً</string>
+    <string name="playlist_updated">تم تحديث القائمة</string>
+    <string name="expired">انتهى الاشتراك</string>
+
+    <!-- Settings -->
+    <string name="language">اللغة</string>
+    <string name="player_mode">المشغّل</string>
+    <string name="language_saved">تم حفظ اللغة</string>
+    <string name="player_saved">تم حفظ وضع المشغّل</string>
+    <string name="whatsapp_support">دعم واتساب</string>
+    <string name="manual_source">M3U / Xtream يدوي</string>
+    <string name="change_user">تغيير المستخدم</string>
+    <string name="clear_cache">مسح ذاكرة القائمة</string>
+    <string name="cache_cleared">تم مسح الذاكرة</string>
+
+    <!-- Player -->
+    <string name="channel_unavailable">القناة غير متوفرة حالياً\nجرّب قناة أخرى أو غيّر وضع المشغّل</string>
+    <string name="next_label">التالي</string>
+    <string name="sleep_timer_title">مؤقت النوم</string>
+    <string name="sleep_timer_30">30 دقيقة</string>
+    <string name="sleep_timer_60">60 دقيقة</string>
+    <string name="sleep_timer_90">90 دقيقة</string>
+    <string name="sleep_timer_120">120 دقيقة</string>
+    <string name="sleep_timer_off">إيقاف</string>
+    <string name="sleep_timer_set">تم ضبط المؤقت: %1$d دقيقة</string>
+    <string name="sleep_timer_cancelled">تم إلغاء المؤقت</string>
+    <string name="sleep_timer_expired">انتهى مؤقت النوم. جارٍ الإغلاق...</string>
+    <string name="pip_not_supported">PIP غير مدعوم على هذا الجهاز</string>
+    <string name="theme">السمة</string>
+    <string name="theme_default">افتراضي</string>
+    <string name="theme_green">أخضر</string>
+    <string name="theme_red">أحمر</string>
+    <string name="theme_dark">داكن</string>
+    <string name="theme_saved">تم حفظ السمة</string>
+    <string name="expiry_warning">⚠ ينتهي اشتراكك خلال %1$d أيام! جدّد الآن.</string>
+
+    <!-- Adhkar Popup -->
+    <string-array name="adhkar_items">
+        <item>سبحان الله وبحمده، سبحان الله العظيم</item>
+        <item>لا إله إلا الله وحده لا شريك له، له الملك وله الحمد، وهو على كل شيء قدير</item>
+        <item>أستغفر الله العظيم الذي لا إله إلا هو الحي القيوم، وأتوب إليه</item>
+        <item>اللهم صلِّ وسلم على نبينا محمد</item>
+        <item>لا حول ولا قوة إلا بالله</item>
+        <item>حسبي الله لا إله إلا هو عليه توكلت وهو رب العرش العظيم</item>
+        <item>اللهم بك أصبحنا وبك أمسينا، وبك نحيا وبك نموت، وإليك النشور</item>
+        <item>رضيت بالله رباً، وبالإسلام ديناً، وبمحمد صلى الله عليه وسلم نبياً</item>
+        <item>اللهم إني أسألك علماً نافعاً، ورزقاً طيباً، وعملاً متقبلاً</item>
+        <item>اللهم إني أعوذ بك من الهم والحزن، ومن العجز والكسل</item>
+        <item>أعوذ بالله من الشيطان الرجيم</item>
+        <item>بسم الله الرحمن الرحيم</item>
+    </string-array>
+
+    <string-array name="adhkar_references">
+        <item>التسبيح 100 مرة — ورد الخير</item>
+        <item>ذكر يغرس جنتين في الجنة — صحيح</item>
+        <item>استغفار يجلب الرزق والفرج</item>
+        <item>الصلاة على النبي 10 مرات — صحيح</item>
+        <item>كنز من كنوز الجنة</item>
+        <item>دعوة ذي النون — لا يُرد</item>
+        <item>ذكر الصباح والمساء</item>
+        <item>ثلاث مرات — عند الاستيقاظ</item>
+        <item>دعاء المسلم بعد الصلاة</item>
+        <item>دعاء الأحزان والكدر</item>
+        <item>التعوذ قبل القراءة</item>
+        <item>افتتح كل عمل بها</item>
+    </string-array>
+
+    <string-array name="ayat_items">
+        <item>﴿ إِنَّ مَعَ الْعُسْرِ يُسْرًا ﴾</item>
+        <item>﴿ وَلَسَوْفَ يُعْطِيكَ رَبُّكَ فَتَرْضَىٰ ﴾</item>
+        <item>﴿ وَهُوَ مَعَكُمْ أَيْنَ مَا كُنتُمْ ﴾</item>
+        <item>﴿ وَمَن يَتَّقِ اللَّهَ يَجْعَل لَّهُ مَخْرَجًا ﴾</item>
+        <item>﴿ رَبِّ اشْرَحْ لِي صَدْرِي وَيَسِّرْ لِي أَمْرِي ﴾</item>
+        <item>﴿ وَإِذَا مَرِضْتُ فَهُوَ يَشْفِينِ ﴾</item>
+        <item>﴿ لَا تَدْرِي لَعَلَّ اللَّهَ يُحْدِثُ بَعْدَ ذَٰلِكَ أَمْرًا ﴾</item>
+        <item>﴿ وَأَن لَّيْسَ لِلْإِنسَانِ إِلَّا مَا سَعَىٰ ﴾</item>
+        <item>﴿ فَإِنَّ مَعَ الْعُسْرِ يُسْرًا إِنَّ مَعَ الْعُسْرِ يُسْرًا ﴾</item>
+        <item>﴿ وَمَا تَوْفِيقِي إِلَّا بِاللَّهِ ﴾</item>
+    </string-array>
+
+    <string-array name="ayat_references">
+        <item>سورة الشرح - الآية 6</item>
+        <item>سورة الضحى - الآية 5</item>
+        <item>سورة الحديد - الآية 4</item>
+        <item>سورة الطلاق - الآية 2</item>
+        <item>سورة طه - الآية 25</item>
+        <item>سورة الشعراء - الآية 80</item>
+        <item>سورة الطلاق - الآية 1</item>
+        <item>سورة النجم - الآية 39</item>
+        <item>سورة الشرح - الآية 5-6</item>
+        <item>سورة هود - الآية 88</item>
+    </string-array>
+
+    <string name="adhkar_close_hint">✕ اضغط للإغلاق</string>
+
+    <!-- Update -->
+    <string name="loading_adhkar_title">لا تقلق...</string>
+    <string name="loading_adhkar_subtitle">شغل وقتك بالذكر</string>
+
+    <string name="update_available">يتوفر تحديث جديد</string>
+    <string name="update_now">تحديث الآن</string>
+    <string name="later">لاحقاً</string>
+
+    <!-- User List -->
+    <string name="invalid_code">أدخل كود صحيح (4-6 أرقام)</string>
+    <string name="api_not_configured">API غير مضبوط</string>
+    <string name="empty_playlist">رابط القائمة فارغ</string>
+    <string name="activation_failed">فشل التفعيل، تحقق من الإنترنت</string>
+    <string name="code_valid_enter_name">✅ الكود صحيح! أدخل الاسم</string>
+    <string name="enter_name">أدخل اسم المستخدم</string>
+    <string name="save">حفظ</string>
+    <string name="cancel">إلغاء</string>
+    <string name="whatsapp_error">لا يمكن فتح واتساب</string>
+
+    <!-- Prayer -->
+    <string name="prayer_fajr">الفجر</string>
+    <string name="prayer_dhuhr">الظهر</string>
+    <string name="prayer_asr">العصر</string>
+    <string name="prayer_maghrib">المغرب</string>
+    <string name="prayer_isha">العشاء</string>
+    <string name="prayer_next">الصلاة القادمة</string>
+    <string name="prayer_load_failed">تعذر تحميل المواقيت. تحقق من الإنترنت.</string>
+    <string name="location_permission_denied">تم رفض صلاحية الموقع</string>
+    <string name="location_not_found">لم يتم العثور على الموقع</string>
+    <string name="location_error">خطأ في تحديد الموقع</string>
+
+    <!-- Matches -->
+    <string name="matches_title">جدول المباريات</string>
+    <string name="no_matches">لا توجد مباريات اليوم</string>
+    <string name="matches_load_failed">تعذر تحميل المباريات.\nتحقق من الإنترنت.</string>
+    <string name="channel_not_found">القناة الناقلة غير متوفرة في قائمتك</string>
+
+    <!-- Pricing -->
+    <string name="pricing_title">أسعار الاشتراك</string>
+    <string name="pricing_month">اشتراك 1 شهر</string>
+    <string name="pricing_3months">اشتراك 3 أشهر</string>
+    <string name="pricing_year">اشتراك 1 سنة</string>
+    <string name="pricing_trial">تجربة مجانية 24 ساعة</string>
+    <string name="pricing_free">مجاناً — جرب قبل الشراء!</string>
+    <string name="buy_whatsapp">🛒 شراء الكود عبر واتساب</string>
+    <string name="payment_methods">💳 الدفع: D17 BaridiMob / CCP / Lydia</string>
+
+    <!-- New UI strings -->
+    <string name="activate_subscription">تفعيل الاشتراك</string>
+    <string name="enter_code_hint">أدخل كود التفعيل</string>
+    <string name="activate">تفعيل ✓</string>
+    <string name="or_use_manual">أو استخدام طريقة يدوية</string>
+    <string name="enter_app">▶  الدخول إلى حسابي</string>
+    <string name="confirm_delete">تأكيد الحذف</string>
+    <string name="delete_profile_confirm">هل تريد حذف حساب %1$s؟</string>
+    <string name="delete">حذف</string>
+    <string name="app_info_title">عن التطبيق</string>
+    <string name="app_info_desc">تطبيق Latchi IPTV هو بوابتك الذكية لعالم الترفيه الرقمي، يجمع لك آلاف القنوات العالمية الحية، أحدث الأفلام والمسلسلات بجودة عالية، مع جدول مباريات ذكي ومحدث تلقائياً لتجربة مشاهدة فريدة وبدون تقطيع.</string>
+    <string name="live_matches">🔴 مباريات جارية حالياً</string>
+    <string name="finished_matches">✅ مباريات منتهية</string>
+    <string name="logout">تسجيل خروج</string>
+    <string name="drawer_prayer">🕌 مواقيت الصلاة</string>
+    <string name="drawer_pricing">💰 أسعار الاشتراك</string>
+    <string name="drawer_about">ℹ️ عن التطبيق</string>
+    <string name="drawer_settings">⚙️ الإعدادات</string>
+    <string name="drawer_matches">⚽ جدول المباريات</string>
+    <string name="back_to_home_main">العودة للصفحة الرئيسية</string>
+    <string name="exit_app">🚪 تسجيل الخروج من التطبيق</string>
+    <string name="confirm_exit_title">تأكيد الخروج</string>
+    <string name="confirm_exit_desc">هل تريد حقاً الخروج من تطبيق LATCHI IPTV VIP؟</string>
+    <string name="press_back_again_exit">اضغط مرة أخرى للخروج</string>
+    <string name="theme_settings">إعدادات السِمات</string>
+    <string name="general_settings">الإعدادات العامة</string>
+    <string name="my_dhikr">أذكاري</string>
+    <string name="todays_matches">مباريات اليوم</string>
+    <string name="choose_image">اختر صورة</string>
+    <string name="choose_gallery">اختر من المعرض</string>
+    <string name="available_themes">الثيمات المتوفرة</string>
+    <string name="profile_picture">صورة البروفايل</string>
+    <string name="menu">☰</string>
+    <string name="dhikr_morning">أذكار الصباح</string>
+    <string name="dhikr_evening">أذكار المساء</string>
+    <string name="dhikr_sleep">أذكار النوم</string>
+    <string name="dhikr_prayer">أذكار بعد الصلاة</string>
+    <string name="open_channel">فتح القناة الناقلة</string>
+    <string name="match_live">🔴 جارية الآن</string>
+    <string name="match_finished">✅ انتهت</string>
+    <string name="match_upcoming">⏳ لم تبدأ</string>
+    <string name="weather">حالة الطقس</string>
+    <string name="loading_progress">%1$d%%</string>
+
+    <string name="voice_not_understood">لم أفهم الأمر، حاول مرة أخرى</string>
+    <string name="voice_try_again">🤔 أعد المحاولة بوضوح</string>
+    <string name="voice_searching">جاري البحث عن %1$s</string>
+    <string name="search">بحث</string>
+    <!-- Vip Accounts screen -->
+    <string name="vip_accounts_title">🔑 الحسابات • VIP</string>
+    <string name="vip_accounts_subtitle">🛡️ أكواد التفعيل المسجلة على جهازك</string>
+    <string name="vip_accounts_empty">📭 لا توجد أكواد تفعيل</string>
+    <string name="vip_accounts_add">➕ إضافة كود تفعيل جديد</string>
+    <string name="vip_accounts_activate">🔄  تحويل للحساب</string>
+    <string name="vip_accounts_delete">🗑️  حذف</string>
+    <string name="vip_accounts_active_label">نشط</string>
+    <string name="vip_accounts_code_label">🔑 كود التفعيل:</string>
+
+    <!-- beIN Sports screen -->
+    <string name="bein_title">🏆  beIN Sports • الفئات</string>
+    <string name="bein_subtitle">📡 اختر فئة beIN Sports التي تريد مشاهدتها</string>
+    <string name="bein_empty">📭 لا توجد قنوات beIN Sports في قائمتك الحالية</string>
+    <string name="bein_count_fmt">%1$d قناة</string>
+    <string name="bein_category_general">beIN SPORTS (عام)</string>
+
+    <!-- Drawer Support (Whatsapp) -->
+    <string name="drawer_support">📞 الدعم الفني (واتساب)</string>
+</resources>

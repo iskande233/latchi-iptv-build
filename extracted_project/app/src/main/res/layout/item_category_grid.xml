@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 🗂 بطاقة الفئة العمودية (Elongated Vertical List Category Card مع Ripple Effect وأيقونات Vector) -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/cardCatGridRoot"
+    android:layout_width="match_parent"
+    android:layout_height="76dp"
+    android:layout_marginVertical="4dp"
+    android:layout_marginHorizontal="8dp"
+    android:background="@drawable/bg_panel_premium_focusable"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="@drawable/focus_selector"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingHorizontal="14dp"
+    android:elevation="4dp">
+
+    <ImageView
+        android:id="@+id/catGridIconImg"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginEnd="10dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_cat_globe" />
+
+    <TextView
+        android:id="@+id/catGridName"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:ellipsize="marquee"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:gravity="start|center_vertical"
+        android:marqueeRepeatLimit="marquee_forever"
+        android:maxLines="1"
+        android:scrollHorizontally="true"
+        android:singleLine="true"
+        android:text="اسم الباقة / الفئة"
+        android:textColor="#FFFFFF"
+        android:textSize="15sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/catGridCount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="#3d3d5c"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="5dp"
+        android:text="0 قناة"
+        android:textColor="#FFD700"
+        android:textSize="13sp"
+        android:textStyle="bold" />
+</LinearLayout>
