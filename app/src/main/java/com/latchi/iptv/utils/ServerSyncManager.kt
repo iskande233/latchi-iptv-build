@@ -58,16 +58,23 @@ object ServerSyncManager {
 
                 val oldUrl = normalizeUrl(active.m3uUrl)
                 val newUrl = normalizeUrl(result.playlistUrl.ifBlank { active.m3uUrl })
+                val oldRevision = active.serverRevision
+                val newRevision = result.serverRevision
                 val updatedName = result.name.ifBlank { active.name }
                 val updatedExpiry = result.expiresAt.ifBlank { active.expiresAt }
                 val updatedMax = result.maxDevices.takeIf { it > 0 } ?: active.maxDevices
 
-                if (newUrl.isNotBlank() && newUrl != oldUrl) {
-                    val health = ServerHealthChecker.check(newUrl)
-                    prefs.edit().putString(KEY_LAST_STATUS, if (health.online) "online:${health.responseMs}" else "offline:${health.message}").apply()
-                    if (!health.online) {
-                        onMain { onResult(ServerSyncResult(false, "server_offline:${health.message}", profileId = active.id)) }
-                        return@thread
+                val urlChanged = newUrl.isNotBlank() && newUrl != oldUrl
+                val revisionChanged = newRevision > oldRevision
+
+                if (urlChanged || revisionChanged) {
+                    if (newUrl.isNotBlank()) {
+                        val health = ServerHealthChecker.check(newUrl)
+                        prefs.edit().putString(KEY_LAST_STATUS, if (health.online) "online:${health.responseMs}" else "offline:${health.message}").apply()
+                        if (!health.online) {
+                            onMain { onResult(ServerSyncResult(false, "server_offline:${health.message}", profileId = active.id)) }
+                            return@thread
+                        }
                     }
                     SourcePrefs.saveActivatedProfile(
                         context = appContext,
@@ -75,18 +82,20 @@ object ServerSyncManager {
                         name = updatedName,
                         playlistUrl = newUrl,
                         expiresAt = updatedExpiry,
-                        maxDevices = updatedMax
+                        maxDevices = updatedMax,
+                        serverRevision = newRevision
                     )
                     ChannelCache.clear(appContext, active.id)
                     prefs.edit()
                         .putString("last_applied_url_${active.id}", newUrl)
+                        .putLong("last_applied_revision_${active.id}", newRevision)
                         .putLong("last_changed_at_${active.id}", System.currentTimeMillis())
                         .apply()
                     onMain {
                         onResult(
                             ServerSyncResult(
                                 changed = true,
-                                message = "server_changed",
+                                message = if (revisionChanged) "revision_changed" else "server_changed",
                                 oldUrl = oldUrl,
                                 newUrl = newUrl,
                                 profileId = active.id
@@ -95,14 +104,15 @@ object ServerSyncManager {
                     }
                 } else {
                     // Keep account metadata fresh without clearing channel cache.
-                    if (updatedName != active.name || updatedExpiry != active.expiresAt || updatedMax != active.maxDevices) {
+                    if (updatedName != active.name || updatedExpiry != active.expiresAt || updatedMax != active.maxDevices || newRevision != active.serverRevision) {
                         SourcePrefs.saveActivatedProfile(
                             context = appContext,
                             code = active.activationCode,
                             name = updatedName,
                             playlistUrl = active.m3uUrl,
                             expiresAt = updatedExpiry,
-                            maxDevices = updatedMax
+                            maxDevices = updatedMax,
+                            serverRevision = newRevision
                         )
                     }
                     onMain { onResult(ServerSyncResult(false, "no_change", profileId = active.id)) }

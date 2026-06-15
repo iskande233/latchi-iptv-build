@@ -80,6 +80,18 @@ object ActivationConfig {
         return fallback
     }
 
+    fun extractRevision(json: org.json.JSONObject, fallback: Long = 0L): Long {
+        val keys = listOf("server_revision", "playlist_revision", "revision", "version", "serverVersion", "playlistVersion")
+        for (key in keys) {
+            if (!json.has(key)) continue
+            val value = json.optString(key, "").trim().toLongOrNull()
+            if (value != null && value > 0L) return value
+            val longValue = json.optLong(key, -1L)
+            if (longValue > 0L) return longValue
+        }
+        return fallback
+    }
+
     private fun firstString(json: org.json.JSONObject, keys: List<String>): String {
         for (key in keys) {
             val value = json.optString(key, "").trim().replace("&amp;", "&")

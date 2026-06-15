@@ -218,6 +218,19 @@ class ChannelListActivity : AppCompatActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        try {
+            val active = com.latchi.iptv.utils.SourcePrefs.getActiveProfile(this)
+            if (active != null && com.latchi.iptv.utils.SourcePrefs.isPendingServerRefresh(this, active.id)) {
+                com.latchi.iptv.utils.SourcePrefs.setPendingServerRefresh(this, active.id, false)
+                startSilentServerSync()
+            } else {
+                startSilentServerSync()
+            }
+        } catch (_: Exception) {}
+    }
+
     private fun startSilentServerSync() {
         ServerSyncManager.checkForServerUpdate(this, force = false) { result ->
             if (!result.changed || isFinishing) return@checkForServerUpdate

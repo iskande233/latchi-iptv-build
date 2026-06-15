@@ -128,10 +128,13 @@ object FloatingBackHelper {
         }
         styleFloatingButton(activity, button)
 
-        val params = FrameLayout.LayoutParams(dp(activity, 92), dp(activity, 48)).apply {
-            gravity = Gravity.TOP or Gravity.END
-            marginEnd = dp(activity, 24)
-            topMargin = dp(activity, 24)
+        val isTv = TvUtils.isTv(activity)
+        if (isTv) return // TV remotes have dedicated hardware back buttons
+
+        val params = FrameLayout.LayoutParams(dp(activity, 86), dp(activity, 42)).apply {
+            gravity = Gravity.BOTTOM or Gravity.START
+            marginStart = dp(activity, 20)
+            bottomMargin = dp(activity, 20)
         }
         root.addView(button, params)
     }

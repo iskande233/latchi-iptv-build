@@ -22,6 +22,7 @@ import com.latchi.iptv.utils.MatchChannelMapper
 import com.latchi.iptv.utils.SourcePrefs
 import com.latchi.iptv.utils.TvUtils
 import com.latchi.iptv.utils.YacineTvHelper
+import com.latchi.iptv.screens.TvLivePreviewActivity
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -39,9 +40,13 @@ class MatchesActivity : AppCompatActivity() {
         backButton.setOnClickListener{finish()}; refreshButton.setOnClickListener{load()}
         adapter = SmartMatchesAdapter(items) { mi ->
             if (mi.channel != null) {
-                PlayerActivity.start(this, mi.channel)
+                if (TvUtils.isTv(this)) {
+                    TvLivePreviewActivity.startWithChannels(this, mi.channel, listOf(mi.channel), mi.channel.category)
+                } else {
+                    PlayerActivity.start(this, mi.channel)
+                }
             } else {
-                Toast.makeText(this, getString(R.string.channel_not_found), Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "لم نجد القناة الناقلة في سيرفرك الحالي، سيتم فتح البحث.", Toast.LENGTH_LONG).show()
                 val searchIntent = Intent(this, ChannelListActivity::class.java).apply {
                     putExtra("extra_type", "live")
                     putExtra("extra_title", "بحث: ${mi.channelName ?: "قناة"}")

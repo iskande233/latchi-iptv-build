@@ -10,7 +10,8 @@ data class IptvProfile(
     val activationCode: String,
     val m3uUrl: String,
     val expiresAt: String = "",
-    val maxDevices: Int = 1
+    val maxDevices: Int = 1,
+    val serverRevision: Long = 0L
 )
 
 object SourcePrefs {
@@ -74,7 +75,8 @@ object SourcePrefs {
                     activationCode = o.optString("activationCode", ""),
                     m3uUrl = o.optString("m3uUrl", ""),
                     expiresAt = o.optString("expiresAt", ""),
-                    maxDevices = o.optInt("maxDevices", 1)
+                    maxDevices = o.optInt("maxDevices", 1),
+                    serverRevision = o.optLong("serverRevision", 0L)
                 )
             )
         }
@@ -95,13 +97,26 @@ object SourcePrefs {
             .edit().putString(KEY_ACTIVE_ID, id).apply()
     }
 
+    fun isPendingServerRefresh(context: Context, profileId: String): Boolean {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getBoolean("pending_server_refresh_$profileId", false)
+    }
+
+    fun setPendingServerRefresh(context: Context, profileId: String, pending: Boolean) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean("pending_server_refresh_$profileId", pending)
+            .apply()
+    }
+
     fun saveActivatedProfile(
         context: Context,
         code: String,
         name: String,
         playlistUrl: String,
         expiresAt: String,
-        maxDevices: Int
+        maxDevices: Int,
+        serverRevision: Long = 0L
     ) {
         val id = code.trim()
         val profile = IptvProfile(
@@ -110,7 +125,8 @@ object SourcePrefs {
             activationCode = code,
             m3uUrl = playlistUrl.trim().replace("&amp;", "&"),
             expiresAt = expiresAt,
-            maxDevices = maxDevices
+            maxDevices = maxDevices,
+            serverRevision = serverRevision
         )
         val profiles = getProfiles(context)
         val index = profiles.indexOfFirst { it.id == id }
@@ -165,6 +181,7 @@ object SourcePrefs {
                 put("m3uUrl", p.m3uUrl)
                 put("expiresAt", p.expiresAt)
                 put("maxDevices", p.maxDevices)
+                put("serverRevision", p.serverRevision)
             })
         }
         // 🔐 حفظ مشفر + حذف النسخة القديمة غير المشفرة

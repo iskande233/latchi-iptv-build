@@ -44,6 +44,14 @@ class MainActivity : AppCompatActivity() {
                 replace(R.id.contentFrame, home)
             }
             MatchNotificationHelper.startChecking(this)
+
+            UpdateChecker.checkInBackground(this, object : UpdateChecker.OnUpdateListener {
+                override fun onUpdateAvailable(info: UpdateChecker.UpdateInfo) {
+                    if (info.forceUpdate) {
+                        UpdateChecker.showUpdateDialog(this@MainActivity, info)
+                    }
+                }
+            })
         } catch (e: Throwable) {
             Toast.makeText(this, "Crash: ${e.message}", Toast.LENGTH_LONG).show()
         }

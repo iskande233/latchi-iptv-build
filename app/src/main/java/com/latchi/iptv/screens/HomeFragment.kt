@@ -202,9 +202,14 @@ class HomeFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        // 🔄 فحص فوري عند الرجوع للشاشة الرئيسية (مع cooldown 30 ثانية)
         try {
-            view?.post { startSilentServerSync(force = false) }
+            val active = com.latchi.iptv.utils.SourcePrefs.getActiveProfile(requireContext())
+            if (active != null && com.latchi.iptv.utils.SourcePrefs.isPendingServerRefresh(requireContext(), active.id)) {
+                com.latchi.iptv.utils.SourcePrefs.setPendingServerRefresh(requireContext(), active.id, false)
+                startSilentServerSync(force = true)
+            } else {
+                view?.post { startSilentServerSync(force = false) }
+            }
         } catch (_: Exception) {}
     }
 
@@ -326,8 +331,8 @@ class HomeFragment : Fragment() {
                     val locale = java.util.Locale("ar")
                     val timeFmt = java.text.SimpleDateFormat("hh:mm a", locale)
                     val dateFmt = java.text.SimpleDateFormat("EEEE d MMMM yyyy", locale)
-                    clockTimeText?.text = timeFmt.format(now)
-                    clockDateText?.text = dateFmt.format(now)
+                    clockTimeText?.text = com.latchi.iptv.utils.DigitNormalizer.normalizeDigits(timeFmt.format(now))
+                    clockDateText?.text = com.latchi.iptv.utils.DigitNormalizer.normalizeDigits(dateFmt.format(now))
                 } catch (_: Exception) { }
                 clockHandler?.postDelayed(this, 1000L)
             }

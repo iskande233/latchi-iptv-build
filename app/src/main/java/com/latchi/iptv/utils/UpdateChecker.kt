@@ -90,7 +90,7 @@ object UpdateChecker {
             info.versionCode,
             info.apkUrl,
             info.notes,
-            true
+            info.forceUpdate
         )
     }
 

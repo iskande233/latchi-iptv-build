@@ -39,7 +39,9 @@ class SplashActivity : AppCompatActivity() {
         // 🚀 Early Update Check: فحص التحديث فوراً عند الإقلاع
         UpdateChecker.checkInBackground(this, object : UpdateChecker.OnUpdateListener {
             override fun onUpdateAvailable(info: UpdateChecker.UpdateInfo) {
-                isUpdating = true
+                if (info.forceUpdate) {
+                    isUpdating = true
+                }
                 UpdateChecker.showUpdateDialog(this@SplashActivity, info)
             }
         })

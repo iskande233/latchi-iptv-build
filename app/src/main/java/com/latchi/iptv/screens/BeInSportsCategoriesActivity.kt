@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.latchi.iptv.R
 import com.latchi.iptv.model.Channel
+import com.latchi.iptv.utils.BeinChannelResolver
 import com.latchi.iptv.utils.ChannelCache
 import com.latchi.iptv.utils.LocaleHelper
 import com.latchi.iptv.utils.SourcePrefs
@@ -185,25 +186,17 @@ class BeInSportsCategoriesActivity : AppCompatActivity() {
             setPadding(dp(20), dp(40), dp(20), dp(20))
         })
 
-        Thread {
-            try {
-                val active = SourcePrefs.getActiveProfile(this) ?: return@Thread
-                val cached = ChannelCache.load(applicationContext, active.id)
-                val groups = groupByCategory(cached)
-                runOnUiThread { renderCategories(groups) }
-            } catch (e: Throwable) {
-                runOnUiThread {
-                    listContainer.removeAllViews()
-                    listContainer.addView(TextView(this@BeInSportsCategoriesActivity).apply {
-                        text = "❌ خطأ في تحميل القنوات:\n${e.localizedMessage}"
-                        setTextColor(Color.parseColor("#FF5577"))
-                        textSize = 12f
-                        gravity = Gravity.CENTER
-                        setPadding(dp(20), dp(20), dp(20), dp(20))
-                    })
-                }
-            }
-        }.start()
+        val active = SourcePrefs.getActiveProfile(this)
+        if (active == null) {
+            listContainer.removeAllViews()
+            emptyState.text = "❌ لم يتم العثور على حساب مفعل"
+            return
+        }
+
+        BeinChannelResolver.resolve(this, active) { beinChannels ->
+            val groups = groupByCategory(beinChannels)
+            renderCategories(groups)
+        }
     }
 
     private fun renderCategories(groups: Map<String, List<Channel>>) {

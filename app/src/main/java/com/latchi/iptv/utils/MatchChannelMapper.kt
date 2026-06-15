@@ -43,7 +43,7 @@ object MatchChannelMapper {
 
     fun findChannelInSportsGroups(channelName: String?, allChannels: List<Channel>): Channel? {
         if (channelName.isNullOrBlank()) return null
-        val normalizedQuery = channelName.trim().lowercase().replace(Regex("""\s+"""), " ")
+        val normalizedQuery = DigitNormalizer.normalizeDigits(channelName.trim()).lowercase().replace(Regex("""\s+"""), " ")
 
         val liveChannels = allChannels.filter { it.contentType == "live" }
 
@@ -51,13 +51,13 @@ object MatchChannelMapper {
         val mappedList = knownMappings[normalizedQuery]
         if (mappedList != null) {
             for (candidate in mappedList) {
-                liveChannels.firstOrNull { it.name.lowercase().contains(candidate) }?.let { return it }
+                liveChannels.firstOrNull { DigitNormalizer.normalizeDigits(it.name).lowercase().contains(candidate) }?.let { return it }
             }
         }
 
         // 2. Direct exact or substring check
-        liveChannels.firstOrNull { it.name.lowercase().trim() == normalizedQuery }?.let { return it }
-        liveChannels.firstOrNull { it.name.lowercase().contains(normalizedQuery) || normalizedQuery.contains(it.name.lowercase()) }?.let { return it }
+        liveChannels.firstOrNull { DigitNormalizer.normalizeDigits(it.name).lowercase().trim() == normalizedQuery }?.let { return it }
+        liveChannels.firstOrNull { DigitNormalizer.normalizeDigits(it.name).lowercase().contains(normalizedQuery) || normalizedQuery.contains(DigitNormalizer.normalizeDigits(it.name).lowercase()) }?.let { return it }
 
         // 3. Ultra-Intelligent Keyword & Number Match
         val queryWords = normalizedQuery.split(" ", "-", "_", ".").filter { it.isNotBlank() }
@@ -66,7 +66,7 @@ object MatchChannelMapper {
 
         if (textsInQuery.isNotEmpty()) {
             for (ch in liveChannels) {
-                val chNameLower = ch.name.lowercase()
+                val chNameLower = DigitNormalizer.normalizeDigits(ch.name).lowercase()
                 
                 // Numbers must match exactly as distinct digits (e.g. "1" matches "HD1" or " 1 " but not "10")
                 val numbersOk = numbersInQuery.isEmpty() || numbersInQuery.all { num ->
@@ -85,7 +85,7 @@ object MatchChannelMapper {
         // 4. Fallback: match any channel containing the first major text keyword
         val firstKw = textsInQuery.firstOrNull { it.length >= 3 }
         if (firstKw != null) {
-            liveChannels.firstOrNull { it.name.lowercase().contains(firstKw) }?.let { return it }
+            liveChannels.firstOrNull { DigitNormalizer.normalizeDigits(it.name).lowercase().contains(firstKw) }?.let { return it }
         }
 
         return null

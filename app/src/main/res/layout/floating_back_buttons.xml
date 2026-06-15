@@ -10,11 +10,11 @@
 
     <LinearLayout
         android:id="@+id/fabBackBottomRight"
-        android:layout_width="92dp"
-        android:layout_height="48dp"
-        android:layout_gravity="bottom|end"
-        android:layout_marginBottom="24dp"
-        android:layout_marginEnd="18dp"
+        android:layout_width="86dp"
+        android:layout_height="42dp"
+        android:layout_gravity="bottom|start"
+        android:layout_marginBottom="20dp"
+        android:layout_marginStart="20dp"
         android:background="@drawable/bg_back_professional"
         android:clickable="true"
         android:focusable="true"

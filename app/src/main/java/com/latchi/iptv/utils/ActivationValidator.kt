@@ -14,13 +14,14 @@ data class ActivationValidationResult(
     val name: String = "",
     val playlistUrl: String = "",
     val expiresAt: String = "",
-    val maxDevices: Int = 1
+    val maxDevices: Int = 1,
+    val serverRevision: Long = 0L
 )
 
 object ActivationValidator {
     fun validate(context: Context, profile: IptvProfile): ActivationValidationResult {
         if (profile.activationCode == "MANUAL") {
-            return ActivationValidationResult(true, "OK", profile.name, profile.m3uUrl, profile.expiresAt, profile.maxDevices)
+            return ActivationValidationResult(true, "OK", profile.name, profile.m3uUrl, profile.expiresAt, profile.maxDevices, profile.serverRevision)
         }
         return validateCode(context, profile.activationCode, profile)
     }
@@ -75,7 +76,8 @@ object ActivationValidator {
             name = ActivationConfig.extractName(json, existingProfile?.name ?: "User ${activationCode.trim()}"),
             playlistUrl = playlist,
             expiresAt = ActivationConfig.extractExpiry(json, existingProfile?.expiresAt ?: ""),
-            maxDevices = ActivationConfig.extractMaxDevices(json, existingProfile?.maxDevices ?: 1)
+            maxDevices = ActivationConfig.extractMaxDevices(json, existingProfile?.maxDevices ?: 1),
+            serverRevision = ActivationConfig.extractRevision(json, existingProfile?.serverRevision ?: 0L)
         )
     }
 }
