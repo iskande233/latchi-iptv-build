@@ -301,6 +301,8 @@ class UpdatePromptActivity : AppCompatActivity() {
                 val reason = c.getInt(c.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON))
                 progressText?.text = "فشل التحميل. السبب: $reason"
                 primaryButton?.apply { text = "إعادة المحاولة"; isEnabled = true; alpha = 1f; setOnClickListener { startDownload() } }
+            } else {
+                // Still pending/running/paused; progress polling will continue.
             }
         }
     }
