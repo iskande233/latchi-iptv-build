@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
+import com.google.android.exoplayer2.ui.AspectRatioFrameLayout
 import com.google.android.exoplayer2.ui.PlayerView
 import com.latchi.iptv.R
 import com.latchi.iptv.adapter.ChannelsAdapter
@@ -35,6 +36,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
     private lateinit var playerView: PlayerView
     private lateinit var title: TextView
     private lateinit var adapter: ChannelsAdapter
+    private var currentPlayingChannelUrl: String? = null
 
     companion object {
         fun start(context: Context, channel: Channel, category: String) {
@@ -58,62 +60,86 @@ class TvLivePreviewActivity : AppCompatActivity() {
     private fun buildUi() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            setPadding(dp(18), dp(18), dp(18), dp(18))
+            setPadding(dp(24), dp(24), dp(24), dp(24))
             setBackgroundResource(R.drawable.bg_app)
         }
         setContentView(root)
 
         val list = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@TvLivePreviewActivity)
+            setPadding(0, dp(10), dp(20), 0)
         }
+        
         adapter = ChannelsAdapter(
             channels,
             isGrid = false,
             isFavorite = { ch -> SourcePrefs.getActiveProfile(this)?.let { FavoritesPrefs.isFavorite(this, it.id, ch.streamUrl) } ?: false },
             onFavoriteClicked = { ch -> SourcePrefs.getActiveProfile(this)?.let { FavoritesPrefs.toggle(this, it.id, ch.streamUrl) } },
-            onChannelClicked = { ch -> selected = ch; playPreview(ch) }
+            onChannelClicked = { ch -> 
+                handleChannelSelection(ch) 
+            }
         )
         list.adapter = adapter
         TvFocusHelper.setupRecycler(list)
-        root.addView(list, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 0.42f))
+        root.addView(list, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 0.35f))
 
         val right = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            setPadding(dp(18), 0, 0, 0)
+            setPadding(dp(20), 0, 0, 0)
         }
-        root.addView(right, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 0.58f))
+        root.addView(right, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 0.65f))
 
         title = TextView(this).apply {
             text = selected.name
             setTextColor(0xFFFFD700.toInt())
-            textSize = 22f
+            textSize = 26f
             gravity = Gravity.CENTER
             setTypeface(null, android.graphics.Typeface.BOLD)
+            setPadding(0, 0, 0, dp(20))
         }
-        right.addView(title, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(52)))
+        right.addView(title, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(60)))
 
         playerView = PlayerView(this).apply {
-            useController = true
+            useController = false
             isFocusable = true
             isClickable = true
-            setOnClickListener { PlayerActivity.start(this@TvLivePreviewActivity, selected) }
+            resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM 
+            setOnClickListener { handlePlayerOkClick() }
             setOnKeyListener { _, keyCode, event ->
                 if (event.action == KeyEvent.ACTION_DOWN && (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER)) {
-                    PlayerActivity.start(this@TvLivePreviewActivity, selected)
+                    handlePlayerOkClick()
                     true
                 } else false
             }
         }
-        right.addView(playerView, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
+        val playerContainer = LinearLayout(this).apply {
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, dp(20))
+        }
+        playerContainer.addView(playerView, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
+        right.addView(playerContainer, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
 
         val hint = TextView(this).apply {
-            text = "OK على المعاينة = شاشة كاملة  •  Back = رجوع للقنوات"
-            setTextColor(0xFFEADCF8.toInt())
+            text = "OK على القناة = معاينة  •  OK على الفيديو = شاشة كاملة"
+            setTextColor(0xFFBDBDBD.toInt())
             textSize = 14f
             gravity = Gravity.CENTER
+            setPadding(0, dp(10), 0, 0)
         }
-        right.addView(hint, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(42)))
+        right.addView(hint, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(40)))
+    }
+
+    private fun handleChannelSelection(ch: Channel) {
+        if (currentPlayingChannelUrl == ch.streamUrl) {
+            PlayerActivity.start(this, ch)
+        } else {
+            playPreview(ch)
+        }
+    }
+
+    private fun handlePlayerOkClick() {
+        PlayerActivity.start(this, selected)
     }
 
     private fun loadChannelsForPreview(category: String): List<Channel> {
@@ -125,6 +151,8 @@ class TvLivePreviewActivity : AppCompatActivity() {
     }
 
     private fun playPreview(ch: Channel) {
+        selected = ch
+        currentPlayingChannelUrl = ch.streamUrl
         title.text = ch.name
         player?.release()
         player = ExoPlayer.Builder(this).build().also { exo ->
