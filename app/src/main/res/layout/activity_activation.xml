@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_app"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="22dp">
+
+        <TextView
+            android:id="@+id/backButton"
+            android:layout_width="match_parent"
+            android:layout_height="46dp"
+            android:gravity="center_vertical"
+            android:text="‹ رجوع / Back"
+            android:textColor="@android:color/white"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <ImageView
+            android:layout_width="96dp"
+            android:layout_height="96dp"
+            android:layout_gravity="center"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_tv" />
+
+        <TextView
+            android:id="@+id/titleText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="8dp"
+            android:text="إضافة مصدر"
+            android:textColor="@android:color/white"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:background="@drawable/bg_panel"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- Profile Name (always visible) -->
+            <EditText
+                android:id="@+id/profileNameInput"
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:background="@drawable/bg_input_dark"
+                android:gravity="center"
+                android:hint="اسم المستخدم / User name"
+                android:inputType="text"
+                android:textColor="@android:color/white"
+                android:textColorHint="#B8AFC8" />
+
+            <!-- M3U Section -->
+            <LinearLayout
+                android:id="@+id/layoutM3u"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <EditText
+                    android:id="@+id/m3uInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="64dp"
+                    android:background="@drawable/bg_input_dark"
+                    android:gravity="center"
+                    android:hint="رابط M3U URL"
+                    android:inputType="textUri"
+                    android:padding="14dp"
+                    android:textColor="@android:color/white"
+                    android:textColorHint="#B8AFC8" />
+            </LinearLayout>
+
+            <!-- Xtream Section -->
+            <LinearLayout
+                android:id="@+id/layoutXtream"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <EditText
+                    android:id="@+id/serverInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="54dp"
+                    android:background="@drawable/bg_input_dark"
+                    android:gravity="center"
+                    android:hint="Server URL"
+                    android:inputType="textUri"
+                    android:textColor="@android:color/white"
+                    android:textColorHint="#B8AFC8" />
+
+                <EditText
+                    android:id="@+id/usernameInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="54dp"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_input_dark"
+                    android:gravity="center"
+                    android:hint="Username"
+                    android:inputType="text"
+                    android:textColor="@android:color/white"
+                    android:textColorHint="#B8AFC8" />
+
+                <EditText
+                    android:id="@+id/passwordInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="54dp"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_input_dark"
+                    android:gravity="center"
+                    android:hint="Password"
+                    android:inputType="textPassword"
+                    android:textColor="@android:color/white"
+                    android:textColorHint="#B8AFC8" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/txtError"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:textColor="#FF5252"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <ProgressBar
+                android:id="@+id/progressBarActivation"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="12dp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/actionButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="14dp"
+                android:background="@drawable/bg_button_primary"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="@drawable/focus_selector"
+                android:gravity="center"
+                android:text="حفظ وتسجيل الدخول"
+                android:textColor="@android:color/white"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

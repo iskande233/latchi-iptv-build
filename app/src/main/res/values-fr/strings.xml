@@ -1,0 +1,184 @@
+<resources>
+    <string name="about">À propos</string>
+    <string name="home">Accueil</string>
+    <string name="share_app">Partager l\'app</string>
+
+    <string name="region">Région</string>
+    <string name="city">Ville</string>
+    <string name="country">Pays</string>
+    <string name="speed_test">Test de vitesse</string>
+    <string name="latency">Latence</string>
+    <string name="start">Démarrer</string>
+    <string name="server">Serveur</string>
+    <string name="time">Temps</string>
+    <string name="tap_to_start">Appuyez pour démarrer</string>
+
+    <string name="live_tv">TV EN DIRECT</string>
+    <string name="movies">FILMS</string>
+    <string name="series">SÉRIES</string>
+    <string name="users">Actualiser</string>
+    <string name="users_btn">🔄 Actualiser</string>
+    <string name="settings">Paramètres</string>
+    <string name="settings_btn">⚙️ Paramètres</string>
+    <string name="logged_in">Connecté</string>
+    <string name="expiry">Expiration</string>
+    <string name="last_update">Dernière MàJ</string>
+    <string name="update">Mettre à jour</string>
+    <string name="continue_watching">Reprendre</string>
+    <string name="developed_by">Développé par ISKANDER KHANTOUCHE</string>
+    <string name="whatsapp_contact">Contact WhatsApp</string>
+
+    <string name="channels_suffix">Chaînes</string>
+    <string name="movies_suffix">Films</string>
+    <string name="series_suffix">Séries</string>
+
+    <string name="back">Retour</string>
+    <string name="search_hint">Rechercher...</string>
+    <string name="categories">Catégories</string>
+    <string name="categories_button">☰ Catégories</string>
+    <string name="search_categories">Rechercher des catégories</string>
+    <string name="all">Tout</string>
+    <string name="favorites">Favoris</string>
+    <string name="added_to_favorites">❤️ Ajouté aux favoris</string>
+    <string name="removed_from_favorites">💔 Retiré des favoris</string>
+    <string name="close">Fermer</string>
+    <string name="loading_episodes">Chargement des épisodes...</string>
+    <string name="no_episodes">Aucun épisode trouvé</string>
+    <string name="season_prefix">Saison</string>
+    <string name="episode_prefix">Épisode</string>
+    <string name="choose_season">Choisir la saison</string>
+    <string name="seasons">Saisons</string>
+    <string name="episodes">Épisodes</string>
+    <string name="series_not_available">Séries non disponibles pour cette source</string>
+    <string name="watch_now">▶ Regarder</string>
+    <string name="back_to_home">🏠 Retour à l\'accueil</string>
+    <string name="add_favorite">Ajouter aux favoris</string>
+    <string name="in_favorites">Dans les favoris</string>
+    <string name="movie_description">Catégorie : %1$s\n\nAppuyez sur \'Regarder\' pour commencer.</string>
+    <string name="series_description">Catégorie : %1$s</string>
+
+    <string name="checking_subscription">Vérification de l\'abonnement...</string>
+    <string name="identifying_subscription">Identification de l\'abonnement...</string>
+    <string name="subscription_verified">Abonnement vérifié ✓</string>
+    <string name="loading_dots">Chargement...</string>
+    <string name="offline_mode">Mode hors ligne : liste enregistrée</string>
+    <string name="no_internet">Pas de connexion Internet</string>
+    <string name="check_connection">Veuillez vérifier votre connexion et réessayer.</string>
+    <string name="retry">Réessayer</string>
+    <string name="no_last_watched">Aucune chaîne récente</string>
+    <string name="playlist_updated">Liste mise à jour</string>
+    <string name="expired">Abonnement expiré</string>
+
+    <string name="language">Langue</string>
+    <string name="player_mode">Lecteur</string>
+    <string name="language_saved">Langue enregistrée</string>
+    <string name="player_saved">Mode du lecteur enregistré</string>
+    <string name="whatsapp_support">Support WhatsApp</string>
+    <string name="manual_source">M3U / Xtream manuel</string>
+    <string name="change_user">Changer d\'utilisateur</string>
+    <string name="clear_cache">Vider le cache</string>
+    <string name="cache_cleared">Cache vidé</string>
+
+    <string name="channel_unavailable">Chaîne indisponible\nEssayez une autre chaîne ou changez le mode</string>
+    <string name="next_label">Suivant</string>
+
+    <string name="update_available">Mise à jour disponible</string>
+    <string name="update_now">Mettre à jour</string>
+    <string name="later">Plus tard</string>
+
+    <string name="loading_adhkar_title">Ne t\'inquiète pas...</string>
+    <string name="loading_adhkar_subtitle">Occupe ton temps avec le Dhikr</string>
+
+    <string name="invalid_code">Entrez un code valide (4-6 chiffres)</string>
+    <string name="api_not_configured">API non configuré</string>
+    <string name="empty_playlist">URL de la liste vide</string>
+    <string name="activation_failed">Échec de l\'activation, vérifiez internet</string>
+    <string name="code_valid_enter_name">✅ Code valide ! Entrez le nom</string>
+    <string name="enter_name">Entrez le nom d\'utilisateur</string>
+    <string name="save">Enregistrer</string>
+    <string name="cancel">Annuler</string>
+    <string name="whatsapp_error">Impossible d\'ouvrir WhatsApp</string>
+
+    <string name="prayer_fajr">Fajr</string>
+    <string name="prayer_dhuhr">Dhuhr</string>
+    <string name="prayer_asr">Asr</string>
+    <string name="prayer_maghrib">Maghrib</string>
+    <string name="prayer_isha">Isha</string>
+    <string name="prayer_next">Prochaine Prière</string>
+    <string name="prayer_load_failed">Impossible de charger les horaires. Vérifiez internet.</string>
+    <string name="location_permission_denied">Permission de localisation refusée</string>
+    <string name="location_not_found">Localisation non trouvée</string>
+    <string name="location_error">Erreur de localisation</string>
+
+    <string name="matches_title">Calendrier des Matchs</string>
+    <string name="no_matches">Aucun match aujourd\'hui</string>
+    <string name="matches_load_failed">Impossible de charger les matchs.\nVérifiez internet.</string>
+    <string name="channel_not_found">Chaîne de diffusion non disponible dans votre liste</string>
+
+    <string name="pricing_title">Prix des Abonnements</string>
+    <string name="pricing_month">Abonnement 1 mois</string>
+    <string name="pricing_3months">Abonnement 3 mois</string>
+    <string name="pricing_year">Abonnement 1 an</string>
+    <string name="pricing_trial">Essai gratuit 24h</string>
+    <string name="pricing_free">Gratuit — Essayez avant d\'acheter !</string>
+    <string name="buy_whatsapp">🛒 Acheter via WhatsApp</string>
+    <string name="payment_methods">💳 Paiement : D17 BaridiMob / CCP / Lydia</string>
+
+    <!-- Sleep timer -->
+    <string name="sleep_timer_title">Minuterie de sommeil</string>
+    <string name="sleep_timer_30">30 minutes</string>
+    <string name="sleep_timer_60">60 minutes</string>
+    <string name="sleep_timer_90">90 minutes</string>
+    <string name="sleep_timer_120">120 minutes</string>
+    <string name="sleep_timer_off">Désactivé</string>
+    <string name="sleep_timer_set">Minuterie réglée : %1$d minutes</string>
+    <string name="sleep_timer_cancelled">Minuterie annulée</string>
+    <string name="sleep_timer_expired">Minuterie expirée. Fermeture...</string>
+    <string name="pip_not_supported">PIP non supporté sur cet appareil</string>
+
+    <!-- New UI strings -->
+    <string name="activate_subscription">Activer l\'abonnement</string>
+    <string name="enter_code_hint">Entrez le code d\'activation</string>
+    <string name="activate">Activer ✓</string>
+    <string name="or_use_manual">Ou utiliser la méthode manuelle</string>
+    <string name="enter_app">▶  Entrer dans mon compte</string>
+    <string name="confirm_delete">Confirmer la suppression</string>
+    <string name="delete_profile_confirm">Supprimer le compte %1$s ?</string>
+    <string name="delete">Supprimer</string>
+    <string name="app_info_title">À propos</string>
+    <string name="app_info_desc">Latchi IPTV est votre passerelle intelligente vers le divertissement numérique, vous offrant des milliers de chaînes mondiales en direct, les derniers films et séries en haute qualité, avec un calendrier de matchs intelligent qui se met à jour automatiquement pour une expérience de visionnage unique et sans coupure.</string>
+    <string name="live_matches">🔴 Matchs en direct</string>
+    <string name="finished_matches">✅ Matchs terminés</string>
+    <string name="logout">Déconnexion</string>
+    <string name="drawer_prayer">🕌 Horaires de prière</string>
+    <string name="drawer_pricing">💰 Prix des abonnements</string>
+    <string name="drawer_about">ℹ️ À propos</string>
+    <string name="drawer_settings">⚙️ Paramètres</string>
+    <string name="drawer_matches">⚽ Calendrier des matchs</string>
+    <string name="back_to_home_main">Retour à la page d\'accueil</string>
+    <string name="exit_app">Quitter l\'application</string>
+    <string name="theme_settings">Paramètres visuels des thèmes</string>
+    <string name="general_settings">Paramètres généraux</string>
+    <string name="my_dhikr">Mon Dhikr</string>
+    <string name="todays_matches">Matchs d\'aujourd\'hui</string>
+    <string name="choose_image">Choisir une image</string>
+    <string name="choose_gallery">Choisir depuis la galerie</string>
+    <string name="available_themes">Thèmes disponibles</string>
+    <string name="profile_picture">Photo de profil</string>
+    <string name="menu">☰</string>
+    <string name="dhikr_morning">Adhkar du matin</string>
+    <string name="dhikr_evening">Adhkar du soir</string>
+    <string name="dhikr_sleep">Adhkar du sommeil</string>
+    <string name="dhikr_prayer">Adhkar après la prière</string>
+    <string name="open_channel">Ouvrir la chaîne de diffusion</string>
+    <string name="match_live">🔴 En direct</string>
+    <string name="match_finished">✅ Terminé</string>
+    <string name="match_upcoming">⏳ À venir</string>
+    <string name="weather">Météo</string>
+    <string name="loading_progress">%1$d%%</string>
+
+    <string name="voice_not_understood">Je n’ai pas compris, réessayez</string>
+    <string name="voice_try_again">🤔 Réessayez clairement</string>
+    <string name="voice_searching">Recherche de %1$s</string>
+    <string name="search">Recherche</string>
+</resources>

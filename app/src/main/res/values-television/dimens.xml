@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="padding_default">10dp</dimen>
+    <dimen name="padding_small">6dp</dimen>
+    <dimen name="margin_top_xs">3dp</dimen>
+    <dimen name="margin_top_sm">4dp</dimen>
+    <dimen name="margin_top_md">5dp</dimen>
+    <dimen name="margin_top_lg">6dp</dimen>
+    <dimen name="margin_top_xl">7dp</dimen>
+    <dimen name="margin_top_xxl">8dp</dimen>
+
+    <dimen name="header_height">44dp</dimen>
+    <dimen name="header_logo">32dp</dimen>
+    <dimen name="header_text">14sp</dimen>
+    <dimen name="header_icon_text">13sp</dimen>
+    <dimen name="header_label_text">7sp</dimen>
+    <dimen name="header_btn_width">50dp</dimen>
+    <dimen name="header_btn_height">36dp</dimen>
+
+    <dimen name="info_bar_height">28dp</dimen>
+    <dimen name="info_bar_text">10sp</dimen>
+    <dimen name="expiry_height">26dp</dimen>
+    <dimen name="expiry_text">9sp</dimen>
+
+    <!-- Cards much smaller for TV -->
+    <dimen name="card_live_height">52dp</dimen>
+    <dimen name="card_media_height">46dp</dimen>
+    <dimen name="card_icon_width">40dp</dimen>
+    <dimen name="card_icon_text">22sp</dimen>
+    <dimen name="card_media_icon_text">20sp</dimen>
+    <dimen name="card_title">14sp</dimen>
+    <dimen name="card_media_title">13sp</dimen>
+    <dimen name="card_count">10sp</dimen>
+    <dimen name="card_padding">8dp</dimen>
+
+    <dimen name="action_row_height">32dp</dimen>
+    <dimen name="action_btn_width">90dp</dimen>
+    <dimen name="action_text">10sp</dimen>
+
+    <dimen name="last_watched_height">32dp</dimen>
+    <dimen name="last_watched_text">10sp</dimen>
+    <dimen name="whatsapp_height">34dp</dimen>
+    <dimen name="whatsapp_icon">13sp</dimen>
+    <dimen name="whatsapp_text">11sp</dimen>
+
+    <dimen name="footer_text">8sp</dimen>
+    <dimen name="loading_size">20dp</dimen>
+    <dimen name="loading_text">9sp</dimen>
+
+    <dimen name="toolbar_height">36dp</dimen>
+    <dimen name="back_width">44dp</dimen>
+    <dimen name="back_height">30dp</dimen>
+    <dimen name="back_text">10sp</dimen>
+    <dimen name="list_title">13sp</dimen>
+    <dimen name="refresh_size">30dp</dimen>
+    <dimen name="refresh_text">14sp</dimen>
+    <dimen name="search_height">30dp</dimen>
+    <dimen name="search_padding">10dp</dimen>
+    <dimen name="cat_btn_height">28dp</dimen>
+    <dimen name="cat_btn_text">9sp</dimen>
+    <dimen name="progress_size">26dp</dimen>
+    <dimen name="cat_panel_width">220dp</dimen>
+    <dimen name="cat_panel_padding">8dp</dimen>
+    <dimen name="cat_title">13sp</dimen>
+    <dimen name="close_btn_size">30dp</dimen>
+    <dimen name="close_text">18sp</dimen>
+    <dimen name="cat_search_height">28dp</dimen>
+    <dimen name="cat_search_padding">8dp</dimen>
+
+    <dimen name="item_height">44dp</dimen>
+    <dimen name="item_margin_bottom">4dp</dimen>
+    <dimen name="item_logo">24dp</dimen>
+    <dimen name="item_logo_padding">3dp</dimen>
+    <dimen name="item_name">10sp</dimen>
+    <dimen name="item_category">7sp</dimen>
+    <dimen name="item_cat_margin_top">2dp</dimen>
+    <dimen name="item_fav_size">28dp</dimen>
+    <dimen name="item_fav_padding">5dp</dimen>
+    <dimen name="item_badge_width">38dp</dimen>
+    <dimen name="item_badge_height">16dp</dimen>
+    <dimen name="item_badge_text">6sp</dimen>
+</resources>

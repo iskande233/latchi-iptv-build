@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- زر ذهبي ملكي لواجهة التلفاز: يتوهج عند التحديد بالريموت -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- محدد بالريموت / مضغوط: ذهبي متوهج -->
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <corners android:radius="16dp" />
+            <gradient
+                android:angle="270"
+                android:startColor="#FFE9A0"
+                android:centerColor="#F5C542"
+                android:endColor="#B8860B" />
+            <stroke android:width="3dp" android:color="#FFF6D5" />
+        </shape>
+    </item>
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <corners android:radius="16dp" />
+            <gradient
+                android:angle="270"
+                android:startColor="#FFE9A0"
+                android:centerColor="#F5C542"
+                android:endColor="#B8860B" />
+            <stroke android:width="3dp" android:color="#FFF6D5" />
+        </shape>
+    </item>
+    <!-- عادي: بنفسجي غامق شفاف بإطار ذهبي -->
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="16dp" />
+            <solid android:color="#8A1A0F33" />
+            <stroke android:width="2dp" android:color="#C9A227" />
+        </shape>
+    </item>
+</selector>
