@@ -461,7 +461,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun displayValue(option: TvOption): String {
-        return when (option.action) {
+        val valStr = when (option.action) {
             "language" -> LanguagePrefs.getLanguageName(this)
             "player_mode" -> PlayerPrefs.getModeLabel(this)
             "epg_url" -> {
@@ -474,6 +474,8 @@ class SettingsActivity : AppCompatActivity() {
             }
             else -> tvPrefs.getString(option.key, option.defaultValue) ?: option.defaultValue
         }
+        // إضافة علامة صح للتأكيد أن هذه هي القيمة النشطة حالياً
+        return if (valStr.isBlank()) valStr else "✓ $valStr"
     }
 
     private fun showTextInputDialog(title: String, currentValue: String, numeric: Boolean, onSave: (String) -> Unit) {
@@ -507,7 +509,7 @@ class SettingsActivity : AppCompatActivity() {
         }
         val action = {
             ChannelCache.clear(this, active.id)
-            Toast.makeText(this, getString(R.string.cache_cleared), Toast.LENGTH_SHORT).show()
+            com.latchi.iptv.utils.CustomOverlayHelper.show(this, "ذاكرة", getString(R.string.cache_cleared), true)
         }
         if (showConfirm) {
             AlertDialog.Builder(this)
@@ -575,7 +577,7 @@ class SettingsActivity : AppCompatActivity() {
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     private fun toastSaved() {
-        Toast.makeText(this, getString(R.string.player_saved), Toast.LENGTH_SHORT).show()
+        com.latchi.iptv.utils.CustomOverlayHelper.show(this, "حفظ", getString(R.string.player_saved), true)
     }
 
     private fun addServerSyncSection() {
@@ -630,7 +632,7 @@ class SettingsActivity : AppCompatActivity() {
                 }
             } else {
                 val msg = if (result.message.startsWith("server_offline")) "السيرفر الجديد غير متاح، لم يتم التبديل" else "السيرفر محدث بالفعل ✓"
-                Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+                com.latchi.iptv.utils.CustomOverlayHelper.show(this, "تحديث", msg, result.message.startsWith("server_offline").not())
             }
         }
     }
@@ -669,7 +671,7 @@ class SettingsActivity : AppCompatActivity() {
     private fun setLang(lang: String) {
         if (LanguagePrefs.getLanguage(this) == lang) return
         LanguagePrefs.setLanguage(this, lang)
-        Toast.makeText(this, getString(R.string.language_saved), Toast.LENGTH_SHORT).show()
+        com.latchi.iptv.utils.CustomOverlayHelper.show(this, "لغة", getString(R.string.language_saved), true)
         val intent = Intent(this, MainActivity::class.java)
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(intent)

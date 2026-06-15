@@ -84,7 +84,11 @@ class AboutFragment : Fragment() {
         return try {
             val packageInfo =
                 requireContext().packageManager.getPackageInfo(requireContext().packageName, 0)
-            "Version: ${packageInfo.versionName} (${packageInfo.versionCode})"
+            val version = "Version: ${packageInfo.versionName} (${packageInfo.versionCode})"
+            val buildId = "Build ID: ${packageInfo.versionCode}"
+            val date = "Update Date: 2026-06-15"
+            val commit = "Commit: stable-final"
+            "$version\n$buildId\n$commit\n$date"
         } catch (e: PackageManager.NameNotFoundException) {
             "Version info not available"
         }

@@ -16,11 +16,13 @@ import com.latchi.iptv.R
 import com.latchi.iptv.utils.LocaleHelper
 import com.latchi.iptv.utils.SourcePrefs
 import com.latchi.iptv.utils.TvUtils
+import com.latchi.iptv.utils.UpdateChecker
 
 class SplashActivity : AppCompatActivity() {
 
     private val splashHandler = Handler(Looper.getMainLooper())
     private var isNavigationPending = true
+    private var isUpdating = false
 
     override fun attachBaseContext(newBase: android.content.Context) {
         super.attachBaseContext(LocaleHelper.wrap(newBase))
@@ -33,6 +35,14 @@ class SplashActivity : AppCompatActivity() {
         setContentView(R.layout.activity_splash)
 
         setupSplashImage()
+
+        // 🚀 Early Update Check: فحص التحديث فوراً عند الإقلاع
+        UpdateChecker.checkInBackground(this, object : UpdateChecker.OnUpdateListener {
+            override fun onUpdateAvailable(info: UpdateChecker.UpdateInfo) {
+                isUpdating = true
+                UpdateChecker.showUpdateDialog(this@SplashActivity, info)
+            }
+        })
 
         // 🛡️ طلب الصلاحيات الأساسية (الإشعارات + الموقع) عند أول فتح للتطبيق
         if (needsPermissions()) {
@@ -117,6 +127,7 @@ class SplashActivity : AppCompatActivity() {
     }
 
     private fun navigateToNextScreen() {
+        if (isUpdating) return // منع الانتقال إذا كان هناك تحديث إجباري
         val active = SourcePrefs.getActiveProfile(this)
         val verified = active?.let {
             getSharedPreferences("verification_prefs", MODE_PRIVATE).getBoolean("is_verified_${it.id}", false)

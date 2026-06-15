@@ -117,7 +117,6 @@ class HomeFragment : Fragment() {
                     dateView.text = "📅 " + sdf.format(java.util.Date())
                 } catch (_: Exception) { }
             }
-            checkUpdateBadge(view)
             view
         } catch (e: Throwable) {
             val errorView = TextView(requireContext()).apply {
@@ -142,7 +141,7 @@ class HomeFragment : Fragment() {
                 arguments?.putBoolean(MainActivity.EXTRA_OPEN_AI_VOICE, false)
             }
         } catch (e: Throwable) {
-            Toast.makeText(requireContext(), "HomeFragment Crash: ${e.message}", Toast.LENGTH_LONG).show()
+            com.latchi.iptv.utils.CustomOverlayHelper.show(requireContext(), "خطأ", "HomeFragment Crash: ${e.message}", false)
             AlertDialog.Builder(requireContext())
                 .setTitle("HomeFragment Crash")
                 .setMessage(Log.getStackTraceString(e))
@@ -252,7 +251,7 @@ class HomeFragment : Fragment() {
             SourcePrefs.getActiveProfile(requireContext())?.let { active ->
                 LastWatchedPrefs.load(requireContext(), active.id)?.let { ch ->
                     PlayerActivity.start(requireContext(), ch)
-                } ?: Toast.makeText(requireContext(), getString(R.string.no_last_watched), Toast.LENGTH_SHORT).show()
+                } ?: com.latchi.iptv.utils.CustomOverlayHelper.show(requireActivity(), "تنبيه", getString(R.string.no_last_watched), false)
             }
         }
         whatsappButton.setOnClickListener {
@@ -277,7 +276,7 @@ class HomeFragment : Fragment() {
         if (requestCode == 2026 && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             voiceHandler?.startListening()
         } else {
-            Toast.makeText(requireContext(), "صلاحية الميكروفون مطلوبة للبحث الصوتي", Toast.LENGTH_SHORT).show()
+            com.latchi.iptv.utils.CustomOverlayHelper.show(requireActivity(), "صلاحية", "صلاحية الميكروفون مطلوبة للبحث الصوتي", false)
         }
     }
 
@@ -289,14 +288,14 @@ class HomeFragment : Fragment() {
             is VoiceCommand.Category -> openCategorySearch(command.category)
             is VoiceCommand.PlayerControl -> sendPlayerControl(command.target, command.extra)
             VoiceCommand.Favorites -> openSearchResults("Favorites", "live")
-            VoiceCommand.Home -> Toast.makeText(requireContext(), getString(R.string.home), Toast.LENGTH_SHORT).show()
-            VoiceCommand.Unknown -> Toast.makeText(requireContext(), getString(R.string.voice_not_understood), Toast.LENGTH_SHORT).show()
+            VoiceCommand.Home -> com.latchi.iptv.utils.CustomOverlayHelper.show(requireActivity(), "الرئيسية", getString(R.string.home), true)
+            VoiceCommand.Unknown -> com.latchi.iptv.utils.CustomOverlayHelper.show(requireActivity(), "عذراً", getString(R.string.voice_not_understood), false)
         }
     }
 
     private fun handleGeminiAction(action: GeminiVoiceController.VoiceAction) {
         if (!action.isConfident()) {
-            Toast.makeText(requireContext(), getString(R.string.voice_try_again), Toast.LENGTH_SHORT).show()
+            com.latchi.iptv.utils.CustomOverlayHelper.show(requireActivity(), "تنبيه", getString(R.string.voice_try_again), false)
             return
         }
         when (action.actionType.lowercase()) {
@@ -306,8 +305,8 @@ class HomeFragment : Fragment() {
             "category" -> openCategorySearch(action.target)
             "player_control" -> sendPlayerControl(action.target, action.extra)
             "favorites" -> openSearchResults("Favorites", "live")
-            "home" -> Toast.makeText(requireContext(), getString(R.string.home), Toast.LENGTH_SHORT).show()
-            else -> Toast.makeText(requireContext(), "ℹ️ ${action.target}", Toast.LENGTH_SHORT).show()
+            "home" -> com.latchi.iptv.utils.CustomOverlayHelper.show(requireActivity(), "الرئيسية", getString(R.string.home), true)
+            else -> com.latchi.iptv.utils.CustomOverlayHelper.show(requireActivity(), "معلومة", "ℹ️ ${action.target}", true)
         }
     }
 
@@ -418,7 +417,7 @@ class HomeFragment : Fragment() {
                         Handler(Looper.getMainLooper()).post {
                             try {
                                 updateCacheTime(profileId)
-                                Toast.makeText(appContext, getString(R.string.playlist_updated), Toast.LENGTH_SHORT).show()
+                                com.latchi.iptv.utils.CustomOverlayHelper.show(requireActivity(), "تحديث", getString(R.string.playlist_updated), true)
                             } catch (_: Exception) {}
                         }
                     }.start()
@@ -432,7 +431,7 @@ class HomeFragment : Fragment() {
                     progressBar.visibility = View.GONE
                     loadingOverlay.visibility = View.GONE
                     stopAdhkarRotator()
-                    Toast.makeText(requireContext(), error, Toast.LENGTH_LONG).show()
+                    com.latchi.iptv.utils.CustomOverlayHelper.show(requireActivity(), "خطأ", error, false)
                 }
             } catch (e: Throwable) { Log.e("HomeFragment", "Error Observer Crash: ${e.message}") }
         })
@@ -537,7 +536,7 @@ class HomeFragment : Fragment() {
                 progressBar.visibility = View.GONE
                 loadingOverlay.visibility = View.GONE
                 stopAdhkarRotator()
-                Toast.makeText(requireContext(), "انتهت مهلة التحميل. اضغط 'تحديث'", Toast.LENGTH_LONG).show()
+                com.latchi.iptv.utils.CustomOverlayHelper.show(requireActivity(), "تنبيه", "انتهت مهلة التحميل. اضغط 'تحديث'", false)
             }
         }, 120000)
     }
@@ -584,20 +583,6 @@ class HomeFragment : Fragment() {
     private fun updateCacheTime(profileId: String) {
         val time = ChannelCache.updatedAt(requireContext().applicationContext, profileId)
         updatedText.text = "${getString(R.string.last_update)}: " + if (time == 0L) "--" else "✓"
-    }
-
-    private fun checkUpdateBadge(view: View) {
-        val badge = view.findViewById<TextView?>(R.id.updateBadge) ?: return
-        UpdateChecker.checkInBackground(requireActivity(), object : UpdateChecker.OnUpdateListener {
-            override fun onUpdateAvailable(info: UpdateChecker.UpdateInfo) {
-                badge.visibility = View.VISIBLE
-                badge.text = "${getString(R.string.update_available)} ${info.versionName}"
-                badge.setOnClickListener {
-                    UpdatePromptActivity.start(requireContext(), info.versionName, info.versionCode, info.apkUrl, info.notes, true)
-                }
-                UpdatePromptActivity.start(requireContext(), info.versionName, info.versionCode, info.apkUrl, info.notes, true)
-            }
-        })
     }
 
     override fun onDestroyView() {

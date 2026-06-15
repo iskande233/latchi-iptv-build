@@ -1,0 +1,52 @@
+LATCHI IPTV - MEMENTO
+Date: 2026-06-15
+
+1) Video/Intro Splash
+- Old MP4 startup videos were removed from res/raw:
+  * splash_phone.mp4
+  * splash_tv.mp4
+- New compressed WebP splash images are used instead:
+  * app/src/main/res/drawable-nodpi/video_splash_phone.webp
+  * app/src/main/res/drawable-nodpi/video_splash_tv.webp
+- VideoSplashActivity detects TV vs phone through TvUtils.isTv() and selects the matching image.
+- A premium fade-in + slow zoom animation runs for about 3.5s on phone and 3.9s on TV.
+
+Modified files:
+- app/src/main/java/com/latchi/iptv/screens/VideoSplashActivity.kt
+- app/src/main/res/layout/activity_video_splash.xml
+- app/src/main/res/drawable-nodpi/video_splash_phone.webp
+- app/src/main/res/drawable-nodpi/video_splash_tv.webp
+
+2) In-App Update System
+- UpdateChecker reads update info from Google Apps Script using action=get_app_update.
+- UpdatePromptActivity shows a professional update screen for phone and TV.
+- The blue button starts an internal DownloadManager download; it never opens a browser.
+- Progress is shown live from 0% to 100%.
+- After completion, the button becomes Install Update.
+- Installation is launched through FileProvider + Intent.ACTION_VIEW with MIME:
+  application/vnd.android.package-archive
+
+Modified/added files:
+- app/src/main/java/com/latchi/iptv/screens/UpdatePromptActivity.kt
+- app/src/main/AndroidManifest.xml
+- app/src/main/res/xml/file_paths.xml
+
+3) Dashboard Integration
+- The dashboard publishes version_code, version_name and apk_url to Google Apps Script.
+- The viewer app compares remote versionCode with BuildConfig.VERSION_CODE.
+- If remote versionCode is higher and apkUrl exists, UpdatePromptActivity is shown.
+
+4) Final Enhancements (2026-06-15)
+- Early Update Check: Moved update check from HomeFragment to SplashActivity to ensure mandatory updates appear immediately.
+- Server Health Check: Updated ServerHealthChecker to validate M3U headers (#EXTM3U). Integration in SettingsActivity for Online/Offline status.
+- TV Settings Feedback: Added active state indicators (✓) to selected options in TV settings for better remote navigation experience.
+- Custom Overlays: Implemented CustomOverlayHelper (based on bg_success_dialog) and replaced generic Toast messages throughout HomeFragment and SettingsActivity.
+- Build Info: Enhanced AboutFragment to display Build ID, Commit ID, and Update Date.
+
+Modified files:
+- app/src/main/java/com/latchi/iptv/screens/SplashActivity.kt
+- app/src/main/java/com/latchi/iptv/screens/HomeFragment.kt
+- app/src/main/java/com/latchi/iptv/utils/ServerHealthChecker.kt
+- app/src/main/java/com/latchi/iptv/screens/SettingsActivity.kt
+- app/src/main/java/com/latchi/iptv/utils/CustomOverlayHelper.kt
+- app/src/main/java/com/latchi/iptv/screens/AboutFragment.kt
