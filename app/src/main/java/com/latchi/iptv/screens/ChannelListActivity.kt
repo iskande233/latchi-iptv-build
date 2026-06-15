@@ -73,6 +73,7 @@ class ChannelListActivity : AppCompatActivity() {
     private var debounceHandler: Handler? = null
     private var categoryDebounceHandler: Handler? = null
     private var lastChannels: List<Channel> = emptyList()
+    private var currentVisibleChannels: List<Channel> = emptyList()
     private var saveAfterFetch = false
     private var lazyXtreamMode = false
     private var activeSourceUrl = ""
@@ -155,7 +156,7 @@ class ChannelListActivity : AppCompatActivity() {
                     }
                     else -> {
                         if (TvUtils.isTv(this) && contentType == "live") {
-                            TvLivePreviewActivity.start(this, channel, currentCategory)
+                            TvLivePreviewActivity.startWithChannels(this, channel, previewChannelsFor(channel), channel.category.ifBlank { currentCategory })
                         } else {
                             PlayerActivity.start(this, channel)
                         }
@@ -335,6 +336,7 @@ class ChannelListActivity : AppCompatActivity() {
             } catch (e: Exception) { Log.e("ChannelList", "Observer Error: ${e.message}") }
         })
         channelsProvider.filteredChannels.observe(this, Observer { data ->
+            currentVisibleChannels = data
             adapter.updateChannels(data)
             recyclerView.postDelayed({
                 if (com.latchi.iptv.utils.TvUtils.isTv(this) && recyclerView.findViewHolderForAdapterPosition(0) != null && currentFocus == null) {
@@ -385,6 +387,15 @@ class ChannelListActivity : AppCompatActivity() {
                 }
             }.start()
         } catch (e: Exception) { Log.e("ChannelList", "Load Error: ${e.message}") }
+    }
+
+
+    private fun previewChannelsFor(channel: Channel): List<Channel> {
+        val source = currentVisibleChannels.ifEmpty { lastChannels }.filter { it.contentType == "live" }
+        val sameCategory = source.filter { it.category.equals(channel.category, ignoreCase = true) }
+        val base = (if (sameCategory.isNotEmpty()) sameCategory else source).ifEmpty { listOf(channel) }
+        val ordered = listOf(channel) + base.filter { it.streamUrl != channel.streamUrl }
+        return ordered.take(300)
     }
 
     private fun sortCategoriesByPriority(cats: List<String>): List<String> {
