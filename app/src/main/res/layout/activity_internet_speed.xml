@@ -106,14 +106,15 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <com.ekn.gruzer.gaugelibrary.ArcGauge
+        <ProgressBar
             android:id="@+id/speedGauge"
+            style="?android:attr/progressBarStyleHorizontal"
             android:layout_width="200dp"
-            android:outlineAmbientShadowColor="@color/bg_color"
-            android:outlineSpotShadowColor="@color/bg_color"
-            android:layout_height="200dp"
+            android:layout_height="14dp"
             android:layout_centerInParent="true"
-            android:layout_margin="10dp" />
+            android:layout_margin="10dp"
+            android:max="150"
+            android:progress="0" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/startTestBT"

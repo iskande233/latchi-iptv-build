@@ -50,14 +50,14 @@ class HomeFragment : Fragment() {
     private lateinit var cardMovies: LinearLayout
     private lateinit var cardSeries: LinearLayout
     private lateinit var cardMatches: LinearLayout
-    private lateinit var cardBeInSports: LinearLayout
-    private lateinit var cardSettings: LinearLayout
-    private lateinit var cardAccounts: LinearLayout
-    private lateinit var toolbarSettings: LinearLayout
-    private lateinit var toolbarUsers: LinearLayout
-    private lateinit var lastWatchedButton: TextView
-    private lateinit var clockTimeText: TextView
-    private lateinit var clockDateText: TextView
+    private var cardBeInSports: LinearLayout? = null
+    private var cardSettings: LinearLayout? = null
+    private var cardAccounts: LinearLayout? = null
+    private var toolbarSettings: LinearLayout? = null
+    private var toolbarUsers: LinearLayout? = null
+    private var lastWatchedButton: TextView? = null
+    private var clockTimeText: TextView? = null
+    private var clockDateText: TextView? = null
     private lateinit var liveCount: TextView
     private lateinit var movieCount: TextView
     private lateinit var seriesCount: TextView
@@ -90,8 +90,8 @@ class HomeFragment : Fragment() {
             cardBeInSports = view.findViewById(R.id.cardBeInSports)
             cardSettings = view.findViewById(R.id.cardSettings)
             cardAccounts = view.findViewById(R.id.cardAccounts)
-            toolbarSettings = view.findViewById<View?>(R.id.toolbarSettings) as? LinearLayout ?: LinearLayout(requireContext())
-            toolbarUsers = view.findViewById<View?>(R.id.toolbarUsers) as? LinearLayout ?: LinearLayout(requireContext())
+            toolbarSettings = view.findViewById<View?>(R.id.toolbarSettings) as? LinearLayout
+            toolbarUsers = view.findViewById<View?>(R.id.toolbarUsers) as? LinearLayout
             lastWatchedButton = view.findViewById(R.id.lastWatchedButton)
             clockTimeText = view.findViewById(R.id.clockTimeText)
             clockDateText = view.findViewById(R.id.clockDateText)
@@ -287,20 +287,20 @@ class HomeFragment : Fragment() {
 
         // ⚙️ الصف الثاني
         // 🏆 beIN Sports - فتح شاشة الفئات المفلترة
-        cardBeInSports.setOnClickListener { startActivity(Intent(requireContext(), BeInSportsCategoriesActivity::class.java)) }
+        cardBeInSports?.setOnClickListener { startActivity(Intent(requireContext(), BeInSportsCategoriesActivity::class.java)) }
         // ⚙️ الإعدادات
-        cardSettings.setOnClickListener { startActivity(Intent(requireContext(), SettingsActivity::class.java)) }
+        cardSettings?.setOnClickListener { startActivity(Intent(requireContext(), SettingsActivity::class.java)) }
         // 🔑 الحسابات - شاشة VIP النظيفة الجديدة
-        cardAccounts.setOnClickListener { startActivity(Intent(requireContext(), VipAccountsActivity::class.java)) }
+        cardAccounts?.setOnClickListener { startActivity(Intent(requireContext(), VipAccountsActivity::class.java)) }
 
         // 🔧 شريط أدوات علوي قديم (للتوافق)
-        toolbarSettings.setOnClickListener { startActivity(Intent(requireContext(), SettingsActivity::class.java)) }
-        toolbarUsers.setOnClickListener {
+        toolbarSettings?.setOnClickListener { startActivity(Intent(requireContext(), SettingsActivity::class.java)) }
+        toolbarUsers?.setOnClickListener {
             startActivity(Intent(requireContext(), UserListActivity::class.java).putExtra("show_settings", true))
             requireActivity().finish()
         }
         cardAIVoice?.setOnClickListener { onAIVoiceClicked() }
-        lastWatchedButton.setOnClickListener {
+        lastWatchedButton?.setOnClickListener {
             SourcePrefs.getActiveProfile(requireContext())?.let { active ->
                 LastWatchedPrefs.load(requireContext(), active.id)?.let { ch ->
                     PlayerActivity.start(requireContext(), ch)

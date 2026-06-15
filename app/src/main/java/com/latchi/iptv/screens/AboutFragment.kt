@@ -13,7 +13,7 @@ import androidx.fragment.app.Fragment
 import com.latchi.iptv.InternetSpeed.InternetSpeedActivity
 import com.latchi.iptv.R
 import com.latchi.iptv.databinding.FragmentAboutBinding
-import com.samyak2403.tastytoast.TastyToast
+import android.widget.Toast
 
 
 class AboutFragment : Fragment() {
@@ -52,7 +52,7 @@ class AboutFragment : Fragment() {
 
         // Set click listeners for the cards
         binding.cardShare.setOnClickListener {
-            TastyToast.makeText(requireContext(), "Share App clicked", TastyToast.LENGTH_LONG, TastyToast.SUCCESS)
+            Toast.makeText(requireContext(), "Share App clicked", Toast.LENGTH_LONG).show()
 
             shareApp()
         }
@@ -62,7 +62,7 @@ class AboutFragment : Fragment() {
         }
 
         binding.cardUpdate.setOnClickListener {
-            TastyToast.makeText(requireContext(), "Check for updates", TastyToast.LENGTH_LONG, TastyToast.INFO)
+            Toast.makeText(requireContext(), "Check for updates", Toast.LENGTH_LONG).show()
             openDownloadLink()
         }
 
@@ -76,7 +76,7 @@ class AboutFragment : Fragment() {
     }
 
     private fun fetchLiveData() {
-        TastyToast.makeText(requireContext(), "Error 69", TastyToast.LENGTH_LONG, TastyToast.ERROR)
+        Toast.makeText(requireContext(), "Error 69", Toast.LENGTH_LONG).show()
 
     }
 

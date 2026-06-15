@@ -6,9 +6,6 @@ import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
-import androidx.core.content.ContextCompat
-import com.ekn.gruzer.gaugelibrary.Range
-
 import com.latchi.iptv.R
 import com.latchi.iptv.databinding.ActivityInternetSpeedBinding
 import fr.bmartel.speedtest.SpeedTestReport
@@ -66,39 +63,12 @@ class InternetSpeedActivity : AppCompatActivity(), ISpeedTestListener {
     }
 
     private fun setupGauge() {
-        val coolPink = Range().apply {
-            color = ContextCompat.getColor(context, R.color.cool_pink)
-            from = 0.0
-            to = 50.0
-        }
-
-        val yellowRange = Range().apply {
-            color = ContextCompat.getColor(context, R.color.yellow)
-            from = 50.0
-            to = 100.0
-        }
-
-        val greenRange = Range().apply {
-            color = ContextCompat.getColor(context, R.color.cool_green)
-            from = 100.0
-            to = 150.0
-        }
-
-        with(binding.speedGauge) {
-            addRange(coolPink)
-            addRange(yellowRange)
-            addRange(greenRange)
-            minValue = 0.0
-            maxValue = 150.0
-            value = 0.0
-            valueColor = ContextCompat.getColor(context, android.R.color.transparent)
-        }
+        binding.speedGauge.max = 150
+        binding.speedGauge.progress = 0
     }
 
     private fun getNetSpeed() {
         val speedTestSocket = SpeedTestSocket()
-        binding.speedGauge.valueColor = ContextCompat.getColor(context, R.color.white)
-
         startTime = System.currentTimeMillis()
         speedTestSocket.addSpeedTestListener(this)
         speedTestSocket.startDownload("http://ipv4.appliwave.testdebit.info/50M.iso", 100)
@@ -109,21 +79,20 @@ class InternetSpeedActivity : AppCompatActivity(), ISpeedTestListener {
         val latencyMs = (System.currentTimeMillis() - startTime) / 600
 
         runOnUiThread {
-            binding.speedGauge.value = floor(downloadSpeedMbps.toDouble())
+            binding.speedGauge.progress = floor(downloadSpeedMbps.toDouble()).toInt().coerceIn(0, 150)
             binding.speedTxt.text = String.format("%s MB/s", DecimalFormat("##").format(downloadSpeedMbps))
             binding.latencyTxt.text = String.format("%s ms", latencyMs)
             binding.startTestBT.apply {
                 visibility = View.VISIBLE
                 text = getString(R.string.start)
             }
-            binding.speedGauge.valueColor = ContextCompat.getColor(context, android.R.color.transparent)
         }
         Log.d("SpeedTest", "onCompletion: $downloadSpeedMbps Mbps")
     }
 
     override fun onProgress(percent: Float, report: SpeedTestReport) {
         val downloadSpeedMbps = report.transferRateBit.toFloat() / 1_000_000
-        runOnUiThread { binding.speedGauge.value = floor(downloadSpeedMbps.toDouble()) }
+        runOnUiThread { binding.speedGauge.progress = floor(downloadSpeedMbps.toDouble()).toInt().coerceIn(0, 150) }
         Log.d("SpeedTest", "onProgress: $downloadSpeedMbps Mbps")
     }
 

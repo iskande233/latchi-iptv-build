@@ -73,7 +73,7 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    implementation (libs.smoothbottombar)
+    // SmoothBottomBar was unused; removed to avoid JitPack timeout in CI.
     // Fragment library
     implementation("androidx.fragment:fragment-ktx:1.6.0")
     implementation("com.github.bumptech.glide:glide:4.16.0")
@@ -86,11 +86,7 @@ dependencies {
 
     // SpeedTest Library
     implementation("fr.bmartel:jspeedtest:1.32.1")
-    // Gauge Library
-    implementation("com.github.Gruzer:simple-gauge-android:0.3.1")
-
-    //Toast
-    implementation ("com.github.samyak2403:TastyToasts:1.0.2")
+    // Removed unused/fragile JitPack gauge and TastyToasts dependencies; native widgets are used instead.
 
     implementation ("de.hdodenhof:circleimageview:3.1.0")
 
