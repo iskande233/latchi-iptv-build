@@ -24,9 +24,18 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
 import com.latchi.iptv.R
 import com.latchi.iptv.utils.TvUtils
+import java.io.File
 
+/**
+ * Professional in-app updater.
+ *
+ * The APK URL comes from Google Script / Dashboard, then DownloadManager downloads it
+ * inside the app with live progress. When the download reaches 100%, the button turns
+ * into "Install Update" and opens Android's package installer using FileProvider.
+ */
 class UpdatePromptActivity : AppCompatActivity() {
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(com.latchi.iptv.utils.LocaleHelper.wrap(newBase))
@@ -39,6 +48,7 @@ class UpdatePromptActivity : AppCompatActivity() {
     private var forceUpdate = true
     private var downloadId = -1L
     private var downloadedUri: Uri? = null
+    private var downloadedFile: File? = null
     private var progressBar: ProgressBar? = null
     private var progressText: TextView? = null
     private var primaryButton: TextView? = null
@@ -95,7 +105,7 @@ class UpdatePromptActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
             setPadding(if (isTv) dp(56) else dp(24), if (isTv) dp(44) else dp(24), if (isTv) dp(56) else dp(24), if (isTv) dp(44) else dp(24))
-            background = rounded(0xD0141024.toInt(), 0xFFFFD700.toInt(), if (isTv) dp(3) else dp(2), if (isTv) dp(34) else dp(24))
+            background = rounded(0xD0141024.toInt(), 0xFF00A8FF.toInt(), if (isTv) dp(3) else dp(2), if (isTv) dp(34) else dp(24))
             elevation = if (isTv) dp(28).toFloat() else dp(14).toFloat()
         }
         outer.addView(card, LinearLayout.LayoutParams(if (isTv) dp(900) else LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
@@ -138,9 +148,9 @@ class UpdatePromptActivity : AppCompatActivity() {
         }
         card.addView(featureBox, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(18) })
         listOf(
-            "تحديث إجباري وآمن قبل الدخول",
-            "تحميل مباشر للـ APK من Codemagic",
-            "تحسينات السيرفر والتلفاز والمعاينة"
+            "تحديث داخلي بدون فتح المتصفح",
+            "شريط تقدم مباشر من 0% إلى 100%",
+            "تثبيت آمن عبر نافذة النظام الرسمية"
         ).forEach { txt ->
             featureBox.addView(TextView(this).apply {
                 text = txt
@@ -167,14 +177,14 @@ class UpdatePromptActivity : AppCompatActivity() {
         card.addView(progressText)
 
         primaryButton = TextView(this).apply {
-            text = "تحميل التحديث الآن"
-            setTextColor(Color.BLACK)
+            text = "تحديث الآن / Update Now"
+            setTextColor(Color.WHITE)
             textSize = if (isTv) 22f else 16f
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
             isClickable = true
             isFocusable = true
-            setBackgroundResource(R.drawable.bg_gold_btn)
+            background = blueButtonBackground()
             setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_update_download, 0, 0, 0)
             compoundDrawablePadding = dp(10)
             setOnClickListener { startDownload() }
@@ -213,16 +223,26 @@ class UpdatePromptActivity : AppCompatActivity() {
         }
         try {
             progressBar?.visibility = View.VISIBLE
-            progressText?.text = "بدء التحميل..."
-            primaryButton?.isEnabled = false
-            primaryButton?.alpha = 0.65f
+            progressBar?.progress = 0
+            progressText?.text = "بدء التحميل... 0%"
+            primaryButton?.apply {
+                text = "جاري التحميل... 0%"
+                isEnabled = false
+                alpha = 0.75f
+            }
 
-            val fileName = "Latchi-IPTV-${versionName.ifBlank { versionCode.toString() }}.apk".replace("/", "-")
+            val safeVersion = versionName.ifBlank { versionCode.toString().ifBlank { "update" } }.replace(Regex("[^A-Za-z0-9._-]"), "-")
+            val fileName = "Latchi-IPTV-$safeVersion.apk"
+            val dir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: filesDir
+            val file = File(dir, fileName).apply { parentFile?.mkdirs(); if (exists()) delete() }
+            downloadedFile = file
+
             val request = DownloadManager.Request(Uri.parse(apkUrl))
                 .setTitle("LATCHI IPTV")
                 .setDescription("تحميل التحديث الجديد")
-                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
+                .setMimeType("application/vnd.android.package-archive")
+                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
+                .setDestinationUri(Uri.fromFile(file))
                 .setAllowedOverMetered(true)
                 .setAllowedOverRoaming(true)
 
@@ -232,14 +252,12 @@ class UpdatePromptActivity : AppCompatActivity() {
             progressHandler.post(object : Runnable {
                 override fun run() {
                     updateProgress(dm)
-                    if (downloadId != -1L && downloadedUri == null) progressHandler.postDelayed(this, 700)
+                    if (downloadId != -1L && downloadedUri == null) progressHandler.postDelayed(this, 500)
                 }
             })
         } catch (e: Exception) {
-            progressText?.text = "تعذر التحميل. سيتم فتح الرابط خارجياً."
-            primaryButton?.isEnabled = true
-            primaryButton?.alpha = 1f
-            runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(apkUrl))) }
+            progressText?.text = "تعذر بدء التحميل: ${e.localizedMessage}"
+            primaryButton?.apply { isEnabled = true; alpha = 1f; text = "تحديث الآن / Update Now" }
         }
     }
 
@@ -249,16 +267,7 @@ class UpdatePromptActivity : AppCompatActivity() {
             override fun onReceive(context: Context, intent: Intent) {
                 val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L)
                 if (id != downloadId) return
-                downloadedUri = dm.getUriForDownloadedFile(downloadId)
-                progressBar?.progress = 100
-                progressText?.text = "اكتمل التحميل. اضغط تثبيت التحديث."
-                primaryButton?.apply {
-                    text = "تثبيت التحديث"
-                    isEnabled = true
-                    alpha = 1f
-                    setOnClickListener { openInstaller() }
-                    requestFocus()
-                }
+                handleDownloadCompleted(dm)
             }
         }
         val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
@@ -266,18 +275,53 @@ class UpdatePromptActivity : AppCompatActivity() {
         else @Suppress("DEPRECATION") registerReceiver(receiver, filter)
     }
 
+    private fun handleDownloadCompleted(dm: DownloadManager) {
+        val q = DownloadManager.Query().setFilterById(downloadId)
+        dm.query(q)?.use { c ->
+            if (!c.moveToFirst()) return
+            val status = c.getInt(c.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
+            if (status == DownloadManager.STATUS_SUCCESSFUL) {
+                val file = downloadedFile
+                downloadedUri = if (file != null && file.exists()) {
+                    FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
+                } else {
+                    dm.getUriForDownloadedFile(downloadId)
+                }
+                progressBar?.progress = 100
+                progressText?.text = "اكتمل التحميل 100%. اضغط تثبيت التحديث."
+                primaryButton?.apply {
+                    text = "تثبيت التحديث / Install Update"
+                    isEnabled = true
+                    alpha = 1f
+                    background = blueButtonBackground()
+                    setOnClickListener { openInstaller() }
+                    requestFocus()
+                }
+            } else if (status == DownloadManager.STATUS_FAILED) {
+                val reason = c.getInt(c.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON))
+                progressText?.text = "فشل التحميل. السبب: $reason"
+                primaryButton?.apply { text = "إعادة المحاولة"; isEnabled = true; alpha = 1f; setOnClickListener { startDownload() } }
+            }
+        }
+    }
+
     private fun updateProgress(dm: DownloadManager) {
         if (downloadId == -1L) return
         val q = DownloadManager.Query().setFilterById(downloadId)
         dm.query(q)?.use { c ->
             if (c.moveToFirst()) {
+                val status = c.getInt(c.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
                 val total = c.getLong(c.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
                 val done = c.getLong(c.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
                 if (total > 0) {
                     val percent = ((done * 100) / total).toInt().coerceIn(0, 100)
                     progressBar?.progress = percent
                     progressText?.text = "جاري التحميل: $percent%"
+                    primaryButton?.text = "جاري التحميل... $percent%"
+                } else if (status == DownloadManager.STATUS_RUNNING || status == DownloadManager.STATUS_PENDING) {
+                    progressText?.text = "جاري التحميل..."
                 }
+                if (status == DownloadManager.STATUS_SUCCESSFUL) handleDownloadCompleted(dm)
             }
         }
     }
@@ -326,6 +370,11 @@ class UpdatePromptActivity : AppCompatActivity() {
         cornerRadius = radius.toFloat()
         setStroke(strokeWidth, strokeColor)
     }
+
+    private fun blueButtonBackground(): GradientDrawable = GradientDrawable(
+        GradientDrawable.Orientation.LEFT_RIGHT,
+        intArrayOf(Color.parseColor("#007BFF"), Color.parseColor("#00D4FF"))
+    ).apply { cornerRadius = dp(18).toFloat() }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 }

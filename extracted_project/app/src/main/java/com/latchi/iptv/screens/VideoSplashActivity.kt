@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.View
+import android.view.animation.DecelerateInterpolator
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import com.latchi.iptv.R
@@ -18,8 +19,7 @@ import com.latchi.iptv.utils.TvUtils
  * - TV / Android TV: video_splash_tv.webp
  * - Phone: video_splash_phone.webp
  *
- * Keeping this as a separate first splash preserves the existing app flow:
- * VideoSplashActivity -> SplashActivity -> user/main screen.
+ * A slow cinematic fade + zoom animation replaces the old heavy MP4 intro.
  */
 class VideoSplashActivity : AppCompatActivity() {
 
@@ -37,11 +37,24 @@ class VideoSplashActivity : AppCompatActivity() {
         setContentView(R.layout.activity_video_splash)
 
         val isTv = TvUtils.isTv(this)
-        findViewById<ImageView>(R.id.videoSplashImage).setImageResource(
-            if (isTv) R.drawable.video_splash_tv else R.drawable.video_splash_phone
-        )
+        val splashImage = findViewById<ImageView>(R.id.videoSplashImage)
+        splashImage.setImageResource(if (isTv) R.drawable.video_splash_tv else R.drawable.video_splash_phone)
+        runPremiumSplashAnimation(splashImage, isTv)
 
-        splashHandler.postDelayed({ goToNextSplash() }, if (isTv) 4200L else 3500L)
+        splashHandler.postDelayed({ goToNextSplash() }, if (isTv) 4200L else 3800L)
+    }
+
+    private fun runPremiumSplashAnimation(image: ImageView, isTv: Boolean) {
+        image.alpha = 0f
+        image.scaleX = if (isTv) 1.08f else 1.10f
+        image.scaleY = if (isTv) 1.08f else 1.10f
+        image.animate()
+            .alpha(1f)
+            .scaleX(1.0f)
+            .scaleY(1.0f)
+            .setDuration(if (isTv) 3900L else 3500L)
+            .setInterpolator(DecelerateInterpolator(1.6f))
+            .start()
     }
 
     @Synchronized
