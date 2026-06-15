@@ -175,8 +175,7 @@ class HomeFragment : Fragment() {
             // 🔄 عرض واجهة التحديث (مرحلة التحميل → مرحلة النجاح)
             ServerUpdateOverlayHelper.show(requireActivity()) {
                 // ✅ تحديث سلس للقنوات في المكان بدلاً من إعادة تشغيل Activity
-                refreshChannelsSilently()
-            }
+                refreshChannelsSilently()            }
         }
     }
 
