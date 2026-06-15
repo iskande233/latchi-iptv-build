@@ -262,4 +262,23 @@
     <string name="voice_try_again">🤔 أعد المحاولة بوضوح</string>
     <string name="voice_searching">جاري البحث عن %1$s</string>
     <string name="search">بحث</string>
+    <!-- Vip Accounts screen -->
+    <string name="vip_accounts_title">🔑 الحسابات • VIP</string>
+    <string name="vip_accounts_subtitle">🛡️ أكواد التفعيل المسجلة على جهازك</string>
+    <string name="vip_accounts_empty">📭 لا توجد أكواد تفعيل</string>
+    <string name="vip_accounts_add">➕ إضافة كود تفعيل جديد</string>
+    <string name="vip_accounts_activate">🔄  تحويل للحساب</string>
+    <string name="vip_accounts_delete">🗑️  حذف</string>
+    <string name="vip_accounts_active_label">نشط</string>
+    <string name="vip_accounts_code_label">🔑 كود التفعيل:</string>
+
+    <!-- beIN Sports screen -->
+    <string name="bein_title">🏆  beIN Sports • الفئات</string>
+    <string name="bein_subtitle">📡 اختر فئة beIN Sports التي تريد مشاهدتها</string>
+    <string name="bein_empty">📭 لا توجد قنوات beIN Sports في قائمتك الحالية</string>
+    <string name="bein_count_fmt">%1$d قناة</string>
+    <string name="bein_category_general">beIN SPORTS (عام)</string>
+
+    <!-- Drawer Support (Whatsapp) -->
+    <string name="drawer_support">📞 الدعم الفني (واتساب)</string>
 </resources>

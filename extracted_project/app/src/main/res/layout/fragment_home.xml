@@ -21,7 +21,53 @@
                 android:orientation="vertical"
                 android:padding="@dimen/padding_default">
 
-                <!-- Header Row -->
+                <!-- ===== Clock Widget VIP (التاريخ والوقت في الأعلى بالمنتصف) ===== -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="@dimen/margin_top_lg">
+
+                    <!-- 🕒 Clock Widget في المنتصف -->
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:orientation="horizontal"
+                        android:background="@drawable/bg_vip_clock_widget"
+                        android:paddingHorizontal="22dp"
+                        android:paddingVertical="10dp">
+
+                        <TextView
+                            android:id="@+id/clockTimeText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="#FFD700"
+                            android:textSize="20sp"
+                            android:textStyle="bold"
+                            android:fontFamily="monospace"
+                            android:text="--:--"
+                            android:paddingEnd="10dp" />
+
+                        <View
+                            android:layout_width="1dp"
+                            android:layout_height="20dp"
+                            android:background="#66FFD700"
+                            android:layout_marginHorizontal="6dp" />
+
+                        <TextView
+                            android:id="@+id/clockDateText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="#F2F4FF"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            android:text="— —" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- ===== Header Row: Logo + Name + AI + Menu ===== -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="@dimen/header_height"
@@ -33,7 +79,7 @@
                         android:layout_width="@dimen/header_logo"
                         android:layout_height="@dimen/header_logo"
                         android:scaleType="fitCenter"
-                        android:src="@drawable/ic_tv" />
+                        android:src="@drawable/tv_logo" />
 
                     <TextView
                         android:layout_width="0dp"
@@ -45,37 +91,37 @@
                         android:textSize="@dimen/header_text"
                         android:textStyle="bold" />
 
+                    <!-- ✨ Gemini AI Button -->
+                    <ImageView
+                        android:id="@+id/cardAIVoice"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@drawable/bg_vip_grid_card"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="@drawable/focus_ring_vip"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_gemini_professional"
+                        android:contentDescription="Gemini AI" />
+
                     <!-- Hamburger Menu -->
                     <TextView
                         android:id="@+id/menuButton"
                         android:layout_width="40dp"
                         android:layout_height="40dp"
-                        android:layout_marginEnd="8dp"
-                        android:background="@drawable/bg_panel_premium"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/bg_vip_grid_card"
                         android:clickable="true"
                         android:focusable="true"
-                        android:foreground="@drawable/focus_selector"
+                        android:foreground="@drawable/focus_ring_vip"
                         android:gravity="center"
                         android:text="☰"
                         android:textColor="@android:color/white"
                         android:textSize="20sp"
                         android:textStyle="bold" />
-
-                    <!-- ✨ Professional Gemini AI Button -->
-                    <ImageView
-                        android:id="@+id/cardAIVoice"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:background="@drawable/bg_panel_premium"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:foreground="@drawable/focus_selector"
-                        android:padding="8dp"
-                        android:src="@drawable/ic_gemini_professional"
-                        android:contentDescription="Gemini AI" />
                 </LinearLayout>
 
-                <!-- User Profiles Row -->
+                <!-- ===== User Profiles Row ===== -->
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -101,7 +147,7 @@
                     android:clickable="true"
                     android:focusable="true"
                     android:focusableInTouchMode="true"
-                    android:foreground="@drawable/focus_selector"
+                    android:foreground="@drawable/focus_ring_vip"
                     android:gravity="center"
                     android:text="🔄 تحديث جديد متاح"
                     android:textColor="@android:color/white"
@@ -131,7 +177,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="@dimen/info_bar_height"
                     android:layout_marginTop="@dimen/margin_top_sm"
-                    android:background="@drawable/bg_panel"
+                    android:background="@drawable/bg_vip_grid_card"
                     android:ellipsize="end"
                     android:gravity="center"
                     android:maxLines="1"
@@ -144,7 +190,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="@dimen/expiry_height"
                     android:layout_marginTop="@dimen/margin_top_sm"
-                    android:background="@drawable/bg_panel"
+                    android:background="@drawable/bg_vip_grid_card"
                     android:ellipsize="end"
                     android:gravity="center"
                     android:maxLines="1"
@@ -158,10 +204,10 @@
                     android:layout_width="match_parent"
                     android:layout_height="@dimen/info_bar_height"
                     android:layout_marginTop="@dimen/margin_top_sm"
-                    android:background="@drawable/bg_panel_premium"
+                    android:background="@drawable/bg_vip_grid_card"
                     android:clickable="true"
                     android:focusable="true"
-                    android:foreground="@drawable/focus_selector"
+                    android:foreground="@drawable/focus_ring_vip"
                     android:gravity="center"
                     android:text="@string/continue_watching"
                     android:textColor="@android:color/white"
@@ -177,189 +223,308 @@
                     android:textColor="#C7B7D8"
                     android:textSize="12sp" />
 
-
-                <!-- Quick Actions Row -->
-                <LinearLayout android:layout_width="match_parent" android:layout_height="40dp" android:layout_marginTop="@dimen/margin_top_sm" android:gravity="center" android:orientation="horizontal">
-                    <LinearLayout android:id="@+id/toolbarSettingsTop" android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginEnd="6dp" android:layout_weight="1" android:background="@drawable/bg_settings_btn" android:clickable="true" android:focusable="true" android:foreground="@drawable/focus_selector" android:gravity="center"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/settings_btn" android:textColor="@android:color/white" android:textSize="12sp" android:textStyle="bold" /></LinearLayout>
-                    <LinearLayout android:id="@+id/toolbarUsersTop" android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginStart="6dp" android:layout_weight="1" android:background="@drawable/bg_update_btn" android:clickable="true" android:focusable="true" android:foreground="@drawable/focus_selector" android:gravity="center"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/users_btn" android:textColor="@android:color/white" android:textSize="12sp" android:textStyle="bold" /></LinearLayout>
-                </LinearLayout>
-                <!-- Live Card -->
+                <!-- ===== Grid Row 1: البث المباشر | الأفلام | المسلسلات | المباريات ===== -->
                 <LinearLayout
-                    android:id="@+id/cardLive"
                     android:layout_width="match_parent"
-                    android:layout_height="@dimen/card_live_height"
+                    android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/margin_top_xl"
-                    android:background="@drawable/bg_card_live"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="@drawable/focus_selector"
-                    android:gravity="center_vertical"
-                    android:nextFocusUp="@id/menuButton"
-                    android:nextFocusDown="@id/cardMovies"
-                    android:orientation="horizontal"
-                    android:padding="@dimen/card_padding">
+                    android:baselineAligned="false"
+                    android:orientation="horizontal">
 
-                    <TextView
-                        android:layout_width="@dimen/card_icon_width"
-                        android:layout_height="wrap_content"
-                        android:gravity="center"
-                        android:text="▣"
-                        android:textColor="@android:color/white"
-                        android:textSize="@dimen/card_icon_text" />
-
+                    <!-- البث المباشر -->
                     <LinearLayout
+                        android:id="@+id/cardLive"
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="120dp"
                         android:layout_weight="1"
-                        android:orientation="vertical">
+                        android:layout_marginEnd="6dp"
+                        android:background="@drawable/bg_vip_grid_card"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="@drawable/focus_ring_vip"
+                        android:gravity="center"
+                        android:nextFocusUp="@id/menuButton"
+                        android:nextFocusDown="@id/cardMovies"
+                        android:orientation="vertical"
+                        android:padding="10dp">
+
+                        <ImageView
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:src="@drawable/ic_live_tv_vip"
+                            android:contentDescription="البث المباشر" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
                             android:text="@string/live_tv"
                             android:textColor="@android:color/white"
-                            android:textSize="@dimen/card_title"
+                            android:textSize="12sp"
                             android:textStyle="bold" />
 
                         <TextView
                             android:id="@+id/liveCount"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/margin_top_xs"
                             android:text="0"
-                            android:textColor="@android:color/white"
-                            android:textSize="@dimen/card_count" />
+                            android:textColor="#7FE6FF"
+                            android:textSize="10sp" />
                     </LinearLayout>
-                </LinearLayout>
 
-                <!-- Movies Card -->
-                <LinearLayout
-                    android:id="@+id/cardMovies"
-                    android:layout_width="match_parent"
-                    android:layout_height="@dimen/card_media_height"
-                    android:layout_marginTop="@dimen/margin_top_lg"
-                    android:background="@drawable/bg_card_movie"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="@drawable/focus_selector"
-                    android:gravity="center_vertical"
-                    android:nextFocusUp="@id/cardLive"
-                    android:nextFocusDown="@id/cardSeries"
-                    android:orientation="horizontal"
-                    android:padding="@dimen/card_padding">
-
-                    <TextView
-                        android:layout_width="@dimen/card_icon_width"
-                        android:layout_height="wrap_content"
-                        android:gravity="center"
-                        android:text="▶"
-                        android:textColor="@android:color/white"
-                        android:textSize="@dimen/card_media_icon_text" />
-
+                    <!-- الأفلام -->
                     <LinearLayout
+                        android:id="@+id/cardMovies"
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="120dp"
                         android:layout_weight="1"
-                        android:orientation="vertical">
+                        android:layout_marginHorizontal="3dp"
+                        android:background="@drawable/bg_vip_grid_card"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="@drawable/focus_ring_vip"
+                        android:gravity="center"
+                        android:nextFocusUp="@id/cardLive"
+                        android:nextFocusDown="@id/cardSeries"
+                        android:orientation="vertical"
+                        android:padding="10dp">
+
+                        <ImageView
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:src="@drawable/ic_movies_vip"
+                            android:contentDescription="الأفلام" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
                             android:text="@string/movies"
                             android:textColor="@android:color/white"
-                            android:textSize="@dimen/card_media_title"
+                            android:textSize="12sp"
                             android:textStyle="bold" />
 
                         <TextView
                             android:id="@+id/movieCount"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/margin_top_xs"
                             android:text="0"
-                            android:textColor="@android:color/white"
-                            android:textSize="@dimen/card_count" />
+                            android:textColor="#A06BFF"
+                            android:textSize="10sp" />
                     </LinearLayout>
-                </LinearLayout>
 
-                <!-- Series Card -->
-                <LinearLayout
-                    android:id="@+id/cardSeries"
-                    android:layout_width="match_parent"
-                    android:layout_height="@dimen/card_media_height"
-                    android:layout_marginTop="@dimen/margin_top_lg"
-                    android:background="@drawable/bg_card_series"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="@drawable/focus_selector"
-                    android:gravity="center_vertical"
-                    android:nextFocusUp="@id/cardMovies"
-                    android:nextFocusDown="@id/backToHomeButton"
-                    android:orientation="horizontal"
-                    android:padding="@dimen/card_padding">
-
-                    <TextView
-                        android:layout_width="@dimen/card_icon_width"
-                        android:layout_height="wrap_content"
-                        android:gravity="center"
-                        android:text="▤"
-                        android:textColor="@android:color/white"
-                        android:textSize="@dimen/card_media_icon_text" />
-
+                    <!-- المسلسلات -->
                     <LinearLayout
+                        android:id="@+id/cardSeries"
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="120dp"
                         android:layout_weight="1"
-                        android:orientation="vertical">
+                        android:layout_marginHorizontal="3dp"
+                        android:background="@drawable/bg_vip_grid_card"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="@drawable/focus_ring_vip"
+                        android:gravity="center"
+                        android:nextFocusUp="@id/cardMovies"
+                        android:nextFocusDown="@id/cardMatches"
+                        android:orientation="vertical"
+                        android:padding="10dp">
+
+                        <ImageView
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:src="@drawable/ic_series_vip"
+                            android:contentDescription="المسلسلات" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
                             android:text="@string/series"
                             android:textColor="@android:color/white"
-                            android:textSize="@dimen/card_media_title"
+                            android:textSize="12sp"
                             android:textStyle="bold" />
 
                         <TextView
                             android:id="@+id/seriesCount"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/margin_top_xs"
                             android:text="0"
+                            android:textColor="#39FF8B"
+                            android:textSize="10sp" />
+                    </LinearLayout>
+
+                    <!-- المباريات -->
+                    <LinearLayout
+                        android:id="@+id/cardMatches"
+                        android:layout_width="0dp"
+                        android:layout_height="120dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="6dp"
+                        android:background="@drawable/bg_vip_grid_card"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="@drawable/focus_ring_vip"
+                        android:gravity="center"
+                        android:nextFocusUp="@id/cardSeries"
+                        android:nextFocusDown="@id/cardBeInSports"
+                        android:orientation="vertical"
+                        android:padding="10dp">
+
+                        <ImageView
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:src="@drawable/ic_matches_vip"
+                            android:contentDescription="المباريات" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:text="@string/matches_title"
                             android:textColor="@android:color/white"
-                            android:textSize="@dimen/card_count" />
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/todays_matches"
+                            android:textColor="#FFD700"
+                            android:textSize="10sp" />
                     </LinearLayout>
                 </LinearLayout>
 
-
-
-                <!-- Matches Card -->
-                <LinearLayout android:id="@+id/cardMatches" android:layout_width="match_parent" android:layout_height="@dimen/card_media_height" android:layout_marginTop="@dimen/margin_top_lg" android:background="@drawable/bg_card_matches" android:clickable="true" android:focusable="true" android:foreground="@drawable/focus_selector" android:gravity="center_vertical" android:nextFocusUp="@id/cardSeries" android:nextFocusDown="@id/backToHomeButton" android:orientation="horizontal" android:padding="@dimen/card_padding"><TextView android:layout_width="@dimen/card_icon_width" android:layout_height="wrap_content" android:gravity="center" android:text="⚽" android:textColor="@android:color/white" android:textSize="@dimen/card_media_icon_text" /><LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/matches_title" android:textColor="@android:color/white" android:textSize="@dimen/card_media_title" android:textStyle="bold" /><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/margin_top_xs" android:text="@string/todays_matches" android:textColor="@android:color/white" android:textSize="@dimen/card_count" /></LinearLayout></LinearLayout>
-
-                <!-- Back to Home Button -->
+                <!-- ===== Grid Row 2: بي ان سبورت | الإعدادات | الحسابات ===== -->
                 <LinearLayout
-                    android:id="@+id/backToHomeButton"
                     android:layout_width="match_parent"
-                    android:layout_height="56dp"
+                    android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/margin_top_lg"
-                    android:background="@drawable/bg_panel_premium"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="@drawable/focus_selector"
-                    android:gravity="center"
-                    android:nextFocusUp="@id/cardSeries"
-                    android:nextFocusDown="@id/whatsappButton"
+                    android:baselineAligned="false"
+                    android:gravity="center_horizontal"
                     android:orientation="horizontal">
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/back_to_home_main"
-                        android:textColor="@android:color/white"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
+                    <!-- بي ان سبورت -->
+                    <LinearLayout
+                        android:id="@+id/cardBeInSports"
+                        android:layout_width="0dp"
+                        android:layout_height="120dp"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        android:background="@drawable/bg_vip_bein_card"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="@drawable/focus_ring_vip"
+                        android:gravity="center"
+                        android:nextFocusUp="@id/cardMatches"
+                        android:nextFocusDown="@id/cardSettings"
+                        android:orientation="vertical"
+                        android:padding="10dp">
+
+                        <ImageView
+                            android:layout_width="38dp"
+                            android:layout_height="38dp"
+                            android:src="@drawable/ic_bein_sports"
+                            android:contentDescription="بي ان سبورت" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:text="بي ان سبورت"
+                            android:textColor="#FFD700"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="beIN Sports"
+                            android:textColor="#E8D58C"
+                            android:textSize="9sp" />
+                    </LinearLayout>
+
+                    <!-- الإعدادات -->
+                    <LinearLayout
+                        android:id="@+id/cardSettings"
+                        android:layout_width="0dp"
+                        android:layout_height="120dp"
+                        android:layout_weight="1"
+                        android:layout_marginHorizontal="6dp"
+                        android:background="@drawable/bg_vip_grid_card"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="@drawable/focus_ring_vip"
+                        android:gravity="center"
+                        android:nextFocusUp="@id/cardBeInSports"
+                        android:nextFocusDown="@id/cardAccounts"
+                        android:orientation="vertical"
+                        android:padding="10dp">
+
+                        <ImageView
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:src="@drawable/ic_settings_vip"
+                            android:contentDescription="الإعدادات" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:text="@string/settings_btn"
+                            android:textColor="@android:color/white"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Settings"
+                            android:textColor="#7FE6FF"
+                            android:textSize="9sp" />
+                    </LinearLayout>
+
+                    <!-- الحسابات -->
+                    <LinearLayout
+                        android:id="@+id/cardAccounts"
+                        android:layout_width="0dp"
+                        android:layout_height="120dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="6dp"
+                        android:background="@drawable/bg_vip_accounts_card"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="@drawable/focus_ring_vip"
+                        android:gravity="center"
+                        android:nextFocusUp="@id/cardSettings"
+                        android:orientation="vertical"
+                        android:padding="10dp">
+
+                        <ImageView
+                            android:layout_width="38dp"
+                            android:layout_height="38dp"
+                            android:src="@drawable/ic_accounts_vip"
+                            android:contentDescription="الحسابات" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:text="الحسابات"
+                            android:textColor="#39FF8B"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Activation Codes"
+                            android:textColor="#B8E0CB"
+                            android:textSize="9sp" />
+                    </LinearLayout>
                 </LinearLayout>
 
-                <!-- Footer -->
+                <!-- ===== Footer ===== -->
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -369,92 +534,7 @@
                     android:textColor="#C7B7D8"
                     android:textSize="@dimen/footer_text" />
 
-                <!-- Whatsapp -->
-                <LinearLayout
-                    android:id="@+id/whatsappButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="@dimen/whatsapp_height"
-                    android:layout_marginTop="@dimen/margin_top_xl"
-                    android:background="@drawable/bg_whatsapp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="@drawable/focus_selector"
-                    android:gravity="center"
-                    android:nextFocusUp="@id/backToHomeButton"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginEnd="10dp"
-                        android:text="✆"
-                        android:textColor="@android:color/white"
-                        android:textSize="@dimen/whatsapp_icon" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/whatsapp_contact"
-                        android:textColor="@android:color/white"
-                        android:textSize="@dimen/whatsapp_text"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-                <!-- Bottom Toolbar -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:visibility="gone"
-                    android:layout_marginTop="@dimen/margin_top_lg"
-                    android:gravity="center"
-                    android:orientation="horizontal">
-
-                    <LinearLayout
-                        android:id="@+id/toolbarSettings"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_marginEnd="8dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_panel"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:foreground="@drawable/focus_selector"
-                        android:gravity="center"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/settings_btn"
-                            android:textColor="@android:color/white"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/toolbarUsers"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_marginStart="8dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_panel"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:foreground="@drawable/focus_selector"
-                        android:gravity="center"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/users_btn"
-                            android:textColor="@android:color/white"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <!-- Loading Row -->
+                <!-- ===== Loading Row ===== -->
                 <LinearLayout
                     android:id="@+id/loadingRow"
                     android:layout_width="wrap_content"
@@ -555,7 +635,7 @@
         </FrameLayout>
     </FrameLayout>
 
-    <!-- Navigation Drawer (same as UserList) -->
+    <!-- ===== Navigation Drawer ===== -->
     <LinearLayout
         android:id="@+id/drawerMenu"
         android:layout_width="280dp"
@@ -581,10 +661,27 @@
             android:layout_marginVertical="16dp"
             android:background="#2d2d44" />
 
+        <!-- 📞 الدعم (انتقل هنا من الشاشة الرئيسية) -->
+        <TextView
+            android:id="@+id/drawerSupport"
+            android:nextFocusUp="@id/drawerSupport"
+            android:nextFocusDown="@id/drawerMatches"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/bg_vip_grid_card"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="@drawable/focus_ring_vip"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="16dp"
+            android:text="📞 الدعم الفني (واتساب)"
+            android:textColor="#39FF8B"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
         <TextView
             android:id="@+id/drawerMatches"
-            android:nextFocusUp="@id/drawerMatches"
-            android:nextFocusDown="@id/drawerPrayer"
             android:layout_width="match_parent"
             android:layout_height="48dp"
             android:layout_marginBottom="8dp"
@@ -679,7 +776,6 @@
             android:textSize="16sp"
             android:textStyle="bold" />
 
-
         <TextView
             android:id="@+id/drawerShare"
             android:layout_width="match_parent"
@@ -695,6 +791,7 @@
             android:textColor="@android:color/white"
             android:textSize="16sp"
             android:textStyle="bold" />
+
         <View
             android:layout_width="match_parent"
             android:layout_height="0dp"

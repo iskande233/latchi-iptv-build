@@ -45,6 +45,18 @@ class TvLivePreviewActivity : AppCompatActivity() {
                 putExtra("category", category)
             })
         }
+
+        /**
+         * تشغيل المعاينة بقائمة قنوات مخصصة (مثل beIN Sports المفلترة).
+         * يتجاوز الفلتر الافتراضي للتصنيف.
+         */
+        fun startWithChannels(context: Context, channel: Channel, channels: List<Channel>, categoryLabel: String) {
+            context.startActivity(Intent(context, TvLivePreviewActivity::class.java).apply {
+                putExtra("channel", channel)
+                putExtra("category", categoryLabel)
+                putParcelableArrayListExtra("extra_channels", ArrayList(channels))
+            })
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,7 +64,12 @@ class TvLivePreviewActivity : AppCompatActivity() {
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
         ThemeManager.apply(this)
         selected = intent.getParcelableExtra("channel") ?: run { finish(); return }
-        channels = loadChannelsForPreview(intent.getStringExtra("category") ?: selected.category)
+        val customList = intent.getParcelableArrayListExtra<Channel>("extra_channels")
+        channels = if (!customList.isNullOrEmpty()) {
+            customList
+        } else {
+            loadChannelsForPreview(intent.getStringExtra("category") ?: selected.category)
+        }
         buildUi()
         playPreview(selected)
     }

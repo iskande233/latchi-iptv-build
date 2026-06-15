@@ -50,11 +50,14 @@ class HomeFragment : Fragment() {
     private lateinit var cardMovies: LinearLayout
     private lateinit var cardSeries: LinearLayout
     private lateinit var cardMatches: LinearLayout
-    private lateinit var backToHomeButton: LinearLayout
+    private lateinit var cardBeInSports: LinearLayout
+    private lateinit var cardSettings: LinearLayout
+    private lateinit var cardAccounts: LinearLayout
     private lateinit var toolbarSettings: LinearLayout
     private lateinit var toolbarUsers: LinearLayout
     private lateinit var lastWatchedButton: TextView
-    private lateinit var whatsappButton: LinearLayout
+    private lateinit var clockTimeText: TextView
+    private lateinit var clockDateText: TextView
     private lateinit var liveCount: TextView
     private lateinit var movieCount: TextView
     private lateinit var seriesCount: TextView
@@ -84,11 +87,14 @@ class HomeFragment : Fragment() {
             cardMovies = view.findViewById(R.id.cardMovies)
             cardSeries = view.findViewById(R.id.cardSeries)
             cardMatches = view.findViewById(R.id.cardMatches)
-            backToHomeButton = view.findViewById(R.id.backToHomeButton)
+            cardBeInSports = view.findViewById(R.id.cardBeInSports)
+            cardSettings = view.findViewById(R.id.cardSettings)
+            cardAccounts = view.findViewById(R.id.cardAccounts)
             toolbarSettings = view.findViewById(R.id.toolbarSettings)
             toolbarUsers = view.findViewById(R.id.toolbarUsers)
             lastWatchedButton = view.findViewById(R.id.lastWatchedButton)
-            whatsappButton = view.findViewById(R.id.whatsappButton)
+            clockTimeText = view.findViewById(R.id.clockTimeText)
+            clockDateText = view.findViewById(R.id.clockDateText)
             liveCount = view.findViewById(R.id.liveCount)
             movieCount = view.findViewById(R.id.movieCount)
             seriesCount = view.findViewById(R.id.seriesCount)
@@ -111,12 +117,9 @@ class HomeFragment : Fragment() {
             setupVoiceHandler()
             setupClicks(view)
 
-            view.findViewById<TextView?>(R.id.tvDateText)?.let { dateView ->
-                try {
-                    val sdf = java.text.SimpleDateFormat("EEEE d MMMM yyyy", java.util.Locale("ar"))
-                    dateView.text = "📅 " + sdf.format(java.util.Date())
-                } catch (_: Exception) { }
-            }
+            // 🕒 تحديث الساعة الفورية (Time + Date Widget)
+            startClockUpdater()
+
             view
         } catch (e: Throwable) {
             val errorView = TextView(requireContext()).apply {
@@ -166,6 +169,11 @@ class HomeFragment : Fragment() {
     private fun setupDrawer(view: View) {
         view.findViewById<TextView>(R.id.menuButton).setOnClickListener {
             drawerLayout.openDrawer(GravityCompat.END)
+        }
+        // 📞 الدعم الفني (انتقل من الشاشة الرئيسية إلى القائمة الجانبية)
+        view.findViewById<TextView?>(R.id.drawerSupport)?.setOnClickListener {
+            drawerLayout.closeDrawer(GravityCompat.END)
+            try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/213798712450"))) } catch (_: Exception) {}
         }
         view.findViewById<TextView>(R.id.drawerMatches).setOnClickListener {
             drawerLayout.closeDrawer(GravityCompat.END)
@@ -221,7 +229,7 @@ class HomeFragment : Fragment() {
         try {
             val ctx = root.context
             root.findViewById<View?>(R.id.headerLogo)?.startAnimation(AnimationUtils.loadAnimation(ctx, R.anim.float_updown))
-            listOf(R.id.cardLive, R.id.cardMovies, R.id.cardSeries, R.id.cardMatches).forEachIndexed { i, id ->
+            listOf(R.id.cardLive, R.id.cardMovies, R.id.cardSeries, R.id.cardMatches, R.id.cardBeInSports, R.id.cardSettings, R.id.cardAccounts).forEachIndexed { i, id ->
                 root.findViewById<View?>(id)?.let { c ->
                     val anim = AnimationUtils.loadAnimation(ctx, R.anim.card_slide_up).apply { startOffset = (i * 90).toLong() }
                     c.startAnimation(anim)
@@ -231,16 +239,21 @@ class HomeFragment : Fragment() {
     }
 
     private fun setupClicks(view: View) {
+        // 🎬 الصف الأول
         cardLive.setOnClickListener { ChannelListActivity.start(requireContext(), "live", getString(R.string.live_tv)) }
         cardMovies.setOnClickListener { ChannelListActivity.start(requireContext(), "movie", getString(R.string.movies)) }
         cardSeries.setOnClickListener { ChannelListActivity.start(requireContext(), "series", getString(R.string.series)) }
         cardMatches.setOnClickListener { startActivity(Intent(requireContext(), MatchesActivity::class.java)) }
-        backToHomeButton.setOnClickListener {
-            startActivity(Intent(requireContext(), UserListActivity::class.java).putExtra("show_settings", true))
-            requireActivity().finish()
-        }
-        view.findViewById<View?>(R.id.toolbarSettingsTop)?.setOnClickListener { startActivity(Intent(requireContext(), SettingsActivity::class.java)) }
-        view.findViewById<View?>(R.id.toolbarUsersTop)?.setOnClickListener { forceUpdate() }
+
+        // ⚙️ الصف الثاني
+        // 🏆 beIN Sports - فتح شاشة الفئات المفلترة
+        cardBeInSports.setOnClickListener { startActivity(Intent(requireContext(), BeInSportsCategoriesActivity::class.java)) }
+        // ⚙️ الإعدادات
+        cardSettings.setOnClickListener { startActivity(Intent(requireContext(), SettingsActivity::class.java)) }
+        // 🔑 الحسابات - شاشة VIP النظيفة الجديدة
+        cardAccounts.setOnClickListener { startActivity(Intent(requireContext(), VipAccountsActivity::class.java)) }
+
+        // 🔧 شريط أدوات علوي قديم (للتوافق)
         toolbarSettings.setOnClickListener { startActivity(Intent(requireContext(), SettingsActivity::class.java)) }
         toolbarUsers.setOnClickListener {
             startActivity(Intent(requireContext(), UserListActivity::class.java).putExtra("show_settings", true))
@@ -254,9 +267,34 @@ class HomeFragment : Fragment() {
                 } ?: com.latchi.iptv.utils.CustomOverlayHelper.show(requireActivity(), "تنبيه", getString(R.string.no_last_watched), false)
             }
         }
-        whatsappButton.setOnClickListener {
-            try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/213798712450"))) } catch (_: Exception) {}
+    }
+
+    private var clockHandler: Handler? = null
+    private var clockRunnable: Runnable? = null
+
+    private fun startClockUpdater() {
+        stopClockUpdater()
+        clockHandler = Handler(Looper.getMainLooper())
+        clockRunnable = object : Runnable {
+            override fun run() {
+                try {
+                    val now = java.util.Date()
+                    val locale = java.util.Locale("ar")
+                    val timeFmt = java.text.SimpleDateFormat("hh:mm a", locale)
+                    val dateFmt = java.text.SimpleDateFormat("EEEE d MMMM yyyy", locale)
+                    clockTimeText?.text = timeFmt.format(now)
+                    clockDateText?.text = dateFmt.format(now)
+                } catch (_: Exception) { }
+                clockHandler?.postDelayed(this, 1000L)
+            }
         }
+        clockHandler?.post(clockRunnable!!)
+    }
+
+    private fun stopClockUpdater() {
+        clockHandler?.removeCallbacksAndMessages(null)
+        clockHandler = null
+        clockRunnable = null
     }
 
     private fun setupVoiceHandler() {
@@ -511,7 +549,7 @@ class HomeFragment : Fragment() {
                 view?.post {
                     Toast.makeText(requireContext(), getString(R.string.expiry_warning, diffDays), Toast.LENGTH_LONG).show()
                     view?.findViewById<TextView?>(R.id.expiryBanner)?.let { b ->
-                        b.text = msg; b.visibility = View.VISIBLE; b.setOnClickListener { whatsappButton.performClick() }
+                        b.text = msg; b.visibility = View.VISIBLE; b.setOnClickListener { try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/213798712450"))) } catch (_: Exception) {} }
                     }
                 }
             }
@@ -590,5 +628,6 @@ class HomeFragment : Fragment() {
         voiceHandler?.destroy()
         voiceHandler = null
         stopAdhkarRotator()
+        stopClockUpdater()
     }
 }
