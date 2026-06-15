@@ -1,7 +1,7 @@
 workflows:
-  android-debug-build-from-zip:
-    name: Android Debug APK From ZIP
-    max_build_duration: 60
+  android-debug-build:
+    name: Latchi IPTV VIP Debug APK
+    max_build_duration: 90
     instance_type: mac_mini_m2
 
     environment:
@@ -12,48 +12,29 @@ workflows:
         script: |
           pwd
           ls -la
+          echo "---app structure---"
+          ls -la app/
 
-      - name: Unzip project and detect root
+      - name: Verify Gradle wrapper
         script: |
-          rm -rf build_project
-          mkdir -p build_project
-          unzip -q IPTVmine-1.0.9.zip -d build_project
-          echo "Top-level after unzip:"
-          ls -la build_project
-          GRADLEW_PATH="$(find build_project -maxdepth 3 -type f -name gradlew -print -quit)"
-          if [ -z "$GRADLEW_PATH" ]; then
-            echo "ERROR: gradlew not found after unzip. ZIP structure is invalid."
-            find build_project -maxdepth 3 -type f | head -80
+          if [ ! -f "./gradlew" ]; then
+            echo "ERROR: gradlew not found"
             exit 1
           fi
-          PROJECT_ROOT="$(dirname "$GRADLEW_PATH")"
-          echo "Detected PROJECT_ROOT=$PROJECT_ROOT"
-          ls -la "$PROJECT_ROOT"
+          echo "✓ Gradle wrapper found"
 
       - name: Clean local machine files
         script: |
-          GRADLEW_PATH="$(find build_project -maxdepth 3 -type f -name gradlew -print -quit)"
-          if [ -z "$GRADLEW_PATH" ]; then echo "ERROR: gradlew not found"; exit 1; fi
-          PROJECT_ROOT="$(dirname "$GRADLEW_PATH")"
-          cd "$PROJECT_ROOT"
           rm -f local.properties
           rm -rf .idea
           rm -rf app/release
 
       - name: Make Gradle executable
         script: |
-          GRADLEW_PATH="$(find build_project -maxdepth 3 -type f -name gradlew -print -quit)"
-          if [ -z "$GRADLEW_PATH" ]; then echo "ERROR: gradlew not found"; exit 1; fi
-          PROJECT_ROOT="$(dirname "$GRADLEW_PATH")"
-          cd "$PROJECT_ROOT"
           chmod +x ./gradlew
 
       - name: Build Debug APK
         script: |
-          GRADLEW_PATH="$(find build_project -maxdepth 3 -type f -name gradlew -print -quit)"
-          if [ -z "$GRADLEW_PATH" ]; then echo "ERROR: gradlew not found"; exit 1; fi
-          PROJECT_ROOT="$(dirname "$GRADLEW_PATH")"
-          cd "$PROJECT_ROOT"
           attempt=1
           max=3
           while true; do
@@ -80,10 +61,6 @@ workflows:
 
       - name: Verify APK exists
         script: |
-          GRADLEW_PATH="$(find build_project -maxdepth 3 -type f -name gradlew -print -quit)"
-          if [ -z "$GRADLEW_PATH" ]; then echo "ERROR: gradlew not found"; exit 1; fi
-          PROJECT_ROOT="$(dirname "$GRADLEW_PATH")"
-          cd "$PROJECT_ROOT"
           APK=$(find app/build/outputs -name "*.apk" | head -1)
           if [ -z "$APK" ]; then
             echo "ERROR: No APK produced — build did not actually succeed."
@@ -96,4 +73,4 @@ workflows:
 
     artifacts:
       - artifacts/*.apk
-      - build_project/**/*.apk
+      - app/build/outputs/**/*.apk
