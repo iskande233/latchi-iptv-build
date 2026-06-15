@@ -53,6 +53,7 @@ class HomeFragment : Fragment() {
     private var cardBeInSports: LinearLayout? = null
     private var cardSettings: LinearLayout? = null
     private var cardAccounts: LinearLayout? = null
+    private var cardTheme: LinearLayout? = null
     private var toolbarSettings: LinearLayout? = null
     private var toolbarUsers: LinearLayout? = null
     private var lastWatchedButton: TextView? = null
@@ -90,6 +91,7 @@ class HomeFragment : Fragment() {
             cardBeInSports = view.findViewById(R.id.cardBeInSports)
             cardSettings = view.findViewById(R.id.cardSettings)
             cardAccounts = view.findViewById(R.id.cardAccounts)
+            cardTheme = view.findViewById(R.id.cardTheme)
             toolbarSettings = view.findViewById<View?>(R.id.toolbarSettings) as? LinearLayout
             toolbarUsers = view.findViewById<View?>(R.id.toolbarUsers) as? LinearLayout
             lastWatchedButton = view.findViewById(R.id.lastWatchedButton)
@@ -269,7 +271,7 @@ class HomeFragment : Fragment() {
         try {
             val ctx = root.context
             root.findViewById<View?>(R.id.headerLogo)?.startAnimation(AnimationUtils.loadAnimation(ctx, R.anim.float_updown))
-            listOf(R.id.cardLive, R.id.cardMovies, R.id.cardSeries, R.id.cardMatches, R.id.cardBeInSports, R.id.cardSettings, R.id.cardAccounts).forEachIndexed { i, id ->
+            listOf(R.id.cardLive, R.id.cardMovies, R.id.cardSeries, R.id.cardMatches, R.id.cardBeInSports, R.id.cardSettings, R.id.cardAccounts, R.id.cardTheme).forEachIndexed { i, id ->
                 root.findViewById<View?>(id)?.let { c ->
                     val anim = AnimationUtils.loadAnimation(ctx, R.anim.card_slide_up).apply { startOffset = (i * 90).toLong() }
                     c.startAnimation(anim)
@@ -292,6 +294,8 @@ class HomeFragment : Fragment() {
         cardSettings?.setOnClickListener { startActivity(Intent(requireContext(), SettingsActivity::class.java)) }
         // 🔑 الحسابات - شاشة VIP النظيفة الجديدة
         cardAccounts?.setOnClickListener { startActivity(Intent(requireContext(), VipAccountsActivity::class.java)) }
+        // 🎨 الثيم - بطاقة التلفاز الثامنة
+        cardTheme?.setOnClickListener { startActivity(Intent(requireContext(), ThemeSettingsActivity::class.java)) }
 
         // 🔧 شريط أدوات علوي قديم (للتوافق)
         toolbarSettings?.setOnClickListener { startActivity(Intent(requireContext(), SettingsActivity::class.java)) }

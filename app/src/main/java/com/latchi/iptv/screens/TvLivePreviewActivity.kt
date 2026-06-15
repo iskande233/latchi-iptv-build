@@ -52,6 +52,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
     private lateinit var playerView: PlayerView
     private lateinit var title: TextView
     private lateinit var subtitle: TextView
+    private lateinit var epgText: TextView
     private lateinit var adapter: PreviewAdapter
     private var currentPlayingChannelUrl: String? = null
 
@@ -153,6 +154,16 @@ class TvLivePreviewActivity : AppCompatActivity() {
         }
         right.addView(subtitle, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(32)))
 
+        epgText = TextView(this).apply {
+            text = "EPG: جاري جلب تفاصيل البرنامج..."
+            setTextColor(Color.parseColor("#9FEAFF"))
+            textSize = 14f
+            gravity = Gravity.CENTER
+            maxLines = 2
+            setPadding(dp(8), dp(2), dp(8), dp(4))
+        }
+        right.addView(epgText, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(46)))
+
         val videoFrame = FrameLayout(this).apply {
             setBackgroundColor(Color.BLACK)
             isFocusable = true
@@ -220,7 +231,9 @@ class TvLivePreviewActivity : AppCompatActivity() {
         currentPlayingChannelUrl = ch.streamUrl
         title.text = ch.name
         subtitle.text = ch.category
+        epgText.text = "EPG: جاري جلب تفاصيل البرنامج..."
         adapter.setPlaying(ch.streamUrl)
+        loadPreviewEpg(ch)
 
         val dataSourceFactory = DefaultHttpDataSource.Factory()
             .setUserAgent("Mozilla/5.0 (Linux; Android TV) AppleWebKit/537.36")
@@ -239,6 +252,37 @@ class TvLivePreviewActivity : AppCompatActivity() {
                 exo.playWhenReady = true
                 exo.prepare()
             }
+    }
+
+
+    private fun loadPreviewEpg(ch: Channel) {
+        if (ch.contentType != "live") {
+            epgText.text = "EPG: دليل البرامج متاح للقنوات المباشرة فقط"
+            return
+        }
+        val active = SourcePrefs.getActiveProfile(this)
+        val creds = active?.let { com.latchi.iptv.utils.XtreamHelper.parseCreds(it.m3uUrl) }
+        val streamId = com.latchi.iptv.utils.XtreamHelper.liveStreamId(ch.streamUrl)
+        if (creds == null || streamId == null) {
+            epgText.text = "EPG: غير متوفر لهذا المصدر"
+            return
+        }
+        val expectedUrl = ch.streamUrl
+        Thread {
+            val items = try {
+                com.latchi.iptv.utils.XtreamHelper.fetchShortEpg(creds, streamId, 2)
+            } catch (_: Exception) {
+                emptyList()
+            }
+            runOnUiThread {
+                if (selected.streamUrl != expectedUrl) return@runOnUiThread
+                epgText.text = when {
+                    items.isEmpty() -> "EPG: لا توجد تفاصيل برنامج متاحة الآن"
+                    items.size == 1 -> "EPG الآن: ${items[0].title}"
+                    else -> "EPG الآن: ${items[0].title}\nالتالي: ${items[1].title}"
+                }
+            }
+        }.start()
     }
 
     override fun onResume() {

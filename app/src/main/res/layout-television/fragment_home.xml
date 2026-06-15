@@ -321,7 +321,7 @@
                         android:foreground="@drawable/focus_ring_vip"
                         android:gravity="center"
                         android:nextFocusLeft="@id/cardSeries"
-                        android:nextFocusDown="@id/cardAccounts"
+                        android:nextFocusDown="@id/cardTheme"
                         android:orientation="vertical" />
                 </LinearLayout>
 
@@ -380,14 +380,25 @@
                         android:foreground="@drawable/focus_ring_vip"
                         android:gravity="center"
                         android:nextFocusLeft="@id/cardSettings"
+                        android:nextFocusRight="@id/cardTheme"
                         android:nextFocusUp="@id/cardSeries"
                         android:orientation="vertical" />
 
-                    <Space
+                    <LinearLayout
+                        android:id="@+id/cardTheme"
                         android:layout_width="0dp"
                         android:layout_height="150dp"
                         android:layout_weight="1"
-                        android:layout_margin="8dp" />
+                        android:layout_margin="8dp"
+                        android:background="@drawable/tv_card_theme"
+                        android:clickable="true"
+                        android:contentDescription="الثيم"
+                        android:focusable="true"
+                        android:foreground="@drawable/focus_ring_vip"
+                        android:gravity="center"
+                        android:nextFocusLeft="@id/cardAccounts"
+                        android:nextFocusUp="@id/cardMatches"
+                        android:orientation="vertical" />
                 </LinearLayout>
 
                 <!-- ===== Footer ===== -->
