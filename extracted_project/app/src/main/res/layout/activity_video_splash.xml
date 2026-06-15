@@ -1,66 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 🎬 Video / Marvel Simulated Dual Intro Overlay 🎬 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#000000">
 
-    <!-- 1️⃣ Hardware VideoView (Plays res/raw/splash_video.mp4 if present) -->
-    <VideoView
-        android:id="@+id/splashVideoView"
+    <ImageView
+        android:id="@+id/videoSplashImage"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_gravity="center" />
+        android:layout_gravity="center"
+        android:adjustViewBounds="false"
+        android:background="#000000"
+        android:contentDescription="LATCHI IPTV intro"
+        android:scaleType="centerCrop" />
 
-    <!-- 2️⃣ Marvel Cinematic Pure Native Code Dual Canvas Simulation Overlay -->
-    <!-- Runs transparently on GPU ensuring 60FPS flawless execution if MP4 is placeholder -->
-    <FrameLayout
-        android:id="@+id/simulatedIntroOverlay"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="#000000">
-
-        <!-- Particle Floating BG -->
-        <FrameLayout
-            android:id="@+id/particlesOverlay"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-
-        <!-- Glow Central Aura -->
-        <View
-            android:id="@+id/centralAura"
-            android:layout_width="320dp"
-            android:layout_height="320dp"
-            android:layout_gravity="center"
-            android:background="@drawable/bg_voice_glow"
-            android:scaleX="0.2"
-            android:scaleY="0.2"
-            android:alpha="0" />
-
-        <!-- Centered Bouncy Marvel Pop Typography -->
-        <TextView
-            android:id="@+id/introText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:gravity="center"
-            android:text=""
-            android:textColor="#FFFFFF"
-            android:textSize="48sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.2"
-            android:shadowColor="#FFD700"
-            android:shadowDx="0"
-            android:shadowDy="2"
-            android:shadowRadius="12" />
-
-        <!-- Final Metallic Shine Wave Flare -->
-        <View
-            android:id="@+id/flareShine"
-            android:layout_width="match_parent"
-            android:layout_height="80dp"
-            android:layout_gravity="center"
-            android:background="#AA00BFFF"
-            android:alpha="0" />
-    </FrameLayout>
 </FrameLayout>
