@@ -144,7 +144,7 @@ class HomeFragment : Fragment() {
                 arguments?.putBoolean(MainActivity.EXTRA_OPEN_AI_VOICE, false)
             }
         } catch (e: Throwable) {
-            com.latchi.iptv.utils.CustomOverlayHelper.show(requireContext(), "خطأ", "HomeFragment Crash: ${e.message}", false)
+            com.latchi.iptv.utils.CustomOverlayHelper.show(requireActivity(), "خطأ", "HomeFragment Crash: ${e.message}", false)
             AlertDialog.Builder(requireContext())
                 .setTitle("HomeFragment Crash")
                 .setMessage(Log.getStackTraceString(e))
