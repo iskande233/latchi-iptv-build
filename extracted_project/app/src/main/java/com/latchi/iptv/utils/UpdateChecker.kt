@@ -10,8 +10,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import com.latchi.iptv.BuildConfig
+import com.latchi.iptv.screens.UpdatePromptActivity
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
@@ -39,7 +39,7 @@ object UpdateChecker {
     )
 
     interface OnUpdateListener {
-        fun onUpdateAvailable(versionName: String, notes: String, url: String)
+        fun onUpdateAvailable(info: UpdateInfo)
     }
 
     fun checkInBackground(activity: Activity, listener: OnUpdateListener? = null) {
@@ -49,7 +49,7 @@ object UpdateChecker {
                 activity.runOnUiThread {
                     if (activity.isFinishing) return@runOnUiThread
                     if (listener != null) {
-                        listener.onUpdateAvailable(info.versionName, info.notes, info.apkUrl)
+                        listener.onUpdateAvailable(info)
                     } else {
                         showUpdateDialog(activity, info)
                     }
@@ -79,22 +79,19 @@ object UpdateChecker {
             versionName = json.optString("versionName", ""),
             apkUrl = apkUrl,
             notes = notes,
-            forceUpdate = json.optBoolean("forceUpdate", false)
+            forceUpdate = true
         )
     }
 
     fun showUpdateDialog(activity: Activity, info: UpdateInfo) {
-        AlertDialog.Builder(activity)
-            .setTitle("${activity.getString(com.latchi.iptv.R.string.update_available)}  (${info.versionName})")
-            .setMessage(info.notes.ifBlank { "تحديث جديد متوفر." })
-            .setCancelable(!info.forceUpdate)
-            .setPositiveButton(activity.getString(com.latchi.iptv.R.string.update_now)) { _, _ ->
-                downloadAndInstall(activity, info.apkUrl, info.versionName)
-            }
-            .apply {
-                if (!info.forceUpdate) setNegativeButton(activity.getString(com.latchi.iptv.R.string.close), null)
-            }
-            .show()
+        UpdatePromptActivity.start(
+            activity,
+            info.versionName,
+            info.versionCode,
+            info.apkUrl,
+            info.notes,
+            true
+        )
     }
 
     fun downloadAndInstall(activity: Activity, apkUrl: String, versionName: String = "") {

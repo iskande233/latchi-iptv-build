@@ -589,10 +589,13 @@ class HomeFragment : Fragment() {
     private fun checkUpdateBadge(view: View) {
         val badge = view.findViewById<TextView?>(R.id.updateBadge) ?: return
         UpdateChecker.checkInBackground(requireActivity(), object : UpdateChecker.OnUpdateListener {
-            override fun onUpdateAvailable(versionName: String, notes: String, url: String) {
+            override fun onUpdateAvailable(info: UpdateChecker.UpdateInfo) {
                 badge.visibility = View.VISIBLE
-                badge.text = "🔄 ${getString(R.string.update_available)} $versionName"
-                badge.setOnClickListener { UpdateChecker.downloadAndInstall(requireActivity(), url, versionName) }
+                badge.text = "${getString(R.string.update_available)} ${info.versionName}"
+                badge.setOnClickListener {
+                    UpdatePromptActivity.start(requireContext(), info.versionName, info.versionCode, info.apkUrl, info.notes, true)
+                }
+                UpdatePromptActivity.start(requireContext(), info.versionName, info.versionCode, info.apkUrl, info.notes, true)
             }
         })
     }
