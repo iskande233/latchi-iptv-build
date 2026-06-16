@@ -499,9 +499,8 @@ class HomeFragment : Fragment() {
         channelsProvider.channels.observe(viewLifecycleOwner, Observer { data ->
             try {
                 loadingTimeoutHandler?.removeCallbacksAndMessages(null)
-                progressBar.visibility = View.GONE
-                loadingOverlay.visibility = View.GONE
-                stopAdhkarRotator()
+                progressBar?.visibility = View.GONE
+                loadingOverlay?.visibility = View.GONE
                 updateCounts(data)
                 VoiceIndex.update(data)
                 
@@ -526,9 +525,8 @@ class HomeFragment : Fragment() {
             try {
                 loadingTimeoutHandler?.removeCallbacksAndMessages(null)
                 if (!error.isNullOrBlank()) {
-                    progressBar.visibility = View.GONE
-                    loadingOverlay.visibility = View.GONE
-                    stopAdhkarRotator()
+                    progressBar?.visibility = View.GONE
+                    loadingOverlay?.visibility = View.GONE
                     com.latchi.iptv.utils.CustomOverlayHelper.show(requireActivity(), "خطأ", error, false)
                 }
             } catch (e: Throwable) { Log.e("HomeFragment", "Error Observer Crash: ${e.message}") }
@@ -560,16 +558,14 @@ class HomeFragment : Fragment() {
                                 channelsProvider.setLocalChannels(cached)
                                 updateCacheTime(active.id)
                                 VoiceIndex.update(cached)
-                                progressBar.visibility = View.GONE
-                                loadingOverlay.visibility = View.GONE
-                                stopAdhkarRotator()
+                                progressBar?.visibility = View.GONE
+                                loadingOverlay?.visibility = View.GONE
                             }
                             embedded.isNotEmpty() -> {
                                 channelsProvider.setLocalChannels(embedded)
                                 VoiceIndex.update(embedded)
-                                progressBar.visibility = View.GONE
-                                loadingOverlay.visibility = View.GONE
-                                stopAdhkarRotator()
+                                progressBar?.visibility = View.GONE
+                                loadingOverlay?.visibility = View.GONE
                             }
                             else -> {
                                 // Flawless user requirement: Absolute fast lazy mode for everything! No forced full loading at startup.
@@ -626,7 +622,6 @@ class HomeFragment : Fragment() {
         super.onDestroyView()
         voiceHandler?.destroy()
         voiceHandler = null
-        stopAdhkarRotator()
         stopClockUpdater()
     }
 }
