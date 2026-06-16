@@ -133,6 +133,8 @@
                 android:textColor="#FFFFFF"
                 android:textColorHint="#B8AFC8"
                 android:textSize="15sp"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
                 android:visibility="gone" />
 
             <ProgressBar
@@ -223,7 +225,9 @@
                     android:singleLine="true"
                     android:textColor="#FFFFFF"
                     android:textColorHint="#888888"
-                    android:textSize="14sp" />
+                    android:textSize="14sp"
+                    android:focusable="true"
+                    android:focusableInTouchMode="true" />
 
                 <!-- 3-Column Recycler Grid View -->
                 <androidx.recyclerview.widget.RecyclerView
