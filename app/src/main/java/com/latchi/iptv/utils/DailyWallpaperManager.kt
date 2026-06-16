@@ -70,15 +70,15 @@ object DailyWallpaperManager {
 
                 val existingFiles = dir.listFiles()?.filter { it.extension.equals("jpg", true) || it.extension.equals("png", true) } ?: emptyList()
 
-                // If already synced today and we have exactly 5 files, return them immediately
-                if (!force && lastDay == todayDay && existingFiles.size == 5) {
-                    Log.d(TAG, "Already synced today. Returning 5 active wallpapers.")
+    // If already synced today and we have exactly 6 files, return them immediately
+                if (!force && lastDay == todayDay && existingFiles.size == 6) {
+                    Log.d(TAG, "Already synced today. Returning 6 active wallpapers.")
                     onMain { onComplete(existingFiles.sortedBy { it.name }) }
                     return@thread
                 }
 
                 Log.d(TAG, "Starting new daily wallpaper sync...")
-                val dayOffset = (todayDay % 5).toInt()
+                val dayOffset = (todayDay % 6).toInt()
                 val targetUrls = mutableListOf<String>()
 
                 // Try fetching remote live JSON first
@@ -101,8 +101,8 @@ object DailyWallpaperManager {
                     targetUrls.addAll(fallbackPool)
                 }
 
-                // Pick exactly 5 urls based on today's rotation
-                val pickedUrls = (0 until 5).map { i ->
+                // Pick exactly 6 urls based on today's rotation
+                val pickedUrls = (0 until 6).map { i ->
                     targetUrls[(dayOffset + i) % targetUrls.size]
                 }
 

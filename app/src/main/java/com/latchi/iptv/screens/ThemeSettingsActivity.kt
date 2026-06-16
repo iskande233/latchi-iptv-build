@@ -33,7 +33,7 @@ import java.io.File
  * 🌟 TV Fullscreen Majestic Backdrop Wallpaper Gallery (`THEME` / `Shape`) 🌟
  *
  * Full-screen VIP cinematic wallpaper backdrop gallery.
- * Automatically synchronizes exactly 5 rotating daily backdrops. Deletes leftovers
+ * Automatically synchronizes exactly 6 rotating daily backdrops. Deletes leftovers
  * to consume zero leftover storage. Offers Instant DPAD selection or Custom Gallery.
  */
 class ThemeSettingsActivity : AppCompatActivity() {
@@ -41,6 +41,7 @@ class ThemeSettingsActivity : AppCompatActivity() {
         super.attachBaseContext(LocaleHelper.wrap(newBase))
     }
 
+    private lateinit var rootLayout: LinearLayout
     private lateinit var content: LinearLayout
     private lateinit var progressBarRow: View
 
@@ -54,12 +55,18 @@ class ThemeSettingsActivity : AppCompatActivity() {
     }
 
     private fun buildMajesticUi() {
-        val root = LinearLayout(this).apply {
+        rootLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(Color.parseColor("#050A1A"))
         }
-        setContentView(root)
+        setContentView(rootLayout)
         FloatingBackHelper.setup(this)
+
+        // Set the active background instantly on load
+        val activeBg = DailyWallpaperManager.loadActiveWallpaperDrawable(this)
+        if (activeBg != null) {
+            rootLayout.background = activeBg
+        }
 
         // Top bar
         val topBar = LinearLayout(this).apply {
@@ -67,8 +74,9 @@ class ThemeSettingsActivity : AppCompatActivity() {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(20), dp(16), dp(20), dp(16))
             background = GradientDrawable().apply {
-                setColor(Color.parseColor("#121228"))
+                setColor(Color.parseColor("#CC121228"))
                 setStroke(dp(1), Color.parseColor("#3d3d5c"))
+                cornerRadius = dp(12).toFloat()
             }
         }
 
@@ -83,6 +91,9 @@ class ThemeSettingsActivity : AppCompatActivity() {
             isFocusable = true
             setOnClickListener { finish() }
             setPadding(dp(16), dp(8), dp(16), dp(8))
+            setOnFocusChangeListener { v, has ->
+                v.animate().scaleX(if (has) 1.05f else 1f).scaleY(if (has) 1.05f else 1f).setDuration(120).start()
+            }
         }
         topBar.addView(back, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(44)))
 
@@ -97,13 +108,15 @@ class ThemeSettingsActivity : AppCompatActivity() {
             setTypeface(null, Typeface.BOLD)
         })
         titles.addView(TextView(this).apply {
-            text = "5 خلفيات يومية متجددة أوتوماتيكياً • صفر استهلاك للمساحة"
+            text = "6 خلفيات يومية متجددة أوتوماتيكياً • صفر استهلاك للمساحة"
             setTextColor(Color.parseColor("#A5B4FC"))
             textSize = 12f
             setPadding(0, dp(2), 0, 0)
         })
         topBar.addView(titles, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-        root.addView(topBar, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+        rootLayout.addView(topBar, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+            setMargins(dp(20), dp(16), dp(20), 0)
+        })
 
         progressBarRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -111,13 +124,13 @@ class ThemeSettingsActivity : AppCompatActivity() {
             setPadding(dp(20), dp(40), dp(20), dp(40))
             addView(ProgressBar(this@ThemeSettingsActivity).apply { isIndeterminate = true })
             addView(TextView(this@ThemeSettingsActivity).apply {
-                text = "جاري مزامنة 5 خلفيات سينمائية جديدة لهذا اليوم...\nسيتم مسح الخلفيات القديمة صمتاً للحفاظ على المساحة ⚡"
+                text = "جاري مزامنة 6 خلفيات سينمائية جديدة لهذا اليوم...\nسيتم مسح الخلفيات القديمة صمتاً للحفاظ على المساحة ⚡"
                 setTextColor(Color.WHITE)
                 textSize = 14f
                 setPadding(dp(16), 0, 0, 0)
             })
         }
-        root.addView(progressBarRow)
+        rootLayout.addView(progressBarRow)
 
         val scroll = ScrollView(this).apply {
             isFillViewport = true
@@ -127,7 +140,7 @@ class ThemeSettingsActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
         }
         scroll.addView(content)
-        root.addView(scroll, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
+        rootLayout.addView(scroll, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
     }
 
     private fun loadWallpapers() {
@@ -145,21 +158,31 @@ class ThemeSettingsActivity : AppCompatActivity() {
 
         val activePath = DailyWallpaperManager.getActiveWallpaper(this)
 
+        // Horizontal Row for Custom & Refresh Options (To keep them compact at the top)
+        val actionRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                bottomMargin = dp(16)
+            }
+        }
+
         // Custom Option
         val customCard = createWallpaperCard(
-            title = "🖼️ اختيار صورة من المعرض (Custom Wallpaper)",
-            subtitle = "تحديد صورة خاصة من هاتفك أو جهازك",
+            title = "🖼️ اختيار صورة خاصة",
+            subtitle = "تحديد صورة من معرض جهازك",
             isActive = ThemeManager.getTheme(this) == "custom",
             imageFile = null
         ) {
             pickCustomImage()
         }
-        content.addView(customCard)
+        actionRow.addView(customCard, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+            marginEnd = dp(6)
+        })
 
         // Refresh Option
         val refreshCard = createWallpaperCard(
-            title = "🔄 مزامنة 5 خلفيات سينمائية جديدة الآن",
-            subtitle = "تحميل 5 خلفيات مذهلة فوراً ومسح الخلفيات الحالية",
+            title = "🔄 مزامنة 6 خلفيات جديدة",
+            subtitle = "تحميل وتحديث الخلفيات الآن",
             isActive = false,
             imageFile = null
         ) {
@@ -167,14 +190,18 @@ class ThemeSettingsActivity : AppCompatActivity() {
             DailyWallpaperManager.syncDailyWallpapers(this, force = true) { updated ->
                 progressBarRow.visibility = View.GONE
                 renderWallpapers(updated)
-                CustomOverlayHelper.show(this, "مزامنة", "تم جلب 5 خلفيات جديدة بنجاح ✓", true)
+                CustomOverlayHelper.show(this, "مزامنة", "تم جلب 6 خلفيات جديدة بنجاح ✓", true)
             }
         }
-        content.addView(refreshCard)
+        actionRow.addView(refreshCard, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+            marginStart = dp(6)
+        })
+
+        content.addView(actionRow)
 
         // Section Title
         val titleView = TextView(this).apply {
-            text = "✨ خلفيات اليوم الأوتوماتيكية (اضغط للتطبيق الفوري)"
+            text = "✨ خلفيات اليوم السينمائية (تطبيق فوري في جزء من الثانية ⚡)"
             setTextColor(Color.parseColor("#FFD700"))
             textSize = 16f
             setTypeface(null, Typeface.BOLD)
@@ -182,23 +209,44 @@ class ThemeSettingsActivity : AppCompatActivity() {
         }
         content.addView(titleView)
 
+        // 3-Column Grid for the 6 wallpapers
+        val grid = android.widget.GridLayout(this).apply {
+            columnCount = 3
+            alignmentMode = android.widget.GridLayout.ALIGN_BOUNDS
+            useDefaultMargins = true
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                topMargin = dp(6)
+                bottomMargin = dp(30)
+            }
+        }
+
         files.forEachIndexed { index, file ->
             val isCurrent = file.absolutePath == activePath && ThemeManager.getTheme(this) != "custom"
-            val card = createWallpaperCard(
-                title = "🌌 خلفية سينمائية — المظهر ${index + 1}",
-                subtitle = "المسار: ${file.name}",
+            val card = createGridWallpaperCard(
+                title = "خلفية سينمائية — ${index + 1}",
                 isActive = isCurrent,
                 imageFile = file
             ) {
                 DailyWallpaperManager.setActiveWallpaper(this, file.absolutePath)
                 ThemeManager.setTheme(this, "daily")
-                CustomOverlayHelper.show(this, "خلفية الشاشة", "✨ تم تطبيق خلفية الشاشة بنجاح", true)
-                recreate()
+                
+                // Set the active background instantly!
+                val drawable = DailyWallpaperManager.loadActiveWallpaperDrawable(this)
+                if (drawable != null) {
+                    rootLayout.background = drawable
+                }
+                
+                // Re-render the grid to show the new active border instantly!
+                renderWallpapers(files)
+                
+                Toast.makeText(this, "✨ تم تطبيق الخلفية ${index + 1} بنجاح", Toast.LENGTH_SHORT).show()
             }
-            content.addView(card)
+            grid.addView(card)
         }
-
-        CustomOverlayHelper.show(this, "خلفيات", "تم تحميل 5 خلفيات جاهزة ✓", true)
+        content.addView(grid)
     }
 
     private fun createWallpaperCard(
@@ -208,28 +256,88 @@ class ThemeSettingsActivity : AppCompatActivity() {
         imageFile: File?,
         onClick: () -> Unit
     ): LinearLayout {
-        val card = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(16), dp(14), dp(16), dp(14))
+            setPadding(dp(12), dp(10), dp(12), dp(10))
             isClickable = true
             isFocusable = true
             background = GradientDrawable().apply {
-                setColor(if (isActive) Color.parseColor("#1B1B3A") else Color.parseColor("#121228"))
-                cornerRadius = dp(16).toFloat()
+                setColor(if (isActive) Color.parseColor("#331B1B3A") else Color.parseColor("#80121228"))
+                cornerRadius = dp(12).toFloat()
                 setStroke(dp(2), if (isActive) Color.parseColor("#FFD700") else Color.parseColor("#3d3d5c"))
             }
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(12) }
 
             setOnClickListener { onClick() }
             setOnFocusChangeListener { v, has ->
                 v.animate().scaleX(if (has) 1.03f else 1f).scaleY(if (has) 1.03f else 1f).setDuration(120).start()
+                if (has) {
+                    (v.background as? GradientDrawable)?.setStroke(dp(2), Color.parseColor("#7FE6FF"))
+                } else {
+                    (v.background as? GradientDrawable)?.setStroke(dp(2), if (isActive) Color.parseColor("#FFD700") else Color.parseColor("#3d3d5c"))
+                }
+            }
+
+            addView(TextView(this@ThemeSettingsActivity).apply {
+                text = title
+                setTextColor(if (isActive) Color.parseColor("#FFD700") else Color.WHITE)
+                textSize = 14f
+                setTypeface(null, Typeface.BOLD)
+                gravity = Gravity.CENTER
+            })
+            addView(TextView(this@ThemeSettingsActivity).apply {
+                text = subtitle
+                setTextColor(Color.parseColor("#A5B4FC"))
+                textSize = 11f
+                gravity = Gravity.CENTER
+                setPadding(0, dp(4), 0, 0)
+            })
+        }
+    }
+
+    private fun createGridWallpaperCard(
+        title: String,
+        isActive: Boolean,
+        imageFile: File?,
+        onClick: () -> Unit
+    ): LinearLayout {
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dp(8), dp(8), dp(8), dp(8))
+            isClickable = true
+            isFocusable = true
+            background = GradientDrawable().apply {
+                setColor(if (isActive) Color.parseColor("#4D1B1B3A") else Color.parseColor("#B3121228"))
+                cornerRadius = dp(12).toFloat()
+                setStroke(dp(2), if (isActive) Color.parseColor("#FFD700") else Color.parseColor("#3d3d5c"))
+            }
+            
+            // Grid layout params for equal column widths
+            val specRow = android.widget.GridLayout.spec(android.widget.GridLayout.UNDEFINED, 1f)
+            val specCol = android.widget.GridLayout.spec(android.widget.GridLayout.UNDEFINED, 1f)
+            layoutParams = android.widget.GridLayout.LayoutParams(specRow, specCol).apply {
+                width = 0
+                height = LinearLayout.LayoutParams.WRAP_CONTENT
+                setMargins(dp(6), dp(6), dp(6), dp(6))
+            }
+
+            setOnClickListener { onClick() }
+            setOnFocusChangeListener { v, has ->
+                v.animate().scaleX(if (has) 1.05f else 1f).scaleY(if (has) 1.05f else 1f).setDuration(120).start()
+                if (has) {
+                    (v.background as? GradientDrawable)?.setStroke(dp(2), Color.parseColor("#7FE6FF"))
+                } else {
+                    (v.background as? GradientDrawable)?.setStroke(dp(2), if (isActive) Color.parseColor("#FFD700") else Color.parseColor("#3d3d5c"))
+                }
             }
         }
 
         // Preview ImageView
         val imageView = ImageView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(dp(80), dp(50)).apply { marginEnd = dp(16) }
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(84)).apply {
+                bottomMargin = dp(6)
+            }
             scaleType = ImageView.ScaleType.CENTER_CROP
             background = GradientDrawable().apply {
                 setColor(Color.BLACK)
@@ -240,7 +348,7 @@ class ThemeSettingsActivity : AppCompatActivity() {
 
         if (imageFile != null && imageFile.exists()) {
             try {
-                val bitmap = android.graphics.BitmapFactory.decodeFile(imageFile.absolutePath)
+                val bitmap = BitmapFactory.decodeFile(imageFile.absolutePath)
                 imageView.setImageBitmap(bitmap)
             } catch (_: Exception) {}
         } else {
@@ -248,23 +356,14 @@ class ThemeSettingsActivity : AppCompatActivity() {
         }
         card.addView(imageView)
 
-        val textCol = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        }
-        textCol.addView(TextView(this).apply {
-            text = if (isActive) "✓ $title (مطبق حالياً)" else title
+        // Text
+        card.addView(TextView(this).apply {
+            text = if (isActive) "✓ $title" else title
             setTextColor(if (isActive) Color.parseColor("#FFD700") else Color.WHITE)
-            textSize = 16f
+            textSize = 13f
             setTypeface(null, Typeface.BOLD)
+            gravity = Gravity.CENTER
         })
-        textCol.addView(TextView(this).apply {
-            text = subtitle
-            setTextColor(Color.parseColor("#A5B4FC"))
-            textSize = 12f
-            setPadding(0, dp(4), 0, 0)
-        })
-        card.addView(textCol)
 
         return card
     }
@@ -288,7 +387,7 @@ class ThemeSettingsActivity : AppCompatActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        if (com.latchi.iptv.utils.TvFocusHelper.handleKey(this, keyCode, event)) return true
+        // Native android focus search handles grid perfectly, we bypass custom manual key handling if it locks up D-pad
         return super.onKeyDown(keyCode, event)
     }
 

@@ -20,7 +20,7 @@
     <string name="users_btn">🔄 Actualiser</string>
     <string name="settings">Paramètres</string>
     <string name="settings_btn">⚙️ Paramètres</string>
-    <string name="logged_in">Connecté</string>
+    <string name="logged_in">Utilisateur</string>
     <string name="expiry">Expiration</string>
     <string name="last_update">Dernière MàJ</string>
     <string name="update">Mettre à jour</string>
