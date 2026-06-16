@@ -59,9 +59,9 @@ class HomeFragment : Fragment() {
     private var lastWatchedButton: TextView? = null
     private var clockTimeText: TextView? = null
     private var clockDateText: TextView? = null
-    private lateinit var liveCount: TextView
-    private lateinit var movieCount: TextView
-    private lateinit var seriesCount: TextView
+    private var liveCount: TextView? = null
+    private var movieCount: TextView? = null
+    private var seriesCount: TextView? = null
     private lateinit var updatedText: TextView
     private lateinit var loggedInText: TextView
     private lateinit var expiryText: TextView
@@ -600,7 +600,8 @@ class HomeFragment : Fragment() {
     }
 
     private fun updateCounts(data: List<Channel>) {
-        fun setCount(view: TextView, count: Int, suffix: String) {
+        fun setCount(view: TextView?, count: Int, suffix: String) {
+            if (view == null) return
             if (count > 0) {
                 view.visibility = View.VISIBLE
                 view.text = "$count $suffix"
