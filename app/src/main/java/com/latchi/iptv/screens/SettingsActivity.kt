@@ -111,7 +111,6 @@ class SettingsActivity : AppCompatActivity() {
                 "🌐 التطبيق",
                 listOf(
                     TvOption("app_language", "Language", "الإعداد القديم للغة محفوظ ومتاح هنا", listOf("العربية", "Français", "English"), LanguagePrefs.getLanguageName(this), "language"),
-                    TvOption("theme_color", "Theme Color", "تغيير لون السمة للتلفاز", listOf("Default", "Dark", "Blue", "Gold", "Green", "Red"), tvPrefs.getString("theme_color", "Default") ?: "Default", "theme"),
                     TvOption("clear_cache", "Clear Cache", "مسح التخزين المؤقت مع تأكيد", listOf("اضغط OK"), "اضغط OK", "clear_cache"),
                     TvOption("auto_update_app", "Auto Update App", "تحديث تلقائي للتطبيق", listOf("ON", "OFF"), "ON"),
                     TvOption("server_sync", "Server Sync", "تحديث السيرفر الآن + عرض آخر تحقق", listOf("اضغط OK"), "اضغط OK", "server_sync"),
