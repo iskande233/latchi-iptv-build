@@ -25,7 +25,7 @@ object BeinChannelResolver {
     private val BEIN_KEYWORDS = listOf(
         "bein", "be in", "beinsport", "bein sports", "bein sport",
         "bein max", "max", "xtra", "extra", "4k", "uhd", "news",
-        "بي ان", "بي إن", "بي ان سبورت", "بي إن سبورت"
+        "بي ان", "بي إن", "بي ان سبورت", "بي إن سبورت", "بين", "سبورت", "alkass", "ssc", "الكاس", "sports", "sport", "كأس"
     )
 
     fun resolve(
@@ -40,15 +40,15 @@ object BeinChannelResolver {
                 val cached = ChannelCache.load(appContext, profile.id).filter { it.contentType == "live" }
                 val cachedBein = filterBein(cached)
 
-                // If cache has a robust number of beIN channels, return them immediately
-                if (cachedBein.size >= 12) {
+                // If cache has any beIN channels, return them immediately
+                if (cachedBein.isNotEmpty()) {
                     Log.d(TAG, "Resolved ${cachedBein.size} beIN channels from Cache")
                     onMain { onResolved(cachedBein) }
                     return@thread
                 }
 
-                // 2. Cache is empty or inadequate -> Fetch from Server directly
-                Log.d(TAG, "Cache insufficient (${cachedBein.size} found). Fetching live channels from server...")
+                // 2. Cache is empty -> Fetch from Server directly
+                Log.d(TAG, "Cache empty. Fetching live channels from server...")
                 val fetched = fetchFromServer(profile.m3uUrl)
                 val finalBein = filterBein(fetched.ifEmpty { cached })
                 
