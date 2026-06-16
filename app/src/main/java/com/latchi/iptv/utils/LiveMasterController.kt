@@ -82,8 +82,9 @@ object LiveMasterController {
         thread(name = "LatchiLiveMasterPoll") {
             try {
                 val activeProfile = SourcePrefs.getActiveProfile(appContext)
+                val ts = System.currentTimeMillis().toString()
                 val req = Request.Builder()
-                    .url("$MASTER_CHECK_URL&profile_id=${activeProfile?.id ?: ""}&version_code=${BuildConfig.VERSION_CODE}")
+                    .url("$MASTER_CHECK_URL&profile_id=${activeProfile?.id ?: ""}&version_code=${BuildConfig.VERSION_CODE}&_t=$ts")
                     .get()
                     .build()
 

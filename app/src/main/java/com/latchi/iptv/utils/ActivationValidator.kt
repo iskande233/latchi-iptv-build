@@ -35,7 +35,8 @@ object ActivationValidator {
         val deviceId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID) ?: "unknown"
         val code = URLEncoder.encode(activationCode.trim(), "UTF-8")
         val device = URLEncoder.encode(deviceId, "UTF-8")
-        val requestUrl = "$apiUrl?code=$code&device_id=$device"
+        val ts = System.currentTimeMillis().toString()
+        val requestUrl = "$apiUrl?code=$code&device_id=$device&_t=$ts"
 
         val connection = URL(requestUrl).openConnection() as HttpURLConnection
         connection.requestMethod = "GET"

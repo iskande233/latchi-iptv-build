@@ -61,7 +61,8 @@ object UpdateChecker {
     }
 
     fun fetchUpdateInfo(): UpdateInfo? {
-        val url = "$UPDATE_URL&version_code=${BuildConfig.VERSION_CODE}"
+        val ts = System.currentTimeMillis().toString()
+        val url = "$UPDATE_URL&version_code=${BuildConfig.VERSION_CODE}&_t=$ts"
         val req = Request.Builder().url(url).header("Accept", "application/json").build()
         val body = client.newCall(req).execute().use { res ->
             if (!res.isSuccessful) return null
