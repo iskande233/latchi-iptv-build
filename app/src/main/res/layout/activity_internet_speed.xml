@@ -128,7 +128,7 @@
             android:layout_marginTop="20dp"
             android:max="150"
             android:progress="0"
-            android:progressDrawable="@drawable/splash_progress_blue" />
+            android:progressDrawable="@drawable/speed_progress_blue" />
 
         <!-- Circular Big Start Test Button (glowing and focusable) -->
         <TextView
