@@ -10,7 +10,8 @@ data class ServerSyncResult(
     val message: String = "",
     val oldUrl: String = "",
     val newUrl: String = "",
-    val profileId: String = ""
+    val profileId: String = "",
+    val serverRevision: Long = 0L
 )
 
 object ServerSyncManager {
@@ -98,7 +99,8 @@ object ServerSyncManager {
                                 message = if (revisionChanged) "revision_changed" else "server_changed",
                                 oldUrl = oldUrl,
                                 newUrl = newUrl,
-                                profileId = active.id
+                                profileId = active.id,
+                                serverRevision = newRevision
                             )
                         )
                     }
