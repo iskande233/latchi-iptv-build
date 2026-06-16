@@ -46,16 +46,16 @@ import com.latchi.iptv.utils.VoiceIndex
 
 class HomeFragment : Fragment() {
     private lateinit var channelsProvider: ChannelsProvider
-    private lateinit var cardLive: LinearLayout
-    private lateinit var cardMovies: LinearLayout
-    private lateinit var cardSeries: LinearLayout
-    private lateinit var cardMatches: LinearLayout
-    private var cardBeInSports: LinearLayout? = null
-    private var cardSettings: LinearLayout? = null
-    private var cardAccounts: LinearLayout? = null
-    private var cardTheme: LinearLayout? = null
-    private var toolbarSettings: LinearLayout? = null
-    private var toolbarUsers: LinearLayout? = null
+    private var cardLive: View? = null
+    private var cardMovies: View? = null
+    private var cardSeries: View? = null
+    private var cardMatches: View? = null
+    private var cardBeInSports: View? = null
+    private var cardSettings: View? = null
+    private var cardAccounts: View? = null
+    private var cardTheme: View? = null
+    private var toolbarSettings: View? = null
+    private var toolbarUsers: View? = null
     private var lastWatchedButton: TextView? = null
     private var clockTimeText: TextView? = null
     private var clockDateText: TextView? = null
@@ -65,8 +65,8 @@ class HomeFragment : Fragment() {
     private lateinit var updatedText: TextView
     private lateinit var loggedInText: TextView
     private lateinit var expiryText: TextView
-    private lateinit var progressBar: View
-    private lateinit var loadingOverlay: View
+    private var progressBar: View? = null
+    private var loadingOverlay: View? = null
     private lateinit var usersRecyclerView: RecyclerView
     private lateinit var usersAdapter: UserProfilesAdapter
     private lateinit var drawerLayout: DrawerLayout
@@ -181,10 +181,7 @@ class HomeFragment : Fragment() {
         ServerSyncManager.checkForServerUpdate(requireContext(), force = force) { result ->
             syncInProgress = false
             if (!isAdded || !result.changed) return@checkForServerUpdate
-            // 🔄 عرض واجهة التحديث (مرحلة التحميل → مرحلة النجاح)
-            ServerUpdateOverlayHelper.show(requireActivity()) {
-                // ✅ تحديث سلس للقنوات في المكان بدلاً من إعادة تشغيل Activity
-                refreshChannelsSilently()            }
+            refreshChannelsSilently()
         }
     }
 
@@ -301,10 +298,10 @@ class HomeFragment : Fragment() {
 
     private fun setupClicks(view: View) {
         // 🎬 الصف الأول
-        cardLive.setOnClickListener { ChannelListActivity.start(requireContext(), "live", getString(R.string.live_tv)) }
-        cardMovies.setOnClickListener { ChannelListActivity.start(requireContext(), "movie", getString(R.string.movies)) }
-        cardSeries.setOnClickListener { ChannelListActivity.start(requireContext(), "series", getString(R.string.series)) }
-        cardMatches.setOnClickListener { startActivity(Intent(requireContext(), MatchesActivity::class.java)) }
+        cardLive?.setOnClickListener { ChannelListActivity.start(requireContext(), "live", getString(R.string.live_tv)) }
+        cardMovies?.setOnClickListener { ChannelListActivity.start(requireContext(), "movie", getString(R.string.movies)) }
+        cardSeries?.setOnClickListener { ChannelListActivity.start(requireContext(), "series", getString(R.string.series)) }
+        cardMatches?.setOnClickListener { startActivity(Intent(requireContext(), MatchesActivity::class.java)) }
 
         // ⚙️ الصف الثاني
         // 🏆 beIN Sports - فتح شاشة الفئات المفلترة
@@ -575,21 +572,9 @@ class HomeFragment : Fragment() {
                                 stopAdhkarRotator()
                             }
                             else -> {
-                                if (channelsProvider.isXtreamSource(active.m3uUrl)) {
-                                    // نظام التحميل السريع: لا نحمل كل القنوات في الشاشة الرئيسية.
-                                    // كل قسم يحمل فئته الأولى فقط عند الدخول، مثل تطبيقات JSON السريعة.
-                                    channelsProvider.setLocalChannels(emptyList())
-                                    progressBar.visibility = View.GONE
-                                    loadingOverlay.visibility = View.GONE
-                                    stopAdhkarRotator()
-                                } else {
-                                    saveAfterFetch = true
-                                    progressBar.visibility = View.VISIBLE
-                                    loadingOverlay.visibility = View.VISIBLE
-                                    startAdhkarRotator()
-                                    startLoadingTimeout()
-                                    channelsProvider.fetchM3UFile(active.m3uUrl)
-                                }
+                                // Flawless user requirement: Absolute fast lazy mode for everything! No forced full loading at startup.
+                                channelsProvider.setLocalChannels(emptyList())
+                                progressBar?.visibility = View.GONE
                             }
                         }
                     } catch (_: Exception) {}
@@ -597,7 +582,6 @@ class HomeFragment : Fragment() {
             }.start()
         } catch (e: Throwable) {
             Log.e("HomeFragment", "Load Data Crash: ${e.message}")
-            AlertDialog.Builder(requireContext()).setTitle("Load Data Crash").setMessage(Log.getStackTraceString(e)).show()
         }
     }
 
@@ -617,54 +601,6 @@ class HomeFragment : Fragment() {
                 }
             }
         } catch (_: Exception) {}
-    }
-
-    private fun forceUpdate() {
-        val active = SourcePrefs.getActiveProfile(requireContext()) ?: return
-        saveAfterFetch = true
-        progressBar.visibility = View.VISIBLE
-        loadingOverlay.visibility = View.VISIBLE
-        startAdhkarRotator()
-        startLoadingTimeout()
-        channelsProvider.fetchM3UFile(active.m3uUrl)
-    }
-
-    private fun startLoadingTimeout() {
-        loadingTimeoutHandler?.removeCallbacksAndMessages(null)
-        loadingTimeoutHandler = Handler(Looper.getMainLooper())
-        loadingTimeoutHandler?.postDelayed({
-            if (progressBar.visibility == View.VISIBLE) {
-                progressBar.visibility = View.GONE
-                loadingOverlay.visibility = View.GONE
-                stopAdhkarRotator()
-                com.latchi.iptv.utils.CustomOverlayHelper.show(requireActivity(), "تنبيه", "انتهت مهلة التحميل. اضغط 'تحديث'", false)
-            }
-        }, 120000)
-    }
-
-    private fun startAdhkarRotator() {
-        stopAdhkarRotator()
-        val allTexts = resources.getStringArray(R.array.adhkar_items).toList() + resources.getStringArray(R.array.ayat_items).toList()
-        val allRefs = resources.getStringArray(R.array.adhkar_references).toList() + resources.getStringArray(R.array.ayat_references).toList()
-        loadingOverlay.findViewById<TextView?>(R.id.loadingTitle)?.text = getString(R.string.loading_adhkar_title)
-        val tv = loadingOverlay.findViewById<TextView?>(R.id.loadingText)
-        val ref = loadingOverlay.findViewById<TextView?>(R.id.loadingRef)
-        if (allTexts.isEmpty()) return
-
-        adhkarRotatorHandler = Handler(Looper.getMainLooper())
-        adhkarRotatorRunnable = object : Runnable {
-            override fun run() {
-                val idx = (0 until allTexts.size).random()
-                tv?.text = allTexts[idx]; ref?.text = allRefs.getOrNull(idx) ?: ""
-                adhkarRotatorHandler?.postDelayed(this, 8000)
-            }
-        }
-        adhkarRotatorHandler?.post(adhkarRotatorRunnable!!)
-    }
-
-    private fun stopAdhkarRotator() {
-        adhkarRotatorHandler?.removeCallbacksAndMessages(null)
-        adhkarRotatorHandler = null; adhkarRotatorRunnable = null
     }
 
     private fun updateCounts(data: List<Channel>) {

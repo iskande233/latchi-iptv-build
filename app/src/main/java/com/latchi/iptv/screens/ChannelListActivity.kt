@@ -234,13 +234,11 @@ class ChannelListActivity : AppCompatActivity() {
     private fun startSilentServerSync() {
         ServerSyncManager.checkForServerUpdate(this, force = false) { result ->
             if (!result.changed || isFinishing) return@checkForServerUpdate
-            ServerUpdateOverlayHelper.show(this) {
-                val intent = Intent(this, MainActivity::class.java).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                }
-                startActivity(intent)
-                finish()
+            val intent = Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             }
+            startActivity(intent)
+            finish()
         }
     }
 
