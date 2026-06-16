@@ -181,7 +181,7 @@ class HomeFragment : Fragment() {
         ServerSyncManager.checkForServerUpdate(requireContext(), force = force) { result ->
             syncInProgress = false
             if (!isAdded || !result.changed) return@checkForServerUpdate
-            refreshChannelsSilently()
+            GlowingServerUpdateActivity.start(requireActivity(), result.serverRevision)
         }
     }
 
@@ -340,7 +340,7 @@ class HomeFragment : Fragment() {
                 try {
                     val now = java.util.Date()
                     val locale = java.util.Locale("ar")
-                    val timeFmt = java.text.SimpleDateFormat("hh:mm a", locale)
+                    val timeFmt = java.text.SimpleDateFormat("hh:mm:ss a", locale)
                     val dateFmt = java.text.SimpleDateFormat("EEEE d MMMM yyyy", locale)
                     clockTimeText?.text = com.latchi.iptv.utils.DigitNormalizer.normalizeDigits(timeFmt.format(now))
                     clockDateText?.text = com.latchi.iptv.utils.DigitNormalizer.normalizeDigits(dateFmt.format(now))
@@ -615,7 +615,8 @@ class HomeFragment : Fragment() {
 
     private fun updateCacheTime(profileId: String) {
         val time = ChannelCache.updatedAt(requireContext().applicationContext, profileId)
-        updatedText.text = "${getString(R.string.last_update)}: " + if (time == 0L) "--" else "✓"
+        val timeStr = if (time == 0L) "--" else java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date(time))
+        updatedText?.text = "Last Server Update:  $timeStr  :آخر تحديث للسيرفر"
     }
 
     override fun onDestroyView() {

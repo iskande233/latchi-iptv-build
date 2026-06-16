@@ -178,7 +178,7 @@ class GlowingServerUpdateActivity : AppCompatActivity() {
 
             handler.postDelayed({
                 navigateToMain()
-            }, 3500L) // Exactly 3.5 seconds as requested
+            }, 2000L) // Exactly 2 seconds as requested
         }.start()
     }
 
