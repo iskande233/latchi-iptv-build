@@ -50,7 +50,31 @@ class SplashActivity : AppCompatActivity() {
         if (needsPermissions()) {
             requestAppPermissions()
         } else {
-            scheduleNavigation(5000)
+            startSplashLoading()
+        }
+    }
+
+    private fun startSplashLoading() {
+        val isTv = TvUtils.isTv(this)
+        val splashProgressBar = findViewById<android.widget.ProgressBar>(R.id.splashProgressBar)
+        val tvProgressBar = findViewById<android.widget.ProgressBar>(R.id.tvProgressBar)
+
+        if (isTv) {
+            tvProgressBar?.visibility = View.VISIBLE
+            splashProgressBar?.visibility = View.GONE
+            scheduleNavigation(3000)
+        } else {
+            tvProgressBar?.visibility = View.GONE
+            splashProgressBar?.visibility = View.VISIBLE
+
+            val animator = android.animation.ValueAnimator.ofInt(0, 100).apply {
+                duration = 2000L
+                addUpdateListener { animation ->
+                    splashProgressBar?.progress = animation.animatedValue as Int
+                }
+            }
+            animator.start()
+            scheduleNavigation(2000)
         }
     }
 
@@ -115,7 +139,7 @@ class SplashActivity : AppCompatActivity() {
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == PERMISSION_REQUEST_CODE) {
-            scheduleNavigation(1000)
+            startSplashLoading()
         }
     }
 
