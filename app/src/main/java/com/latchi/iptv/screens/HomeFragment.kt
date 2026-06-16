@@ -77,6 +77,7 @@ class HomeFragment : Fragment() {
 
     private var saveAfterFetch = false
     private var loadingTimeoutHandler: Handler? = null
+    private var adhkarBannerText: TextView? = null
     private var adhkarRotatorHandler: Handler? = null
     private var adhkarRotatorRunnable: Runnable? = null
 
@@ -121,6 +122,10 @@ class HomeFragment : Fragment() {
 
             // 🕒 تحديث الساعة الفورية (Time + Date Widget)
             startClockUpdater()
+
+            // 🕌 تفعيل وبدء التسبيح والأذكار اليومي
+            adhkarBannerText = view.findViewById(R.id.adhkarBannerText)
+            startAdhkarRotator()
 
             view
         } catch (e: Throwable) {
@@ -625,5 +630,32 @@ class HomeFragment : Fragment() {
         voiceHandler?.destroy()
         voiceHandler = null
         stopClockUpdater()
+        stopAdhkarRotator()
+    }
+
+    private fun startAdhkarRotator() {
+        stopAdhkarRotator()
+        val textWidget = adhkarBannerText ?: return
+        val items = resources.getStringArray(R.array.adhkar_items)
+        if (items.isEmpty()) return
+
+        adhkarRotatorHandler = Handler(Looper.getMainLooper())
+        var index = 0
+        adhkarRotatorRunnable = object : Runnable {
+            override fun run() {
+                try {
+                    textWidget.text = items[index]
+                    index = (index + 1) % items.size
+                } catch (_: Exception) {}
+                adhkarRotatorHandler?.postDelayed(this, 15000L) // Rotate every 15 seconds
+            }
+        }
+        adhkarRotatorHandler?.post(adhkarRotatorRunnable!!)
+    }
+
+    private fun stopAdhkarRotator() {
+        adhkarRotatorHandler?.removeCallbacksAndMessages(null)
+        adhkarRotatorHandler = null
+        adhkarRotatorRunnable = null
     }
 }

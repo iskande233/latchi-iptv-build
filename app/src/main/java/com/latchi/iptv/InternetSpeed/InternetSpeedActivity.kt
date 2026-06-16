@@ -52,7 +52,7 @@ class InternetSpeedActivity : AppCompatActivity(), ISpeedTestListener {
 
     private fun init() {
         setupGauge()
-
+        com.latchi.iptv.utils.TvFocusHelper.setupFocusableItem(binding.startTestBT)
 
         binding.startTestBT.setOnClickListener {
 

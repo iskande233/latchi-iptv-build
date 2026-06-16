@@ -294,14 +294,21 @@ class PlayerActivity : AppCompatActivity() {
         val mediaItem = MediaItem.fromUri(Uri.parse(streamUrl))
         val mode = PlayerPrefs.getMode(this)
 
+        val loadControl = com.google.android.exoplayer2.DefaultLoadControl.Builder()
+            .setBufferDurationsMs(15000, 30000, 2500, 5000)
+            .build()
+
         player = if (mode == PlayerPrefs.MODE_AUTO) {
             val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
-            ExoPlayer.Builder(this).setMediaSourceFactory(mediaSourceFactory)
+            ExoPlayer.Builder(this)
+                .setMediaSourceFactory(mediaSourceFactory)
+                .setLoadControl(loadControl)
                 .setSeekBackIncrementMs(INCREMENT_MILLIS)
                 .setSeekForwardIncrementMs(INCREMENT_MILLIS)
                 .build()
         } else {
             ExoPlayer.Builder(this)
+                .setLoadControl(loadControl)
                 .setSeekBackIncrementMs(INCREMENT_MILLIS)
                 .setSeekForwardIncrementMs(INCREMENT_MILLIS)
                 .build()

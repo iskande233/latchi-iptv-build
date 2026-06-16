@@ -421,8 +421,12 @@ class TvLivePreviewActivity : AppCompatActivity() {
         val streamUrl = ch.streamUrl.trim().replace("&amp;", "&")
 
         player?.release()
+        val loadControl = com.google.android.exoplayer2.DefaultLoadControl.Builder()
+            .setBufferDurationsMs(15000, 30000, 2500, 5000)
+            .build()
         player = ExoPlayer.Builder(this)
             .setMediaSourceFactory(mediaSourceFactory)
+            .setLoadControl(loadControl)
             .build()
             .also { exo ->
                 playerView.player = exo

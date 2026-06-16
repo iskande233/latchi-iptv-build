@@ -20,6 +20,7 @@ object BeinChannelResolver {
     private val client = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
+        .addInterceptor(AntiBlockInterceptor)
         .build()
 
     private val BEIN_KEYWORDS = listOf(

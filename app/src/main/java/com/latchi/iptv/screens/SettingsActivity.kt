@@ -424,7 +424,7 @@ class SettingsActivity : AppCompatActivity() {
             handleTvOptionOk(option, valueView)
             return
         }
-        val current = displayValue(option)
+        val current = displayValue(option).removePrefix("✓ ").trim()
         val currentIndex = option.values.indexOf(current).let { if (it >= 0) it else option.values.indexOf(option.defaultValue).coerceAtLeast(0) }
         val nextIndex = (currentIndex + direction + option.values.size) % option.values.size
         val next = option.values[nextIndex]
@@ -437,6 +437,11 @@ class SettingsActivity : AppCompatActivity() {
                     else -> "ar"
                 }
                 LanguagePrefs.setLanguage(this, lang)
+                val intent = Intent(this, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                }
+                startActivity(intent)
+                finish()
             }
             "player_mode" -> {
                 val mode = when (next) {

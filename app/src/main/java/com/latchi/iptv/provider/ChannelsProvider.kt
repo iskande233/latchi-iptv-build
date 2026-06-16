@@ -55,6 +55,7 @@ class ChannelsProvider : ViewModel() {
         .retryOnConnectionFailure(true)
         .followRedirects(true)
         .followSslRedirects(true)
+        .addInterceptor(com.latchi.iptv.utils.AntiBlockInterceptor)
         .build()
 
     fun setLocalChannels(list: List<Channel>) {
