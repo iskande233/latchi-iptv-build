@@ -18,7 +18,7 @@ object ActivationConfig {
     }
 
     fun resolvePlaylistUrlFromGoogle(rawPlaylistUrl: String): String {
-        val cleaned = rawPlaylistUrl.trim().replace("&amp;", "&")
+        val cleaned = rawPlaylistUrl.replace(" ", "").trim().replace("&amp;", "&")
         return if (USE_LOCKED_PROVIDER_AFTER_GOOGLE_CODE) lockedProviderPlaylistUrl() else cleaned
     }
 
