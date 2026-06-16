@@ -225,7 +225,7 @@ class HomeFragment : Fragment() {
     }
 
     private fun setupDrawer(view: View) {
-        view.findViewById<TextView>(R.id.menuButton).setOnClickListener {
+        view.findViewById<TextView?>(R.id.menuButton)?.setOnClickListener {
             drawerLayout.openDrawer(GravityCompat.END)
         }
         // 📞 الدعم الفني (انتقل من الشاشة الرئيسية إلى القائمة الجانبية)
@@ -233,27 +233,27 @@ class HomeFragment : Fragment() {
             drawerLayout.closeDrawer(GravityCompat.END)
             try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/213798712450"))) } catch (_: Exception) {}
         }
-        view.findViewById<TextView>(R.id.drawerMatches).setOnClickListener {
+        view.findViewById<TextView?>(R.id.drawerMatches)?.setOnClickListener {
             drawerLayout.closeDrawer(GravityCompat.END)
             startActivity(Intent(requireContext(), MatchesActivity::class.java))
         }
-        view.findViewById<TextView>(R.id.drawerPrayer).setOnClickListener {
+        view.findViewById<TextView?>(R.id.drawerPrayer)?.setOnClickListener {
             drawerLayout.closeDrawer(GravityCompat.END)
             startActivity(Intent(requireContext(), PrayerActivity::class.java))
         }
-        view.findViewById<TextView>(R.id.drawerPricing).setOnClickListener {
+        view.findViewById<TextView?>(R.id.drawerPricing)?.setOnClickListener {
             drawerLayout.closeDrawer(GravityCompat.END)
             startActivity(Intent(requireContext(), PricingActivity::class.java))
         }
-        view.findViewById<TextView>(R.id.drawerThemeSettings).setOnClickListener {
+        view.findViewById<TextView?>(R.id.drawerThemeSettings)?.setOnClickListener {
             drawerLayout.closeDrawer(GravityCompat.END)
             startActivity(Intent(requireContext(), ThemeSettingsActivity::class.java))
         }
-        view.findViewById<TextView>(R.id.drawerSettings).setOnClickListener {
+        view.findViewById<TextView?>(R.id.drawerSettings)?.setOnClickListener {
             drawerLayout.closeDrawer(GravityCompat.END)
             startActivity(Intent(requireContext(), SettingsActivity::class.java))
         }
-        view.findViewById<TextView>(R.id.drawerAbout).setOnClickListener {
+        view.findViewById<TextView?>(R.id.drawerAbout)?.setOnClickListener {
             drawerLayout.closeDrawer(GravityCompat.END)
             AlertDialog.Builder(requireContext())
                 .setTitle(getString(R.string.app_info_title))
