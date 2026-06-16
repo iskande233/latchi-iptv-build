@@ -28,16 +28,10 @@ object ServerHealthChecker {
                 .build()
             client.newCall(req).execute().use { res ->
                 val ms = System.currentTimeMillis() - start
-                if (!res.isSuccessful && res.code !in 300..399 && res.code != 401 && res.code != 403) {
-                    return HealthResult(false, "HTTP ${res.code}", ms)
-                }
-                
-                // التحقق من أن الملف هو M3U فعلاً عن طريق قراءة البداية
-                val body = res.body?.string() ?: ""
-                if (body.trimStart().startsWith("#EXTM3U", ignoreCase = true)) {
+                if (res.isSuccessful || res.code == 401 || res.code == 403 || res.code in 300..399) {
                     HealthResult(true, "online", ms)
                 } else {
-                    HealthResult(false, "invalid_m3u_header", ms)
+                    HealthResult(false, "HTTP ${res.code}", ms)
                 }
             }
         } catch (e: Exception) {
