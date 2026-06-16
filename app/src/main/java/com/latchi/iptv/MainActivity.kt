@@ -16,6 +16,7 @@ import com.latchi.iptv.utils.LocaleHelper
 import com.latchi.iptv.utils.MatchNotificationHelper
 import com.latchi.iptv.utils.ThemeManager
 import com.latchi.iptv.utils.TvUtils
+import com.latchi.iptv.utils.UpdateChecker
 
 class MainActivity : AppCompatActivity() {
 

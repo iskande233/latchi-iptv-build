@@ -112,7 +112,7 @@ class GlowingServerUpdateActivity : AppCompatActivity() {
         val titleAr = TextView(this).apply {
             text = "تم تحديث السيرفر"
             setTextColor(Color.parseColor("#FFD700"))
-            textSize = if (TvUtils.isTv(this)) 46f else 32f
+            textSize = if (TvUtils.isTv(this@GlowingServerUpdateActivity)) 46f else 32f
             setTypeface(null, Typeface.BOLD) // Calligraphy Islamic vibe
             gravity = Gravity.CENTER
             setShadowLayer(16f, 0f, 0f, Color.parseColor("#FFD700")) // Golden Glow
@@ -123,7 +123,7 @@ class GlowingServerUpdateActivity : AppCompatActivity() {
         val titleEn = TextView(this).apply {
             text = "Server Updated Successfully"
             setTextColor(Color.parseColor("#00E5FF"))
-            textSize = if (TvUtils.isTv(this)) 28f else 20f
+            textSize = if (TvUtils.isTv(this@GlowingServerUpdateActivity)) 28f else 20f
             setTypeface(null, Typeface.BOLD)
             gravity = Gravity.CENTER
             setPadding(0, dp(12), 0, 0)
@@ -134,7 +134,7 @@ class GlowingServerUpdateActivity : AppCompatActivity() {
         val desc = TextView(this).apply {
             text = "تم جلب أحدث قائمة قنوات وإعدادات استقرار البث بنجاح.\nجاري توجيهك للمتابعة بأعلى جودة..."
             setTextColor(Color.WHITE)
-            textSize = if (TvUtils.isTv(this)) 20f else 15f
+            textSize = if (TvUtils.isTv(this@GlowingServerUpdateActivity)) 20f else 15f
             gravity = Gravity.CENTER
             setLineSpacing(8f, 1.1f)
             setPadding(0, dp(24), 0, dp(28))
@@ -157,13 +157,13 @@ class GlowingServerUpdateActivity : AppCompatActivity() {
         progressRow.addView(TextView(this).apply {
             text = "تجهيز القنوات / Loading Channels..."
             setTextColor(Color.parseColor("#A5B4FC"))
-            textSize = if (TvUtils.isTv(this)) 18f else 14f
+            textSize = if (TvUtils.isTv(this@GlowingServerUpdateActivity)) 18f else 14f
             setTypeface(null, Typeface.BOLD)
             setPadding(dp(16), 0, dp(16), 0)
         })
 
         card.addView(progressRow)
-        container.addView(card, LinearLayout.LayoutParams(if (TvUtils.isTv(this)) dp(800) else LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+        container.addView(card, LinearLayout.LayoutParams(if (TvUtils.isTv(this@GlowingServerUpdateActivity)) dp(800) else LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
         root.addView(container, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
     }
 

@@ -76,7 +76,7 @@ object ServerUpdateInteractiveOverlayHelper {
         val btnApply = Button(activity).apply {
             text = "تطبيق الآن / Apply Now"
             setTextColor(Color.WHITE)
-            setBackgroundResource(R.drawable.bg_btn_gold)
+            setBackgroundResource(R.drawable.bg_gold_btn)
             textSize = 15f
             setTypeface(null, Typeface.BOLD)
             isFocusable = true
@@ -93,7 +93,7 @@ object ServerUpdateInteractiveOverlayHelper {
         val btnLater = Button(activity).apply {
             text = "لاحقاً / Later"
             setTextColor(Color.WHITE)
-            setBackgroundResource(R.drawable.bg_purple_panel)
+            setBackgroundResource(R.drawable.bg_button_premium)
             textSize = 15f
             setTypeface(null, Typeface.BOLD)
             isFocusable = true
