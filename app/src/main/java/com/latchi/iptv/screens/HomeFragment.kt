@@ -321,8 +321,12 @@ class HomeFragment : Fragment() {
         // 🔧 شريط أدوات علوي قديم (للتوافق)
         toolbarSettings?.setOnClickListener { startActivity(Intent(requireContext(), SettingsActivity::class.java)) }
         toolbarUsers?.setOnClickListener {
-            startActivity(Intent(requireContext(), UserListActivity::class.java).putExtra("show_settings", true))
-            requireActivity().finish()
+            val intent = Intent(requireContext(), ChannelListActivity::class.java).apply {
+                putExtra("EXTRA_TYPE", "live")
+                putExtra("EXTRA_TITLE", "LIVE TV")
+                putExtra("category", "Favorites")
+            }
+            startActivity(intent)
         }
         cardAIVoice?.setOnClickListener { onAIVoiceClicked() }
         lastWatchedButton?.setOnClickListener {

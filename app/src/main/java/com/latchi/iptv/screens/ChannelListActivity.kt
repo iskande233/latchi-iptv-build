@@ -113,6 +113,7 @@ class ChannelListActivity : AppCompatActivity() {
 
         contentType = intent.getStringExtra(EXTRA_TYPE) ?: "live"
         screenTitle = intent.getStringExtra(EXTRA_TITLE) ?: "LIVE TV"
+        currentCategory = intent.getStringExtra("category") ?: "All"
 
         channelsProvider = ViewModelProvider(this)[ChannelsProvider::class.java]
         
@@ -132,7 +133,7 @@ class ChannelListActivity : AppCompatActivity() {
         btnCloseGrid = findViewById(R.id.btnCloseGrid)
         drawerLayout = findViewById(R.id.drawerLayout)
 
-        stickyCatTitle.text = if (screenTitle.contains("LIVE")) "كل القنوات" else screenTitle
+        stickyCatTitle.text = if (currentCategory == "Favorites") "⭐ المفضلة" else (if (screenTitle.contains("LIVE")) "كل القنوات" else screenTitle)
 
         val isGridMode = (contentType == "movie" || contentType == "series")
 
@@ -189,10 +190,7 @@ class ChannelListActivity : AppCompatActivity() {
         setupDrawer()
 
         menuButton.setOnClickListener {
-            val intent = Intent(this, UserListActivity::class.java).apply { putExtra("show_settings", true) }
-            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-            startActivity(intent)
-            finish()
+            drawerLayout.openDrawer(GravityCompat.END)
         }
         refreshButton.visibility = View.GONE
         searchButton.setOnClickListener {

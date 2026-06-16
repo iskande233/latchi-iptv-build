@@ -168,18 +168,12 @@ class GlowingServerUpdateActivity : AppCompatActivity() {
     }
 
     private fun executeCacheRefreshAndProceed() {
-        Thread {
-            try {
-                val activeProfile = SourcePrefs.getActiveProfile(this)
-                if (activeProfile != null) {
-                    ChannelCache.clear(applicationContext, activeProfile.id)
-                }
-            } catch (_: Exception) {}
-
+        // Run full sync to fetch the new broadcasted URL from Google Sheet and save it to the profile
+        com.latchi.iptv.utils.ServerSyncManager.checkForServerUpdate(this, force = true) { syncResult ->
             handler.postDelayed({
                 navigateToMain()
-            }, 2000L) // Exactly 2 seconds as requested
-        }.start()
+            }, 1500L)
+        }
     }
 
     private fun navigateToMain() {
