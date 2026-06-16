@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import kotlin.concurrent.thread
+import com.latchi.iptv.utils.FavoritesPrefs
 
 data class ServerSyncResult(
     val changed: Boolean,
@@ -87,6 +88,7 @@ object ServerSyncManager {
                         serverRevision = newRevision
                     )
                     ChannelCache.clear(appContext, active.id)
+                    FavoritesPrefs.clearProfile(appContext, active.id)
                     prefs.edit()
                         .putString("last_applied_url_${active.id}", newUrl)
                         .putLong("last_applied_revision_${active.id}", newRevision)

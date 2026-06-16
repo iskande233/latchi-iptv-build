@@ -1,5 +1,6 @@
 package com.latchi.iptv.adapter
 
+import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,7 +13,8 @@ import com.latchi.iptv.utils.TvFocusHelper
 
 class CategoryGridAdapter(
     private var categories: List<CategoryItem>,
-    private val onSelect: (CategoryItem) -> Unit
+    private val onSelect: (CategoryItem) -> Unit,
+    private val onLongSelect: ((CategoryItem) -> Unit)? = null
 ) : RecyclerView.Adapter<CategoryGridAdapter.CatViewHolder>() {
 
     data class CategoryItem(val name: String, val count: Int)
@@ -37,10 +39,20 @@ class CategoryGridAdapter(
         private val countText: TextView = itemView.findViewById(R.id.catGridCount)
 
         fun bind(item: CategoryItem) {
-            nameText.text = if (item.name == "All") "كل القنوات" else if (item.name == "Favorites") "⭐ المفضلة" else item.name
+            val prefs = itemView.context.getSharedPreferences("pinned_categories", Context.MODE_PRIVATE)
+            val profileId = com.latchi.iptv.utils.SourcePrefs.getActiveProfile(itemView.context)?.id ?: ""
+            val pinned = prefs.getString("pinned_${profileId}", "") ?: ""
+            val isPinned = pinned == item.name && item.name != "All" && item.name != "Favorites"
+
+            nameText.text = if (isPinned) "📌 ${item.name}" else (if (item.name == "All") "كل القنوات" else if (item.name == "Favorites") "⭐ المفضلة" else item.name)
             nameText.isSelected = true
             nameText.setHorizontallyScrolling(true)
             countText.text = if (item.count < 0) "فتح سريع" else "${item.count} قناة"
+
+            itemView.setOnLongClickListener {
+                onLongSelect?.invoke(item)
+                true
+            }
 
             val lower = item.name.lowercase()
             val iconRes = when {

@@ -276,6 +276,22 @@
             android:background="#2d2d44" />
 
         <TextView
+            android:id="@+id/drawerFavorites"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/bg_panel_premium_focusable"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="@drawable/focus_selector"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="16dp"
+            android:text="⭐ المفضلة / Favorites"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
             android:id="@+id/drawerTodaysMatches"
             android:layout_width="match_parent"
             android:layout_height="48dp"

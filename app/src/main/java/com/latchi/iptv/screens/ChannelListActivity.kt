@@ -171,17 +171,35 @@ class ChannelListActivity : AppCompatActivity() {
         com.latchi.iptv.utils.TvFocusHelper.setupRecycler(recyclerView)
         recyclerView.adapter = adapter
 
-        gridAdapter = CategoryGridAdapter(emptyList()) { item ->
-            currentCategory = item.name
-            stickyCatTitle.text = if (item.name == "All") "كل القنوات" else if (item.name == "Favorites") "⭐ المفضلة" else item.name
-            stickyCatSubtitle.text = if (item.count < 0) "(تحميل سريع حسب الفئة)" else "(${item.count} قناة - اضغط للتبديل)"
-            closeCategoryGrid()
-            if (lazyXtreamMode) {
-                loadLazyXtreamCategory(item.name)
-            } else {
-                applyFilter()
+        gridAdapter = CategoryGridAdapter(
+            emptyList(),
+            onSelect = { item ->
+                currentCategory = item.name
+                stickyCatTitle.text = if (item.name == "All") "كل القنوات" else if (item.name == "Favorites") "⭐ المفضلة" else item.name
+                stickyCatSubtitle.text = if (item.count < 0) "(تحميل سريع حسب الفئة)" else "(${item.count} قناة - اضغط للتبديل)"
+                closeCategoryGrid()
+                if (lazyXtreamMode) {
+                    loadLazyXtreamCategory(item.name)
+                } else {
+                    applyFilter()
+                }
+            },
+            onLongSelect = { item ->
+                if (item.name == "All" || item.name == "Favorites") return@CategoryGridAdapter
+                val prefs = getSharedPreferences("pinned_categories", Context.MODE_PRIVATE)
+                val profileId = activeId() ?: ""
+                val currentPinned = prefs.getString("pinned_${profileId}", "") ?: ""
+                
+                if (currentPinned == item.name) {
+                    prefs.edit().remove("pinned_${profileId}").apply()
+                    Toast.makeText(this, "📌 تم إلغاء تثبيت الفئة: ${item.name}", Toast.LENGTH_SHORT).show()
+                } else {
+                    prefs.edit().putString("pinned_${profileId}", item.name).apply()
+                    Toast.makeText(this, "📌 تم تثبيت فئة ${item.name} في الأعلى!", Toast.LENGTH_SHORT).show()
+                }
+                buildCategories(lastChannels)
             }
-        }
+        )
         
         catGridRecyclerView.layoutManager = LinearLayoutManager(this)
         com.latchi.iptv.utils.TvFocusHelper.setupRecycler(catGridRecyclerView)
@@ -241,6 +259,12 @@ class ChannelListActivity : AppCompatActivity() {
     }
 
     private fun setupDrawer() {
+        findViewById<TextView>(R.id.drawerFavorites)?.setOnClickListener {
+            drawerLayout.closeDrawer(GravityCompat.END)
+            currentCategory = "Favorites"
+            stickyCatTitle.text = "⭐ المفضلة"
+            applyFilter()
+        }
         findViewById<TextView>(R.id.drawerTodaysMatches)?.setOnClickListener {
             drawerLayout.closeDrawer(GravityCompat.END)
             startActivity(Intent(this, MatchesActivity::class.java))
@@ -408,8 +432,13 @@ class ChannelListActivity : AppCompatActivity() {
     }
 
     private fun sortCategoriesByPriority(cats: List<String>): List<String> {
+        val prefs = getSharedPreferences("pinned_categories", Context.MODE_PRIVATE)
+        val profileId = activeId() ?: ""
+        val pinned = prefs.getString("pinned_${profileId}", "") ?: ""
+
         return cats.sortedWith(Comparator { a, b ->
             fun score(cat: String): Int {
+                if (cat == pinned && cat != "All" && cat != "Favorites") return -1
                 val l = cat.lowercase()
                 return when {
                     l == "all" -> 0
