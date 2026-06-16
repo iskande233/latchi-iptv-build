@@ -15,7 +15,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center|bottom"
-        android:layout_marginBottom="112dp"
+        android:layout_marginBottom="96dp"
         android:text="Developed by Iskander Khantouche"
         android:textColor="#FFFFFF"
         android:textSize="13sp"
@@ -25,26 +25,10 @@
         android:shadowDy="1"
         android:shadowRadius="6" />
 
-    <!-- 📱 شريط اللودينج الأفقي التفاعلي للهاتف (يتطابق مع مفرغ الصورة) -->
     <ProgressBar
-        android:id="@+id/splashProgressBar"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:layout_width="290dp"
-        android:layout_height="13dp"
-        android:layout_gravity="center|bottom"
-        android:layout_marginBottom="81dp"
-        android:max="100"
-        android:progress="0"
-        android:progressDrawable="@drawable/splash_progress_blue"
-        android:visibility="gone" />
-
-    <!-- 📺 لودينج التلفاز الدائري -->
-    <ProgressBar
-        android:id="@+id/tvProgressBar"
         android:layout_width="42dp"
         android:layout_height="42dp"
         android:layout_gravity="center|bottom"
         android:layout_marginBottom="42dp"
-        android:indeterminate="true"
-        android:visibility="visible" />
+        android:indeterminate="true" />
 </FrameLayout>
