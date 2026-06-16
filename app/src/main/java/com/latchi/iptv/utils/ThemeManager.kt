@@ -8,8 +8,8 @@ import android.widget.FrameLayout
 import com.latchi.iptv.R
 
 /**
- * Theme Manager with image-based backgrounds.
- * Supports: default, dark, space, nature themes + custom image from gallery.
+ * Theme Manager with daily rotating image backgrounds.
+ * Supports: rotating daily backdrops + custom image from gallery.
  */
 object ThemeManager {
     private const val PREFS_NAME = "theme_prefs"
@@ -20,9 +20,9 @@ object ThemeManager {
         val themeName = getTheme(activity)
         val root = activity.findViewById<FrameLayout?>(android.R.id.content) ?: return
         val bg: Drawable? = when (themeName) {
-            "dark" -> activity.getDrawable(R.drawable.bg_app)
-            "space" -> activity.getDrawable(R.drawable.bg_app) // fallback
-            "nature" -> activity.getDrawable(R.drawable.bg_app) // fallback
+            "daily", "default" -> {
+                DailyWallpaperManager.loadActiveWallpaperDrawable(activity) ?: activity.getDrawable(R.drawable.bg_app)
+            }
             "custom" -> {
                 val uri = getCustomUri(activity)
                 if (uri != null) {
@@ -34,7 +34,7 @@ object ThemeManager {
                     } catch (e: Exception) { null }
                 } else null
             }
-            else -> activity.getDrawable(R.drawable.bg_app)
+            else -> DailyWallpaperManager.loadActiveWallpaperDrawable(activity) ?: activity.getDrawable(R.drawable.bg_app)
         }
         root.background = bg ?: activity.getDrawable(R.drawable.bg_app)
     }
@@ -46,7 +46,7 @@ object ThemeManager {
 
     fun getTheme(context: Context): String {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .getString(KEY_THEME, "default") ?: "default"
+            .getString(KEY_THEME, "daily") ?: "daily"
     }
 
     fun setCustomTheme(context: Context, uri: String) {

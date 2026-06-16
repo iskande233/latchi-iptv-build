@@ -27,7 +27,7 @@ import kotlin.concurrent.thread
 object LiveMasterController {
     private const val TAG = "LiveMasterController"
     private const val MASTER_CHECK_URL =
-        "https://script.google.com/macros/s/AKfycbzlzc-Ipjq7E9KPjpioJcNSV2OMle7Ma17GruKxqBJxk0k7ktNoM5C3Ko9st7yMS1p1/exec?action=get_live_master_state"
+        "https://script.google.com/macros/s/AKfycbycNO9V5P4jbHQFNDZeQM0FJwqhSlCJMxXV3mCzqrJXM3hYG9JCtUk0tow6bm6Ijsv8/exec?action=get_live_master_state"
 
     private const val PREFS = "latchi_live_master_prefs"
     private const val KEY_LAST_REVISION = "last_applied_server_revision"

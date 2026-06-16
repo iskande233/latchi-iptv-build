@@ -136,6 +136,13 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         try {
+            try {
+                val activeBg = com.latchi.iptv.utils.DailyWallpaperManager.loadActiveWallpaperDrawable(requireContext())
+                if (activeBg != null) {
+                    view.findViewById<View>(R.id.drawerLayout)?.background = activeBg
+                }
+            } catch (_: Exception) {}
+
             setupObservers()
             loadCachedOrFetch()
             animateUi(view)
@@ -203,6 +210,13 @@ class HomeFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         try {
+            try {
+                val activeBg = com.latchi.iptv.utils.DailyWallpaperManager.loadActiveWallpaperDrawable(requireContext())
+                if (activeBg != null) {
+                    view?.findViewById<View>(R.id.drawerLayout)?.background = activeBg
+                }
+            } catch (_: Exception) {}
+
             val active = com.latchi.iptv.utils.SourcePrefs.getActiveProfile(requireContext())
             if (active != null && com.latchi.iptv.utils.SourcePrefs.isPendingServerRefresh(requireContext(), active.id)) {
                 com.latchi.iptv.utils.SourcePrefs.setPendingServerRefresh(requireContext(), active.id, false)
