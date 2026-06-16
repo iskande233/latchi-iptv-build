@@ -1,7 +1,0 @@
-{
-  "_comment": "IMPORTANT: versionCode هنا يجب أن يكون أعلى من versionCode في APK. versionCode الآن ديناميكي (timestamp). للتحديث: غيّر هذا الرقم لأعلى من رقم النسخة الحالية. مثلاً إذا كانت النسخة الحالية 1.1.3-b1234، ضع هنا 999999999",
-  "versionCode": 1,
-  "versionName": "1.1.4",
-  "url": "https://github.com/iskande233/Tv-/releases",
-  "notes": "إصدار جديد متوفر!"
-}
