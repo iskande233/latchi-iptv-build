@@ -485,75 +485,15 @@
 
         <!-- 🎙️ AI Voice Overlay -->
         <include
-            android:id="@+id/voiceOverlay"
             layout="@layout/voice_overlay"
             android:visibility="gone" />
 
-        <!-- Loading Overlay with Dhikr -->
+        <!-- 🚫 Entirely eliminated blocking Dhikr loading overlays forever 🚫 -->
         <FrameLayout
             android:id="@+id/loadingOverlay"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="#AA000000"
-            android:clickable="true"
-            android:focusable="false"
-            android:visibility="gone">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:gravity="center"
-                android:orientation="vertical"
-                android:padding="24dp">
-
-                <ProgressBar
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:layout_marginBottom="16dp" />
-
-                <TextView
-                    android:id="@+id/loadingTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"
-                    android:text="@string/loading_adhkar_title"
-                    android:textColor="#FFD700"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/loadingText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:lineSpacingExtra="6dp"
-                    android:text="سبحان الله وبحمده"
-                    android:textColor="#FFFFFF"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/loadingRef"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:gravity="center"
-                    android:text="التسبيح 33 مرة"
-                    android:textColor="#C7B7D8"
-                    android:textSize="12sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:gravity="center"
-                    android:text="@string/loading_adhkar_subtitle"
-                    android:textColor="#FFFFFF"
-                    android:textSize="14sp"
-                    android:textStyle="italic" />
-            </LinearLayout>
-        </FrameLayout>
+            android:layout_width="1dp"
+            android:layout_height="1dp"
+            android:visibility="gone" />
     </FrameLayout>
 
     <!-- Navigation Drawer (same as UserList) -->
