@@ -15,7 +15,7 @@ android {
         // هكذا Android يعرف أنها نسخة جديدة
         val buildTimestamp = (System.currentTimeMillis() / 1000).toInt()
         versionCode = buildTimestamp
-        versionName = "1.1.3" + "-b" + buildTimestamp.toString().takeLast(4)
+        versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

@@ -1,0 +1,219 @@
+package com.latchi.iptv.screens
+
+import android.app.Activity
+import android.content.Context
+import android.content.Intent
+import android.graphics.Color
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
+import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.view.Gravity
+import android.view.KeyEvent
+import android.view.View
+import android.view.animation.AnimationUtils
+import android.widget.FrameLayout
+import android.widget.LinearLayout
+import android.widget.ProgressBar
+import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
+import com.latchi.iptv.MainActivity
+import com.latchi.iptv.R
+import com.latchi.iptv.utils.ChannelCache
+import com.latchi.iptv.utils.LiveMasterController
+import com.latchi.iptv.utils.LocaleHelper
+import com.latchi.iptv.utils.SourcePrefs
+import com.latchi.iptv.utils.TvUtils
+
+/**
+ * 🌟 Glowing Server Update Activity 🌟
+ *
+ * Full-screen glowing Islamic decorative screen optimized for TV and Phone interfaces.
+ * Appears instantly when the Admin forces a Server Revision update.
+ * Halts all previous activities, displays glowing text "تم تحديث السيرفر" (NO emojis),
+ * clears channel cache, and returns exactly to fresh channels after 3.5 seconds.
+ */
+class GlowingServerUpdateActivity : AppCompatActivity() {
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.wrap(newBase))
+    }
+
+    companion object {
+        private const val EXTRA_REVISION = "extra_server_revision"
+
+        fun start(context: Context, revision: Long) {
+            val intent = Intent(context, GlowingServerUpdateActivity::class.java).apply {
+                putExtra(EXTRA_REVISION, revision)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+            context.startActivity(intent)
+        }
+    }
+
+    private val handler = Handler(Looper.getMainLooper())
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        TvUtils.applyOrientation(this)
+        hideSystemUi()
+
+        val revision = intent.getLongExtra(EXTRA_REVISION, 0L)
+        if (revision > 0L) {
+            LiveMasterController.syncCurrentRevision(this, revision)
+        }
+
+        buildGlowingUi()
+        executeCacheRefreshAndProceed()
+    }
+
+    private fun buildGlowingUi() {
+        val root = FrameLayout(this).apply {
+            setBackgroundColor(Color.parseColor("#020617")) // Extreme deep night
+        }
+        setContentView(root)
+
+        // Add a beautiful pulsing glowing orb in the center background
+        val glowingOrb = View(this).apply {
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                colors = intArrayOf(Color.parseColor("#3300E5FF"), Color.parseColor("#11FFD700"), Color.TRANSPARENT)
+                gradientType = GradientDrawable.RADIAL_GRADIENT
+                setGradientCenter(0.5f, 0.5f)
+                gradientRadius = dp(400).toFloat()
+            }
+        }
+        root.addView(glowingOrb, FrameLayout.LayoutParams(dp(700), dp(700), Gravity.CENTER))
+
+        try {
+            glowingOrb.startAnimation(AnimationUtils.loadAnimation(this, R.anim.voice_pulse))
+        } catch (_: Exception) {}
+
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dp(40), dp(40), dp(40), dp(40))
+        }
+
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dp(48), dp(40), dp(48), dp(40))
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor("#141E33"))
+                cornerRadius = dp(24).toFloat()
+                setStroke(dp(3), Color.parseColor("#FFD700")) // Golden Islamic glowing border
+            }
+            elevation = dp(30).toFloat()
+        }
+
+        // Title in gorgeous decorative typography (NO emojis)
+        val titleAr = TextView(this).apply {
+            text = "تم تحديث السيرفر"
+            setTextColor(Color.parseColor("#FFD700"))
+            textSize = if (TvUtils.isTv(this)) 46f else 32f
+            setTypeface(null, Typeface.BOLD) // Calligraphy Islamic vibe
+            gravity = Gravity.CENTER
+            setShadowLayer(16f, 0f, 0f, Color.parseColor("#FFD700")) // Golden Glow
+        }
+        card.addView(titleAr)
+
+        // English Translation
+        val titleEn = TextView(this).apply {
+            text = "Server Updated Successfully"
+            setTextColor(Color.parseColor("#00E5FF"))
+            textSize = if (TvUtils.isTv(this)) 28f else 20f
+            setTypeface(null, Typeface.BOLD)
+            gravity = Gravity.CENTER
+            setPadding(0, dp(12), 0, 0)
+            setShadowLayer(12f, 0f, 0f, Color.parseColor("#00E5FF")) // Cyan Glow
+        }
+        card.addView(titleEn)
+
+        val desc = TextView(this).apply {
+            text = "تم جلب أحدث قائمة قنوات وإعدادات استقرار البث بنجاح.\nجاري توجيهك للمتابعة بأعلى جودة..."
+            setTextColor(Color.WHITE)
+            textSize = if (TvUtils.isTv(this)) 20f else 15f
+            gravity = Gravity.CENTER
+            setLineSpacing(8f, 1.1f)
+            setPadding(0, dp(24), 0, dp(28))
+        }
+        card.addView(desc)
+
+        val progressRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+        }
+
+        progressRow.addView(ProgressBar(this).apply {
+            isIndeterminate = true
+            layoutParams = LinearLayout.LayoutParams(dp(36), dp(36))
+            try {
+                indeterminateDrawable.setColorFilter(Color.parseColor("#FFD700"), android.graphics.PorterDuff.Mode.SRC_IN)
+            } catch (_: Exception) {}
+        })
+
+        progressRow.addView(TextView(this).apply {
+            text = "تجهيز القنوات / Loading Channels..."
+            setTextColor(Color.parseColor("#A5B4FC"))
+            textSize = if (TvUtils.isTv(this)) 18f else 14f
+            setTypeface(null, Typeface.BOLD)
+            setPadding(dp(16), 0, dp(16), 0)
+        })
+
+        card.addView(progressRow)
+        container.addView(card, LinearLayout.LayoutParams(if (TvUtils.isTv(this)) dp(800) else LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+        root.addView(container, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+    }
+
+    private fun executeCacheRefreshAndProceed() {
+        Thread {
+            try {
+                val activeProfile = SourcePrefs.getActiveProfile(this)
+                if (activeProfile != null) {
+                    ChannelCache.clear(applicationContext, activeProfile.id)
+                }
+            } catch (_: Exception) {}
+
+            handler.postDelayed({
+                navigateToMain()
+            }, 3500L) // Exactly 3.5 seconds as requested
+        }.start()
+    }
+
+    private fun navigateToMain() {
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        startActivity(intent)
+        finish()
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        // Block all back/navigation buttons to ensure absolute synchronization
+        return true
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) hideSystemUi()
+    }
+
+    private fun hideSystemUi() {
+        window.decorView.systemUiVisibility =
+            View.SYSTEM_UI_FLAG_FULLSCREEN or
+                    View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
+                    View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
+                    View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+    }
+
+    override fun onDestroy() {
+        handler.removeCallbacksAndMessages(null)
+        super.onDestroy()
+    }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+}

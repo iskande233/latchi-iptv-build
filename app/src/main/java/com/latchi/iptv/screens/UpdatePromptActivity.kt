@@ -27,6 +27,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
 import com.latchi.iptv.R
 import com.latchi.iptv.utils.TvUtils
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import java.io.File
 
 /**
@@ -168,7 +170,7 @@ class UpdatePromptActivity : AppCompatActivity() {
         card.addView(progressBar, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, if (isTv) dp(18) else dp(12)).apply { topMargin = dp(22) })
 
         progressText = TextView(this).apply {
-            text = "جاهز للتحميل"
+            text = "جاهز للتحميل / Ready"
             setTextColor(Color.parseColor("#00E5FF"))
             textSize = if (isTv) 18f else 13f
             gravity = Gravity.CENTER
@@ -177,9 +179,9 @@ class UpdatePromptActivity : AppCompatActivity() {
         card.addView(progressText)
 
         primaryButton = TextView(this).apply {
-            text = "تحديث الآن / Update Now"
+            text = "تحديث / Update"
             setTextColor(Color.WHITE)
-            textSize = if (isTv) 22f else 16f
+            textSize = if (isTv) 28f else 20f
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
             isClickable = true
@@ -221,25 +223,93 @@ class UpdatePromptActivity : AppCompatActivity() {
             Toast.makeText(this, "رابط التحديث غير متوفر", Toast.LENGTH_LONG).show()
             return
         }
-        try {
-            progressBar?.visibility = View.VISIBLE
-            progressBar?.progress = 0
-            progressText?.text = "بدء التحميل... 0%"
-            primaryButton?.apply {
-                text = "جاري التحميل... 0%"
-                isEnabled = false
-                alpha = 0.75f
+        progressBar?.visibility = View.VISIBLE
+        progressBar?.progress = 0
+        progressText?.text = "جاري التحميل... 0% / Loading... 0%"
+        primaryButton?.apply {
+            text = "جاري التحميل... 0% / Loading..."
+            isEnabled = false
+            alpha = 0.75f
+        }
+
+        val safeVersion = versionName.ifBlank { versionCode.toString().ifBlank { "update" } }.replace(Regex("[^A-Za-z0-9._-]"), "-")
+        val fileName = "Latchi-IPTV-$safeVersion.apk"
+        val dir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: filesDir
+        val file = File(dir, fileName).apply { parentFile?.mkdirs(); if (exists()) delete() }
+        downloadedFile = file
+
+        Thread {
+            try {
+                val reqBuilder = Request.Builder().url(apkUrl)
+                if (apkUrl.contains("codemagic.io")) {
+                    reqBuilder.header("x-auth-token", "FDMmnLkER_lgElEvjz0r9g1g04PnTFilMfy1d7mTRjk")
+                }
+                val request = reqBuilder.build()
+                
+                val okClient = OkHttpClient.Builder()
+                    .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+                    .readTimeout(180, java.util.concurrent.TimeUnit.SECONDS)
+                    .build()
+
+                okClient.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) throw Exception("HTTP ${response.code}")
+                    val body = response.body ?: throw Exception("Empty body")
+                    val total = body.contentLength()
+                    val input = body.byteStream()
+                    val output = file.outputStream()
+
+                    var copied = 0L
+                    val buffer = ByteArray(16 * 1024)
+                    var read: Int
+                    var lastUpdate = System.currentTimeMillis()
+
+                    input.use { inStream ->
+                        output.use { outStream ->
+                            while (inStream.read(buffer).also { read = it } >= 0) {
+                                outStream.write(buffer, 0, read)
+                                copied += read
+                                
+                                val now = System.currentTimeMillis()
+                                if (total > 0 && now - lastUpdate > 250) {
+                                    lastUpdate = now
+                                    val percent = ((copied * 100) / total).toInt().coerceIn(0, 100)
+                                    runOnUiThread {
+                                        progressBar?.progress = percent
+                                        progressText?.text = "جاري التحميل... $percent% / Loading... $percent%"
+                                        primaryButton?.text = "جاري التحميل... $percent% / Loading..."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                runOnUiThread {
+                    downloadedUri = FileProvider.getUriForFile(this@UpdatePromptActivity, "$packageName.fileprovider", file)
+                    progressBar?.progress = 100
+                    progressText?.text = "اكتمل التحميل 100%. اضغط للتثبيت / Download ready."
+                    primaryButton?.apply {
+                        text = "تثبيت أو انستال / Install"
+                        isEnabled = true
+                        alpha = 1f
+                        background = blueButtonBackground()
+                        setOnClickListener { openInstaller() }
+                        requestFocus()
+                    }
+                }
+            } catch (e: Exception) {
+                runOnUiThread {
+                    startDownloadManagerFallback(file)
+                }
             }
+        }.start()
+    }
 
-            val safeVersion = versionName.ifBlank { versionCode.toString().ifBlank { "update" } }.replace(Regex("[^A-Za-z0-9._-]"), "-")
-            val fileName = "Latchi-IPTV-$safeVersion.apk"
-            val dir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: filesDir
-            val file = File(dir, fileName).apply { parentFile?.mkdirs(); if (exists()) delete() }
-            downloadedFile = file
-
+    private fun startDownloadManagerFallback(file: File) {
+        try {
             val request = DownloadManager.Request(Uri.parse(apkUrl))
                 .setTitle("LATCHI IPTV")
-                .setDescription("تحميل التحديث الجديد")
+                .setDescription("تحميل التحديث الجديد / Loading...")
                 .setMimeType("application/vnd.android.package-archive")
                 .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
                 .setDestinationUri(Uri.fromFile(file))
@@ -257,7 +327,7 @@ class UpdatePromptActivity : AppCompatActivity() {
             })
         } catch (e: Exception) {
             progressText?.text = "تعذر بدء التحميل: ${e.localizedMessage}"
-            primaryButton?.apply { isEnabled = true; alpha = 1f; text = "تحديث الآن / Update Now" }
+            primaryButton?.apply { isEnabled = true; alpha = 1f; text = "تحديث / Update" }
         }
     }
 
@@ -288,9 +358,9 @@ class UpdatePromptActivity : AppCompatActivity() {
                     dm.getUriForDownloadedFile(downloadId)
                 }
                 progressBar?.progress = 100
-                progressText?.text = "اكتمل التحميل 100%. اضغط تثبيت التحديث."
+                progressText?.text = "اكتمل التحميل 100%. اضغط للتثبيت / Ready."
                 primaryButton?.apply {
-                    text = "تثبيت التحديث / Install Update"
+                    text = "تثبيت أو انستال / Install"
                     isEnabled = true
                     alpha = 1f
                     background = blueButtonBackground()
