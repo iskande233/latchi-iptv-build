@@ -93,8 +93,8 @@ class HomeFragment : Fragment() {
             cardSettings = view.findViewById(R.id.cardSettings)
             cardAccounts = view.findViewById(R.id.cardAccounts)
             cardTheme = view.findViewById(R.id.cardTheme)
-            toolbarSettings = view.findViewById<View?>(R.id.toolbarSettings) as? LinearLayout
-            toolbarUsers = view.findViewById<View?>(R.id.toolbarUsers) as? LinearLayout
+            toolbarSettings = (view.findViewById<View?>(R.id.toolbarSettings) ?: view.findViewById<View?>(R.id.toolbarSettingsTop)) as? LinearLayout
+            toolbarUsers = (view.findViewById<View?>(R.id.toolbarUsers) ?: view.findViewById<View?>(R.id.toolbarUsersTop)) as? LinearLayout
             lastWatchedButton = view.findViewById(R.id.lastWatchedButton)
             clockTimeText = view.findViewById(R.id.clockTimeText)
             clockDateText = view.findViewById(R.id.clockDateText)

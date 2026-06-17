@@ -208,7 +208,10 @@ class ChannelListActivity : AppCompatActivity() {
         setupDrawer()
 
         menuButton.setOnClickListener {
-            drawerLayout.openDrawer(GravityCompat.END)
+            val intent = Intent(this, UserListActivity::class.java).apply { putExtra("show_settings", true) }
+            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            startActivity(intent)
+            finish()
         }
         refreshButton.visibility = View.GONE
         searchButton.setOnClickListener {
