@@ -52,75 +52,96 @@ object ServerSyncManager {
         thread(name = "LatchiServerSync") {
             try {
                 prefs.edit().putLong(KEY_LAST_SYNC_AT, now).apply()
+
                 val result = ActivationValidator.validate(appContext, active)
                 if (!result.success) {
                     onMain { onResult(ServerSyncResult(false, result.message, profileId = active.id)) }
                     return@thread
                 }
 
-                val oldUrl = normalizeUrl(active.m3uUrl)
-                val newUrl = normalizeUrl(result.playlistUrl.ifBlank { active.m3uUrl })
-                val oldRevision = active.serverRevision
-                val newRevision = result.serverRevision
-                val updatedName = result.name.ifBlank { active.name }
+                val oldUrl       = normalizeUrl(active.m3uUrl)
+                val newUrl       = normalizeUrl(result.playlistUrl.ifBlank { active.m3uUrl })
+                val oldRevision  = active.serverRevision
+                val newRevision  = result.serverRevision
+                val updatedName  = result.name.ifBlank { active.name }
                 val updatedExpiry = result.expiresAt.ifBlank { active.expiresAt }
-                val updatedMax = result.maxDevices.takeIf { it > 0 } ?: active.maxDevices
+                val updatedMax   = result.maxDevices.takeIf { it > 0 } ?: active.maxDevices
 
-                val urlChanged = newUrl.isNotBlank() && newUrl != oldUrl
-                val revisionChanged = newRevision > oldRevision
+                val urlChanged      = newUrl.isNotBlank() && newUrl != oldUrl
+                // ✅ الإصلاح الجذري:
+                // نعتبر "تغيّر" إذا ارتفع الـ revision حتى لو الرابط نفسه
+                // لأن السكريبت الجديد يرجع نفس default_playlist_url دايماً
+                // لكن الـ revision يرتفع = علامة أن المدير غيّر شيئاً
+                val revisionChanged = newRevision > 0L && newRevision != oldRevision
 
                 if (urlChanged || revisionChanged) {
-                    if (newUrl.isNotBlank()) {
+
+                    // فقط نفحص صحة السيرفر إذا الرابط تغيّر فعلاً
+                    if (urlChanged && newUrl.isNotBlank()) {
                         val health = ServerHealthChecker.check(newUrl)
-                        prefs.edit().putString(KEY_LAST_STATUS, if (health.online) "online:${health.responseMs}" else "offline:${health.message}").apply()
+                        prefs.edit().putString(
+                            KEY_LAST_STATUS,
+                            if (health.online) "online:${health.responseMs}" else "offline:${health.message}"
+                        ).apply()
                         if (!health.online) {
-                            onMain { onResult(ServerSyncResult(false, "server_offline:${health.message}", profileId = active.id)) }
+                            onMain {
+                                onResult(ServerSyncResult(false, "server_offline:${health.message}", profileId = active.id))
+                            }
                             return@thread
                         }
                     }
+
+                    // ✅ نحفظ الـ Profile بالرابط الجديد (أو نفس الرابط مع revision جديد)
+                    val urlToSave = if (newUrl.isNotBlank()) newUrl else oldUrl
                     SourcePrefs.saveActivatedProfile(
-                        context = appContext,
-                        code = active.activationCode,
-                        name = updatedName,
-                        playlistUrl = newUrl,
-                        expiresAt = updatedExpiry,
-                        maxDevices = updatedMax,
+                        context       = appContext,
+                        code          = active.activationCode,
+                        name          = updatedName,
+                        playlistUrl   = urlToSave,
+                        expiresAt     = updatedExpiry,
+                        maxDevices    = updatedMax,
                         serverRevision = newRevision
                     )
+
+                    // ✅ مسح الكاش دايماً عند أي تغيير في الـ revision
                     ChannelCache.clear(appContext, active.id)
                     FavoritesPrefs.clearProfile(appContext, active.id)
+
                     prefs.edit()
-                        .putString("last_applied_url_${active.id}", newUrl)
+                        .putString("last_applied_url_${active.id}", urlToSave)
                         .putLong("last_applied_revision_${active.id}", newRevision)
                         .putLong("last_changed_at_${active.id}", System.currentTimeMillis())
                         .apply()
+
                     onMain {
                         onResult(
                             ServerSyncResult(
-                                changed = true,
-                                message = if (revisionChanged) "revision_changed" else "server_changed",
-                                oldUrl = oldUrl,
-                                newUrl = newUrl,
-                                profileId = active.id,
+                                changed        = true,
+                                message        = if (urlChanged) "server_changed" else "revision_changed",
+                                oldUrl         = oldUrl,
+                                newUrl         = urlToSave,
+                                profileId      = active.id,
                                 serverRevision = newRevision
                             )
                         )
                     }
                 } else {
-                    // Keep account metadata fresh without clearing channel cache.
-                    if (updatedName != active.name || updatedExpiry != active.expiresAt || updatedMax != active.maxDevices || newRevision != active.serverRevision) {
+                    // لا تغيير — نحدّث البيانات الثانوية فقط بدون مسح الكاش
+                    if (updatedName != active.name || updatedExpiry != active.expiresAt ||
+                        updatedMax != active.maxDevices || newRevision != active.serverRevision) {
                         SourcePrefs.saveActivatedProfile(
-                            context = appContext,
-                            code = active.activationCode,
-                            name = updatedName,
-                            playlistUrl = active.m3uUrl,
-                            expiresAt = updatedExpiry,
-                            maxDevices = updatedMax,
+                            context        = appContext,
+                            code           = active.activationCode,
+                            name           = updatedName,
+                            playlistUrl    = active.m3uUrl,
+                            expiresAt      = updatedExpiry,
+                            maxDevices     = updatedMax,
                             serverRevision = newRevision
                         )
                     }
                     onMain { onResult(ServerSyncResult(false, "no_change", profileId = active.id)) }
                 }
+
             } catch (e: Exception) {
                 onMain { onResult(ServerSyncResult(false, e.localizedMessage ?: "sync_error", profileId = active.id)) }
             } finally {
@@ -129,13 +150,11 @@ object ServerSyncManager {
         }
     }
 
-    fun lastSyncAt(context: Context): Long {
-        return context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getLong(KEY_LAST_SYNC_AT, 0L)
-    }
+    fun lastSyncAt(context: Context): Long =
+        context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getLong(KEY_LAST_SYNC_AT, 0L)
 
-    fun lastStatus(context: Context): String {
-        return context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_LAST_STATUS, "") ?: ""
-    }
+    fun lastStatus(context: Context): String =
+        context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_LAST_STATUS, "") ?: ""
 
     private fun normalizeUrl(value: String): String = value.trim().replace("&amp;", "&")
 

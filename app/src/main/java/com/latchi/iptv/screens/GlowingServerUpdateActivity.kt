@@ -168,8 +168,21 @@ class GlowingServerUpdateActivity : AppCompatActivity() {
     }
 
     private fun executeCacheRefreshAndProceed() {
-        // Run full sync to fetch the new broadcasted URL from Google Sheet and save it to the profile
-        com.latchi.iptv.utils.ServerSyncManager.checkForServerUpdate(this, force = true) { syncResult ->
+        // ✅ الإصلاح الجذري:
+        // 1. نمسح الكاش فوراً بدون انتظار
+        val appContext = applicationContext
+        val active = com.latchi.iptv.utils.SourcePrefs.getActiveProfile(appContext)
+        if (active != null) {
+            com.latchi.iptv.utils.ChannelCache.clear(appContext, active.id)
+        }
+
+        // 2. نعيد التحقق من السيرفر لجلب الرابط الجديد وحفظه
+        com.latchi.iptv.utils.ServerSyncManager.checkForServerUpdate(this, force = true) { _ ->
+            // 3. نضع علامة "يحتاج تحديث قنوات" حتى HomeFragment يعيد التحميل عند العودة
+            val freshActive = com.latchi.iptv.utils.SourcePrefs.getActiveProfile(appContext)
+            if (freshActive != null) {
+                com.latchi.iptv.utils.SourcePrefs.setPendingServerRefresh(appContext, freshActive.id, true)
+            }
             handler.postDelayed({
                 navigateToMain()
             }, 1500L)
@@ -177,8 +190,12 @@ class GlowingServerUpdateActivity : AppCompatActivity() {
     }
 
     private fun navigateToMain() {
+        // ✅ FLAG_ACTIVITY_CLEAR_TASK يضمن أن MainActivity تُنشأ من جديد
+        // وHomeFragment يستدعي onResume → يكتشف isPendingServerRefresh → يعيد التحميل
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            // علامة إضافية لإجبار HomeFragment على إعادة تحميل القنوات فوراً
+            putExtra("force_channel_reload", true)
         }
         startActivity(intent)
         finish()

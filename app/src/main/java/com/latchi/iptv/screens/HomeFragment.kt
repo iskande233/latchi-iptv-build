@@ -221,8 +221,13 @@ class HomeFragment : Fragment() {
 
             val active = com.latchi.iptv.utils.SourcePrefs.getActiveProfile(requireContext())
             if (active != null && com.latchi.iptv.utils.SourcePrefs.isPendingServerRefresh(requireContext(), active.id)) {
+                // ✅ الإصلاح: نمسح العلامة أولاً ثم نعيد تحميل القنوات مباشرة
                 com.latchi.iptv.utils.SourcePrefs.setPendingServerRefresh(requireContext(), active.id, false)
-                startSilentServerSync(force = true)
+                // مسح الكاش للأمان (قد يكون مُسح بالفعل لكن نكرر)
+                com.latchi.iptv.utils.ChannelCache.clear(requireContext().applicationContext, active.id)
+                // ✅ نجلب القنوات من الرابط الجديد مباشرة بدون انتظار Sync جديد
+                // (السيرفر Sync حصل بالفعل في GlowingServerUpdateActivity)
+                view?.post { refreshChannelsSilently() }
             } else {
                 view?.post { startSilentServerSync(force = false) }
             }
