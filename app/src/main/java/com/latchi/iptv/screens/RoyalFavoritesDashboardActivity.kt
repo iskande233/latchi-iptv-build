@@ -172,7 +172,7 @@ class RoyalFavoritesDashboardActivity : AppCompatActivity() {
         emptyText.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
 
         categoriesAdapter = RoyalCategoriesAdapter(list, onClick = { catName ->
-            ChannelListActivity.start(this, "live", "📁 $catName", catName)
+            ChannelListActivity.startSearch(this, "live", "📁 $catName", catName)
         }, onLongClick = { catName ->
             confirmRemoveFavoriteCategory(catName)
         })
