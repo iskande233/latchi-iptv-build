@@ -47,41 +47,50 @@ object UpdateChecker {
             try {
                 val info = fetchUpdateInfo() ?: return@Thread
                 activity.runOnUiThread {
-                    if (activity.isFinishing) return@runOnUiThread
-                    if (listener != null) {
-                        listener.onUpdateAvailable(info)
-                    } else {
-                        showUpdateDialog(activity, info)
+                    try {
+                        if (activity.isFinishing) return@runOnUiThread
+                        if (listener != null) {
+                            listener.onUpdateAvailable(info)
+                        } else {
+                            showUpdateDialog(activity, info)
+                        }
+                    } catch (t: Throwable) {
+                        android.util.Log.e("UpdateChecker", "UI Update failed", t)
                     }
                 }
-            } catch (_: Exception) {
-                // silent
+            } catch (t: Throwable) {
+                // silent failure
             }
         }.start()
     }
 
     fun fetchUpdateInfo(): UpdateInfo? {
-        val ts = System.currentTimeMillis().toString()
-        val url = "$UPDATE_URL&version_code=${BuildConfig.VERSION_CODE}&_t=$ts"
-        val req = Request.Builder().url(url).header("Accept", "application/json").build()
-        val body = client.newCall(req).execute().use { res ->
-            if (!res.isSuccessful) return null
-            res.body?.string() ?: return null
+        return try {
+            val ts = System.currentTimeMillis().toString()
+            val url = "$UPDATE_URL&version_code=${BuildConfig.VERSION_CODE}&_t=$ts"
+            val req = Request.Builder().url(url).header("Accept", "application/json").build()
+            val body = client.newCall(req).execute().use { res ->
+                if (!res.isSuccessful) return null
+                res.body?.string() ?: return null
+            }
+            val json = JSONObject(body)
+            val available = json.optBoolean("update_available", false)
+            val apkUrl = json.optString("apkUrl", json.optString("url", ""))
+            if (!available || apkUrl.isBlank()) return null
+            val notesObj = json.optJSONObject("notes") ?: json.optJSONObject("releaseNotes")
+            val notes = notesObj?.optString("ar")?.takeIf { it.isNotBlank() }
+                ?: json.optString("notes", "تحديث جديد متوفر لتطبيق LATCHI IPTV.")
+            UpdateInfo(
+                versionCode = json.optInt("versionCode", 0),
+                versionName = json.optString("versionName", ""),
+                apkUrl = apkUrl,
+                notes = notes,
+                forceUpdate = json.optBoolean("forceUpdate", json.optBoolean("force_update", false))
+            )
+        } catch (t: Throwable) {
+            android.util.Log.e("UpdateChecker", "Fetch failed", t)
+            null
         }
-        val json = JSONObject(body)
-        val available = json.optBoolean("update_available", false)
-        val apkUrl = json.optString("apkUrl", json.optString("url", ""))
-        if (!available || apkUrl.isBlank()) return null
-        val notesObj = json.optJSONObject("notes") ?: json.optJSONObject("releaseNotes")
-        val notes = notesObj?.optString("ar")?.takeIf { it.isNotBlank() }
-            ?: json.optString("notes", "تحديث جديد متوفر لتطبيق LATCHI IPTV.")
-        return UpdateInfo(
-            versionCode = json.optInt("versionCode", 0),
-            versionName = json.optString("versionName", ""),
-            apkUrl = apkUrl,
-            notes = notes,
-            forceUpdate = json.optBoolean("forceUpdate", json.optBoolean("force_update", false))
-        )
     }
 
     fun showUpdateDialog(activity: Activity, info: UpdateInfo) {

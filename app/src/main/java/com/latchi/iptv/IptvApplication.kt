@@ -7,7 +7,10 @@ class IptvApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         try {
+            // تهيئة المحرك السحابي بأمان تام
             LiveMasterController.initialize(this)
-        } catch (_: Exception) {}
+        } catch (t: Throwable) {
+            android.util.Log.e("IptvApplication", "Critical: LiveMasterController initialization failed", t)
+        }
     }
 }

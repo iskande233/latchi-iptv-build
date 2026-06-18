@@ -81,7 +81,7 @@ object LiveMasterController {
         val appContext = context.applicationContext
         thread(name = "LatchiLiveMasterPoll") {
             try {
-                val activeProfile = SourcePrefs.getActiveProfile(appContext)
+                val activeProfile = try { SourcePrefs.getActiveProfile(appContext) } catch (t: Throwable) { null }
                 val ts = System.currentTimeMillis().toString()
                 val req = Request.Builder()
                     .url("$MASTER_CHECK_URL&profile_id=${activeProfile?.id ?: ""}&version_code=${BuildConfig.VERSION_CODE}&_t=$ts")
@@ -90,9 +90,10 @@ object LiveMasterController {
 
                 client.newCall(req).execute().use { response ->
                     if (!response.isSuccessful) return@thread
-                    val body = response.body?.string() ?: return@thread
-                    val json = JSONObject(body)
+                    val body = try { response.body?.string() } catch (t: Throwable) { null } ?: return@thread
+                    val json = try { JSONObject(body) } catch (t: Throwable) { null } ?: return@thread
                     if (!json.optBoolean("success", false)) return@thread
+                    // ...
 
                     val serverRevision = json.optLong("server_revision", 0L)
                     val updateVersionCode = json.optInt("app_update_version_code", 0)

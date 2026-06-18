@@ -48,13 +48,17 @@ class VideoSplashActivity : AppCompatActivity() {
 
             val splashImage = findViewById<ImageView>(R.id.videoSplashImage)
             if (splashImage != null) {
-                splashImage.setImageResource(if (isTv) R.drawable.video_splash_tv else R.drawable.video_splash_phone)
-                runPremiumSplashAnimation(splashImage, isTv)
+                try {
+                    splashImage.setImageResource(if (isTv) R.drawable.video_splash_tv else R.drawable.video_splash_phone)
+                    runPremiumSplashAnimation(splashImage, isTv)
+                } catch (t: Throwable) {
+                    android.util.Log.e("VideoSplashActivity", "Resource error", t)
+                }
             }
 
             splashHandler.postDelayed({ goToNextSplash() }, if (isTv) 4200L else 3800L)
-        } catch (e: Exception) {
-            // Fallback for any crash during splash setup
+        } catch (t: Throwable) {
+            android.util.Log.e("VideoSplashActivity", "Critical crash in onCreate", t)
             startActivity(Intent(this, SplashActivity::class.java))
             finish()
         }

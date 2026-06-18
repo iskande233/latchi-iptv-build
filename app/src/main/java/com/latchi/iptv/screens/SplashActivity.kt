@@ -36,15 +36,19 @@ class SplashActivity : AppCompatActivity() {
             setContentView(R.layout.activity_splash)
             setupSplashImage()
 
-            // 🚀 Early Update Check: فحص التحديث في الخلفية
-            UpdateChecker.checkInBackground(this, object : UpdateChecker.OnUpdateListener {
-                override fun onUpdateAvailable(info: UpdateChecker.UpdateInfo) {
-                    if (info.forceUpdate) {
-                        isUpdating = true
+            // 🚀 Early Update Check: فحص التحديث في الخلفية بأمان
+            try {
+                UpdateChecker.checkInBackground(this, object : UpdateChecker.OnUpdateListener {
+                    override fun onUpdateAvailable(info: UpdateChecker.UpdateInfo) {
+                        if (info.forceUpdate) {
+                            isUpdating = true
+                        }
+                        UpdateChecker.showUpdateDialog(this@SplashActivity, info)
                     }
-                    UpdateChecker.showUpdateDialog(this@SplashActivity, info)
-                }
-            })
+                })
+            } catch (t: Throwable) {
+                android.util.Log.e("SplashActivity", "Update check failed", t)
+            }
 
             // 🛡️ طلب الصلاحيات الأساسية (كما كانت منظمة سابقاً)
             if (needsPermissions()) {
@@ -52,8 +56,9 @@ class SplashActivity : AppCompatActivity() {
             } else {
                 scheduleNavigation(3000)
             }
-        } catch (e: Exception) {
-            // أمان إضافي لضمان الدخول حتى في حالة وقوع خطأ غير متوقع
+        } catch (t: Throwable) {
+            // أمان إضافي ملكي: ضمان الدخول حتى في حالة وقوع خطأ فادح في النظام
+            android.util.Log.e("SplashActivity", "Critical crash in onCreate", t)
             scheduleNavigation(500)
         }
     }

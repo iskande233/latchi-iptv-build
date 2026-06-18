@@ -47,7 +47,10 @@ object SourcePrefs {
             val cipher = javax.crypto.Cipher.getInstance("AES/GCM/NoPadding")
             cipher.init(javax.crypto.Cipher.DECRYPT_MODE, deviceKey(context), javax.crypto.spec.GCMParameterSpec(128, iv))
             String(cipher.doFinal(enc), Charsets.UTF_8)
-        } catch (_: Exception) { null }
+        } catch (t: Throwable) { 
+            android.util.Log.e("SourcePrefs", "Decryption failed", t)
+            null 
+        }
     }
 
     fun getProfiles(context: Context): MutableList<IptvProfile> {
@@ -65,10 +68,10 @@ object SourcePrefs {
                         .putString(KEY_PROFILES_ENC, encrypt(context, raw))
                         .remove(KEY_PROFILES)
                         .apply()
-                } catch (_: Exception) { }
+                } catch (t: Throwable) { }
             }
             
-            val arr = JSONArray(raw)
+            val arr = try { JSONArray(raw) } catch (t: Throwable) { JSONArray("[]") }
             for (i in 0 until arr.length()) {
                 val o = arr.getJSONObject(i)
                 list.add(
@@ -83,9 +86,9 @@ object SourcePrefs {
                     )
                 )
             }
-        } catch (e: Exception) {
+        } catch (t: Throwable) {
             // في حالة فشل التحليل أو البيانات تالفة، نرجع قائمة فارغة بدل الكراش
-            android.util.Log.e("SourcePrefs", "Error loading profiles: ${e.message}")
+            android.util.Log.e("SourcePrefs", "Error loading profiles: ${t.message}")
         }
         return list
     }
