@@ -22,7 +22,6 @@ class SplashActivity : AppCompatActivity() {
 
     private val splashHandler = Handler(Looper.getMainLooper())
     private var isNavigationPending = true
-    private var isUpdating = false
 
     override fun attachBaseContext(newBase: android.content.Context) {
         super.attachBaseContext(LocaleHelper.wrap(newBase))
@@ -36,29 +35,28 @@ class SplashActivity : AppCompatActivity() {
             setContentView(R.layout.activity_splash)
             setupSplashImage()
 
-            // 🚀 Early Update Check: فحص التحديث في الخلفية بأمان
-            try {
-                UpdateChecker.checkInBackground(this, object : UpdateChecker.OnUpdateListener {
-                    override fun onUpdateAvailable(info: UpdateChecker.UpdateInfo) {
-                        if (info.forceUpdate) {
-                            isUpdating = true
-                        }
-                        UpdateChecker.showUpdateDialog(this@SplashActivity, info)
-                    }
-                })
-            } catch (t: Throwable) {
-                android.util.Log.e("SplashActivity", "Update check failed", t)
-            }
-
-            // 🛡️ طلب الصلاحيات الأساسية (كما كانت منظمة سابقاً)
+            // ✅ الانتقال للشاشة التالية أولاً — لا شيء يوقفه أبداً
             if (needsPermissions()) {
                 requestAppPermissions()
             } else {
-                scheduleNavigation(3000)
+                scheduleNavigation(2500)
             }
+
+            // فحص التحديث في الخلفية بصمت — لا يوقف الانتقال
+            try {
+                UpdateChecker.checkInBackground(this, object : UpdateChecker.OnUpdateListener {
+                    override fun onUpdateAvailable(info: UpdateChecker.UpdateInfo) {
+                        try {
+                            if (!isFinishing) {
+                                UpdateChecker.showUpdateDialog(this@SplashActivity, info)
+                            }
+                        } catch (_: Throwable) {}
+                    }
+                })
+            } catch (_: Throwable) {}
+
         } catch (t: Throwable) {
-            // أمان إضافي ملكي: ضمان الدخول حتى في حالة وقوع خطأ فادح في النظام
-            android.util.Log.e("SplashActivity", "Critical crash in onCreate", t)
+            android.util.Log.e("SplashActivity", "onCreate error", t)
             scheduleNavigation(500)
         }
     }
@@ -73,10 +71,10 @@ class SplashActivity : AppCompatActivity() {
         prefs.edit().putBoolean("last_islamic", useIslamic).apply()
 
         val splashRes = when {
-            useIslamic && isLandscape -> R.drawable.splash_islamic_tv
+            useIslamic && isLandscape  -> R.drawable.splash_islamic_tv
             useIslamic && !isLandscape -> R.drawable.splash_islamic_phone
-            isLandscape -> R.drawable.splash_tv
-            else -> R.drawable.splash_phone
+            isLandscape                -> R.drawable.splash_tv
+            else                       -> R.drawable.splash_phone
         }
         splashImage.setImageResource(splashRes)
     }
@@ -100,7 +98,6 @@ class SplashActivity : AppCompatActivity() {
 
     private fun requiredFirstRunPermissions(): List<String> {
         val permissions = mutableListOf<String>()
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permissions.add(Manifest.permission.POST_NOTIFICATIONS)
             permissions.add(Manifest.permission.READ_MEDIA_IMAGES)
@@ -111,7 +108,6 @@ class SplashActivity : AppCompatActivity() {
                 permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
             }
         }
-
         permissions.add(Manifest.permission.ACCESS_FINE_LOCATION)
         permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION)
         return permissions.distinct()
@@ -121,7 +117,11 @@ class SplashActivity : AppCompatActivity() {
         private const val PERMISSION_REQUEST_CODE = 2026
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == PERMISSION_REQUEST_CODE) {
             scheduleNavigation(1000)
@@ -138,18 +138,26 @@ class SplashActivity : AppCompatActivity() {
     }
 
     private fun navigateToNextScreen() {
-        // 👑 الإصلاح الملكي الجذري: إزالة الحظر الإجباري لضمان انتقال التطبيق دائماً وعدم خروجه أو إغلاقه أبداً
-        val active = SourcePrefs.getActiveProfile(this)
-        val verified = active?.let {
-            getSharedPreferences("verification_prefs", MODE_PRIVATE).getBoolean("is_verified_${it.id}", false)
-        } ?: false
-        val intent = when {
-            active == null -> Intent(this, UserListActivity::class.java)
-            active.activationCode == "MANUAL" || verified -> Intent(this, com.latchi.iptv.MainActivity::class.java)
-            else -> Intent(this, VerificationActivity::class.java)
+        try {
+            val active = SourcePrefs.getActiveProfile(this)
+            val verified = active?.let {
+                getSharedPreferences("verification_prefs", MODE_PRIVATE)
+                    .getBoolean("is_verified_${it.id}", false)
+            } ?: false
+            val intent = when {
+                active == null                               -> Intent(this, UserListActivity::class.java)
+                active.activationCode == "MANUAL" || verified -> Intent(this, MainActivity::class.java)
+                else                                          -> Intent(this, VerificationActivity::class.java)
+            }
+            startActivity(intent)
+            finish()
+        } catch (t: Throwable) {
+            android.util.Log.e("SplashActivity", "navigateToNextScreen error", t)
+            try {
+                startActivity(Intent(this, UserListActivity::class.java))
+                finish()
+            } catch (_: Throwable) {}
         }
-        startActivity(intent)
-        finish()
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
