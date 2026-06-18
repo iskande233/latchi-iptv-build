@@ -9,30 +9,49 @@ import java.net.URL
 /**
  * Gemini AI helper
  * المفتاح يُقرأ من SharedPreferences فقط — لا يُخزن في الكود نهائياً
+ * تم تحديثه ليدعم مفتاحين مع خاصية التبديل التلقائي (Fallback)
  */
 object GeminiHelper {
 
     private const val PREFS_NAME = "gemini_prefs"
-    private const val KEY_API    = "gemini_api_key"
+    private const val KEY_API_1  = "gemini_api_key"
+    private const val KEY_API_2  = "gemini_api_key_2"
     private const val MODEL      = "gemini-2.0-flash"
 
-    // ─── حفظ المفتاح من لوحة التحكم ────────────────────────────
-    fun saveApiKey(context: Context, key: String) {
+    // ─── حفظ المفاتيح من لوحة التحكم ────────────────────────────
+    fun saveKeys(context: Context, key1: String, key2: String = "") {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .edit().putString(KEY_API, key.trim()).apply()
+            .edit()
+            .putString(KEY_API_1, key1.trim())
+            .putString(KEY_API_2, key2.trim())
+            .apply()
     }
 
-    fun getApiKey(context: Context): String =
+    fun getApiKey1(context: Context): String =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .getString(KEY_API, "") ?: ""
+            .getString(KEY_API_1, "") ?: ""
 
-    fun hasApiKey(context: Context): Boolean = getApiKey(context).isNotBlank()
+    fun getApiKey2(context: Context): String =
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getString(KEY_API_2, "") ?: ""
 
-    // ─── استدعاء Gemini ─────────────────────────────────────────
+    fun hasApiKey(context: Context): Boolean = getApiKey1(context).isNotBlank()
+
+    // ─── استدعاء Gemini (دعم التبديل التلقائي) ───────────────────
     fun ask(context: Context, prompt: String, maxTokens: Int = 200): String? {
-        val apiKey = getApiKey(context)
-        if (apiKey.isBlank()) return null
+        val keys = listOf(getApiKey1(context), getApiKey2(context)).filter { it.isNotBlank() }
+        if (keys.isEmpty()) return null
 
+        for (key in keys) {
+            try {
+                val result = callGeminiApi(key, prompt, maxTokens)
+                if (result != null) return result
+            } catch (_: Exception) { continue }
+        }
+        return null
+    }
+
+    private fun callGeminiApi(apiKey: String, prompt: String, maxTokens: Int): String? {
         return try {
             val url = URL("https://generativelanguage.googleapis.com/v1beta/models/$MODEL:generateContent?key=$apiKey")
             val conn = url.openConnection() as HttpURLConnection
@@ -81,4 +100,3 @@ object GeminiHelper {
             ?.replace("،", "")
     }
 }
-
