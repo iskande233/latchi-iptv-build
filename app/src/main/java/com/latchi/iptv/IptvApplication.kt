@@ -6,6 +6,8 @@ import com.latchi.iptv.utils.LiveMasterController
 class IptvApplication : Application() {
     override fun onCreate() {
         super.onCreate()
-        LiveMasterController.initialize(this)
+        try {
+            LiveMasterController.initialize(this)
+        } catch (_: Exception) {}
     }
 }

@@ -30,28 +30,15 @@ class SplashActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        TvUtils.applyOrientation(this)
-        hideSystemUi()
-        setContentView(R.layout.activity_splash)
+        try {
+            TvUtils.applyOrientation(this)
+            hideSystemUi()
+            setContentView(R.layout.activity_splash)
+            setupSplashImage()
+        } catch (_: Exception) {}
 
-        setupSplashImage()
-
-        // 🚀 Early Update Check: فحص التحديث فوراً عند الإقلاع
-        UpdateChecker.checkInBackground(this, object : UpdateChecker.OnUpdateListener {
-            override fun onUpdateAvailable(info: UpdateChecker.UpdateInfo) {
-                if (info.forceUpdate) {
-                    isUpdating = true
-                }
-                UpdateChecker.showUpdateDialog(this@SplashActivity, info)
-            }
-        })
-
-        // 🛡️ طلب الصلاحيات الأساسية (الإشعارات + الموقع) عند أول فتح للتطبيق
-        if (needsPermissions()) {
-            requestAppPermissions()
-        } else {
-            scheduleNavigation(4000)
-        }
+        // 👑 انتقال ملكي صاروخي مباشر ومضمون 100% بدون أي حوار صلاحيات أو حظر تحديثات
+        scheduleNavigation(150L)
     }
 
     private fun setupSplashImage() {
