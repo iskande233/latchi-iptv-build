@@ -141,7 +141,15 @@ class ChannelListActivity : AppCompatActivity() {
             emptyList(),
             isGrid = isGridMode,
             isFavorite = { channel -> activeId()?.let { FavoritesPrefs.isFavorite(this, it, channel.streamUrl) } ?: false },
-            onFavoriteClicked = { channel -> activeId()?.let { FavoritesPrefs.toggle(this, it, channel.streamUrl); applyFilter() } },
+            onFavoriteClicked = { channel -> 
+                activeId()?.let { profileId ->
+                    FavoritesPrefs.toggle(this, profileId, channel.streamUrl)
+                    val isFav = com.latchi.iptv.utils.FavoriteManager.toggleFavoriteChannel(this, profileId, channel)
+                    val msg = if (isFav) "⭐ تم حفظ القناة '${channel.name}' في المفضلة ✓" else "إلغاء حفظ القناة '${channel.name}' من المفضلة"
+                    Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+                    applyFilter() 
+                } 
+            },
             onChannelClicked = { channel ->
                 when {
                     channel.contentType == "series" || channel.streamUrl.startsWith("series://") -> {
@@ -208,10 +216,8 @@ class ChannelListActivity : AppCompatActivity() {
         setupDrawer()
 
         menuButton.setOnClickListener {
-            val intent = Intent(this, UserListActivity::class.java).apply { putExtra("show_settings", true) }
-            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-            startActivity(intent)
-            finish()
+            // 👑 الإصلاح الملكي الجذري: فتح شاشة المفضلة والخيارات المستقلة بدلاً من شاشة تسجيل الدخول
+            com.latchi.iptv.screens.RoyalFavoritesDashboardActivity.start(this)
         }
         refreshButton.visibility = View.GONE
         searchButton.setOnClickListener {

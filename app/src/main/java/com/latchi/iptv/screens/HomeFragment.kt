@@ -235,10 +235,13 @@ class HomeFragment : Fragment() {
     }
 
     private fun setupDrawer(view: View) {
-        view.findViewById<TextView?>(R.id.menuButton)?.setOnClickListener {
-            drawerLayout.openDrawer(GravityCompat.END)
+        // 👑 الإصلاح الملكي الجذري: ربط زر ☰ بفتح الشاشة الملكية المستقلة للخيارات والمفضلة
+        view.findViewById<TextView?>(R.id.menuButton)?.apply {
+            setOnClickListener {
+                RoyalFavoritesDashboardActivity.start(requireContext())
+            }
         }
-        // 📞 الدعم الفني (انتقل من الشاشة الرئيسية إلى القائمة الجانبية)
+        
         view.findViewById<TextView?>(R.id.drawerSupport)?.setOnClickListener {
             drawerLayout.closeDrawer(GravityCompat.END)
             try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/213798712450"))) } catch (_: Exception) {}

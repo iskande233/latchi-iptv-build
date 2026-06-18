@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_app"
+    android:orientation="vertical">
+
+    <!-- Top Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:background="#1E1E38"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="20dp"
+        android:elevation="8dp">
+
+        <TextView
+            android:id="@+id/btnBack"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="← رجوع"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:clickable="true"
+            android:focusable="true"
+            android:paddingEnd="16dp"
+            android:foreground="@drawable/focus_selector" />
+
+        <ImageView
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/ic_tv" />
+
+        <TextView
+            android:id="@+id/dashboardTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:text="⭐ القائمة الملكية للمفضلة والخيارات"
+            android:textColor="#FFD700"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <TextView
+            android:id="@+id/activeProfileText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Profile"
+            android:textColor="#39FF8B"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal">
+
+        <!-- Right Side Menu (الخيارات والتبويبات) — Width: 260dp -->
+        <LinearLayout
+            android:layout_width="260dp"
+            android:layout_height="match_parent"
+            android:background="#121228"
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <TextView
+                android:id="@+id/tabFavChannels"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:background="@drawable/bg_panel_premium_focusable"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="@drawable/focus_selector"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="16dp"
+                android:text="⭐ القنوات المفضلة"
+                android:textColor="#FFD700"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:id="@+id/tabFavCategories"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:background="@drawable/bg_panel_premium_focusable"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="@drawable/focus_selector"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="16dp"
+                android:text="📁 الفئات المفضلة"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:id="@+id/tabRecentChannels"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:background="@drawable/bg_panel_premium_focusable"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="@drawable/focus_selector"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="16dp"
+                android:text="🔄 المشاهدة مؤخراً"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#2d2d44"
+                android:layout_marginVertical="10dp" />
+
+            <TextView
+                android:id="@+id/btnOpenSettings"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:background="@drawable/bg_panel_premium_focusable"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="@drawable/focus_selector"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="16dp"
+                android:text="⚙️ الإعدادات العامة"
+                android:textColor="#7FE6FF"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:id="@+id/btnOpenSupport"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:background="@drawable/bg_panel_premium_focusable"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="@drawable/focus_selector"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="16dp"
+                android:text="📞 الدعم الفني"
+                android:textColor="#39FF8B"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="💡 ضغطة مطولة (0.5 ثانية) لإزالة أي عنصر من المفضلة"
+                android:textColor="#8891B8"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <!-- Left Content Section (الشبكة والمحتوى) -->
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:padding="16dp">
+
+            <!-- Section 1: قنوات (مفضلة أو حديثة) في شبكة 4×2 -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/channelsRecycler"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:visibility="visible" />
+
+            <!-- Section 2: الفئات المفضلة -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/categoriesRecycler"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:visibility="gone" />
+
+            <!-- Empty State -->
+            <TextView
+                android:id="@+id/emptyText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:text="القائمة فارغة\nأضف القنوات أو الفئات بالضغط المطول (0.5 ثانية) عليها"
+                android:textColor="#B8C2D8"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+        </FrameLayout>
+    </LinearLayout>
+</LinearLayout>

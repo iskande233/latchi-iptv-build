@@ -50,6 +50,11 @@ class CategoryGridAdapter(
             countText.text = if (item.count < 0) "فتح سريع" else "${item.count} قناة"
 
             itemView.setOnLongClickListener {
+                if (item.name != "All" && item.name != "Favorites") {
+                    val isFav = com.latchi.iptv.utils.FavoriteManager.toggleFavoriteCategory(itemView.context, profileId, item.name)
+                    val msg = if (isFav) "⭐ تم حفظ فئة '${item.name}' في الفئات المفضلة ✓" else "إلغاء حفظ فئة '${item.name}' من المفضلة"
+                    android.widget.Toast.makeText(itemView.context, msg, android.widget.Toast.LENGTH_SHORT).show()
+                }
                 onLongSelect?.invoke(item)
                 true
             }
