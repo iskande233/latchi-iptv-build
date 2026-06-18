@@ -26,6 +26,9 @@ android {
             storePassword = "latchi2026"
             keyAlias = "latchi"
             keyPassword = "latchi2026"
+            enableV1Signing = true
+            enableV2Signing = true
+            enableV3Signing = true
         }
     }
     buildTypes {
