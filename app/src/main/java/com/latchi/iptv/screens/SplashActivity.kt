@@ -35,10 +35,27 @@ class SplashActivity : AppCompatActivity() {
             hideSystemUi()
             setContentView(R.layout.activity_splash)
             setupSplashImage()
-        } catch (_: Exception) {}
 
-        // 👑 انتقال ملكي صاروخي مباشر ومضمون 100% بدون أي حوار صلاحيات أو حظر تحديثات
-        scheduleNavigation(150L)
+            // 🚀 Early Update Check: فحص التحديث في الخلفية
+            UpdateChecker.checkInBackground(this, object : UpdateChecker.OnUpdateListener {
+                override fun onUpdateAvailable(info: UpdateChecker.UpdateInfo) {
+                    if (info.forceUpdate) {
+                        isUpdating = true
+                    }
+                    UpdateChecker.showUpdateDialog(this@SplashActivity, info)
+                }
+            })
+
+            // 🛡️ طلب الصلاحيات الأساسية (كما كانت منظمة سابقاً)
+            if (needsPermissions()) {
+                requestAppPermissions()
+            } else {
+                scheduleNavigation(3000)
+            }
+        } catch (e: Exception) {
+            // أمان إضافي لضمان الدخول حتى في حالة وقوع خطأ غير متوقع
+            scheduleNavigation(500)
+        }
     }
 
     private fun setupSplashImage() {

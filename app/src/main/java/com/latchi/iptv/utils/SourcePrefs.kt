@@ -51,34 +51,41 @@ object SourcePrefs {
     }
 
     fun getProfiles(context: Context): MutableList<IptvProfile> {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        // أولاً: المخزن المشفر الجديد، وإلا الترحيل من القديم (نص واضح)
-        val encRaw = prefs.getString(KEY_PROFILES_ENC, null)?.let { decrypt(context, it) }
-        val raw = encRaw ?: prefs.getString(KEY_PROFILES, "[]") ?: "[]"
-        // ترحيل تلقائي: بيانات قديمة غير مشفرة → تشفير فوري وحذف القديمة
-        if (encRaw == null && raw != "[]") {
-            try {
-                prefs.edit()
-                    .putString(KEY_PROFILES_ENC, encrypt(context, raw))
-                    .remove(KEY_PROFILES)
-                    .apply()
-            } catch (_: Exception) { }
-        }
-        val arr = JSONArray(raw)
         val list = mutableListOf<IptvProfile>()
-        for (i in 0 until arr.length()) {
-            val o = arr.getJSONObject(i)
-            list.add(
-                IptvProfile(
-                    id = o.optString("id"),
-                    name = o.optString("name", "User"),
-                    activationCode = o.optString("activationCode", ""),
-                    m3uUrl = o.optString("m3uUrl", ""),
-                    expiresAt = o.optString("expiresAt", ""),
-                    maxDevices = o.optInt("maxDevices", 1),
-                    serverRevision = o.optLong("serverRevision", 0L)
+        try {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            // أولاً: المخزن المشفر الجديد، وإلا الترحيل من القديم (نص واضح)
+            val encRaw = prefs.getString(KEY_PROFILES_ENC, null)?.let { decrypt(context, it) }
+            val raw = encRaw ?: prefs.getString(KEY_PROFILES, "[]") ?: "[]"
+            
+            // ترحيل تلقائي: بيانات قديمة غير مشفرة -> تشفير فوري وحذف القديمة
+            if (encRaw == null && raw != "[]") {
+                try {
+                    prefs.edit()
+                        .putString(KEY_PROFILES_ENC, encrypt(context, raw))
+                        .remove(KEY_PROFILES)
+                        .apply()
+                } catch (_: Exception) { }
+            }
+            
+            val arr = JSONArray(raw)
+            for (i in 0 until arr.length()) {
+                val o = arr.getJSONObject(i)
+                list.add(
+                    IptvProfile(
+                        id = o.optString("id"),
+                        name = o.optString("name", "User"),
+                        activationCode = o.optString("activationCode", ""),
+                        m3uUrl = o.optString("m3uUrl", ""),
+                        expiresAt = o.optString("expiresAt", ""),
+                        maxDevices = o.optInt("maxDevices", 1),
+                        serverRevision = o.optLong("serverRevision", 0L)
+                    )
                 )
-            )
+            }
+        } catch (e: Exception) {
+            // في حالة فشل التحليل أو البيانات تالفة، نرجع قائمة فارغة بدل الكراش
+            android.util.Log.e("SourcePrefs", "Error loading profiles: ${e.message}")
         }
         return list
     }
