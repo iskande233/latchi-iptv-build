@@ -62,14 +62,14 @@ class HomeFragment : Fragment() {
     private var liveCount: TextView? = null
     private var movieCount: TextView? = null
     private var seriesCount: TextView? = null
-    private lateinit var updatedText: TextView
-    private lateinit var loggedInText: TextView
-    private lateinit var expiryText: TextView
+    private var updatedText: TextView? = null
+    private var loggedInText: TextView? = null
+    private var expiryText: TextView? = null
     private var progressBar: View? = null
     private var loadingOverlay: View? = null
-    private lateinit var usersRecyclerView: RecyclerView
-    private lateinit var usersAdapter: UserProfilesAdapter
-    private lateinit var drawerLayout: DrawerLayout
+    private var usersRecyclerView: RecyclerView? = null
+    private var usersAdapter: UserProfilesAdapter? = null
+    private var drawerLayout: DrawerLayout? = null
 
     private var cardAIVoice: View? = null
     private var voiceOverlay: FrameLayout? = null
@@ -243,31 +243,31 @@ class HomeFragment : Fragment() {
         }
         
         view.findViewById<TextView?>(R.id.drawerSupport)?.setOnClickListener {
-            drawerLayout.closeDrawer(GravityCompat.END)
+            drawerLayout?.closeDrawer(GravityCompat.END)
             try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/213798712450"))) } catch (_: Exception) {}
         }
         view.findViewById<TextView?>(R.id.drawerMatches)?.setOnClickListener {
-            drawerLayout.closeDrawer(GravityCompat.END)
+            drawerLayout?.closeDrawer(GravityCompat.END)
             startActivity(Intent(requireContext(), MatchesActivity::class.java))
         }
         view.findViewById<TextView?>(R.id.drawerPrayer)?.setOnClickListener {
-            drawerLayout.closeDrawer(GravityCompat.END)
+            drawerLayout?.closeDrawer(GravityCompat.END)
             startActivity(Intent(requireContext(), PrayerActivity::class.java))
         }
         view.findViewById<TextView?>(R.id.drawerPricing)?.setOnClickListener {
-            drawerLayout.closeDrawer(GravityCompat.END)
+            drawerLayout?.closeDrawer(GravityCompat.END)
             startActivity(Intent(requireContext(), PricingActivity::class.java))
         }
         view.findViewById<TextView?>(R.id.drawerThemeSettings)?.setOnClickListener {
-            drawerLayout.closeDrawer(GravityCompat.END)
+            drawerLayout?.closeDrawer(GravityCompat.END)
             startActivity(Intent(requireContext(), ThemeSettingsActivity::class.java))
         }
         view.findViewById<TextView?>(R.id.drawerSettings)?.setOnClickListener {
-            drawerLayout.closeDrawer(GravityCompat.END)
+            drawerLayout?.closeDrawer(GravityCompat.END)
             startActivity(Intent(requireContext(), SettingsActivity::class.java))
         }
         view.findViewById<TextView?>(R.id.drawerAbout)?.setOnClickListener {
-            drawerLayout.closeDrawer(GravityCompat.END)
+            drawerLayout?.closeDrawer(GravityCompat.END)
             AlertDialog.Builder(requireContext())
                 .setTitle(getString(R.string.app_info_title))
                 .setMessage(getString(R.string.app_info_desc))
@@ -284,16 +284,16 @@ class HomeFragment : Fragment() {
             SourcePrefs.deleteProfile(requireContext(), profile.id)
             refreshUsers()
         })
-        usersRecyclerView.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
-        com.latchi.iptv.utils.TvFocusHelper.setupRecycler(usersRecyclerView)
-        usersRecyclerView.adapter = usersAdapter
+        usersRecyclerView?.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+        com.latchi.iptv.utils.TvFocusHelper.setupRecycler(usersRecyclerView ?: return)
+        usersRecyclerView?.adapter = usersAdapter
         refreshUsers()
     }
 
     private fun refreshUsers() {
         val profiles = SourcePrefs.getProfiles(requireContext())
-        usersAdapter.update(profiles, SourcePrefs.getActiveProfile(requireContext())?.id)
-        usersRecyclerView.visibility = if (profiles.size > 1) View.VISIBLE else View.GONE
+        usersAdapter?.update(profiles, SourcePrefs.getActiveProfile(requireContext())?.id)
+        usersRecyclerView?.visibility = if (profiles.size > 1) View.VISIBLE else View.GONE
     }
 
     private fun animateUi(root: View) {
@@ -555,8 +555,8 @@ class HomeFragment : Fragment() {
             val active = SourcePrefs.getActiveProfile(requireContext())
             if (active == null) { startActivity(Intent(requireContext(), UserListActivity::class.java).putExtra("show_settings", true)); requireActivity().finish(); return }
             try {
-                loggedInText.text = "${getString(R.string.logged_in)}: ${active.name}"
-                expiryText.text = "${getString(R.string.expiry)}: ${DateText.shortDate(active.expiresAt)}"
+                loggedInText?.text = "${getString(R.string.logged_in)}: ${active.name}"
+                expiryText?.text = "${getString(R.string.expiry)}: ${DateText.shortDate(active.expiresAt)}"
             } catch (_: Throwable) {}
             checkExpiryWarning(active.expiresAt)
 
