@@ -474,12 +474,12 @@ class TvLivePreviewActivity : AppCompatActivity() {
             setBackgroundColor(Color.BLACK)
             isFocusable = true
             isClickable = true
-            background = GradientDrawable().apply {
-                setColor(Color.BLACK)
-                cornerRadius = dp(10).toFloat()
+            // حدود ذهبية فقط — بدون clipToOutline حتى لا يقطع الزوايا في Fullscreen
+            foreground = GradientDrawable().apply {
+                setColor(Color.TRANSPARENT)
                 setStroke(dp(2), Color.parseColor("#FFD700"))
             }
-            clipToOutline = true
+            clipToOutline = false  // ❌ لا نقطع الزوايا — تسبب مشكلة في Fullscreen
             setOnClickListener { toggleFullscreen(true) }
             setOnKeyListener { _, keyCode, event ->
                 if (event.action == KeyEvent.ACTION_DOWN &&
@@ -489,7 +489,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
         }
         playerView = PlayerView(this).apply {
             useController = false
-            resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+            resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT  // FIT = يحافظ على النسبة بدون قطع
             setShutterBackgroundColor(Color.BLACK)
             setBackgroundColor(Color.BLACK)
             isFocusable = false
@@ -618,7 +618,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
         isFullscreenMode = enable
         try {
             if (enable) {
-                // إخفاء عموديّ الفئات والقنوات
+                // إخفاء عمودَي الفئات والقنوات
                 categoriesPanel.visibility = View.GONE
                 channelsPanel.visibility   = View.GONE
                 // إخفاء نصوص العمود الأيسر
@@ -627,7 +627,9 @@ class TvLivePreviewActivity : AppCompatActivity() {
                 epgText.visibility         = View.GONE
                 detailsText.visibility     = View.GONE
                 hintText.visibility        = View.GONE
-                // تمديد عمود الفيديو
+                // إزالة الـ border في fullscreen
+                videoFrame.foreground = null
+                // تمديد عمود الفيديو لملء الشاشة كاملة
                 playerPanel.layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.MATCH_PARENT
@@ -636,6 +638,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.MATCH_PARENT
                 )
+                playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
                 mainContainer.requestLayout()
                 videoFrame.postDelayed({ videoFrame.requestFocus() }, 100)
 
@@ -650,6 +653,11 @@ class TvLivePreviewActivity : AppCompatActivity() {
                 hintText.visibility        = View.VISIBLE
                 playerPanel.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 0.45f)
                 videoFrame.layoutParams  = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
+                // إعادة الـ border عند الرجوع للوضع المصغر
+                videoFrame.foreground = GradientDrawable().apply {
+                    setColor(Color.TRANSPARENT)
+                    setStroke(dp(2), Color.parseColor("#FFD700"))
+                }
                 mainContainer.requestLayout()
                 // الفوكس يرجع للقناة الحالية في القائمة
                 channelsRecycler.postDelayed({
