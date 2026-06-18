@@ -16,16 +16,27 @@ import android.content.res.Configuration
 object TvUtils {
 
     fun isTv(context: Context): Boolean {
+        // 1. فحص UiModeManager — الأدق
         val uiModeManager = context.getSystemService(Context.UI_MODE_SERVICE) as? UiModeManager
         if (uiModeManager?.currentModeType == Configuration.UI_MODE_TYPE_TELEVISION) return true
 
         val pm = context.packageManager
+
+        // 2. فحص Leanback (Android TV رسمي)
         if (pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK)) return true
         if (pm.hasSystemFeature("android.software.leanback")) return true
         if (pm.hasSystemFeature("android.hardware.type.television")) return true
 
-        // Extra heuristic: no touchscreen + large landscape screen = very likely a TV box
+        // 3. بدون شاشة لمس = تلفاز أو TV Box
         if (!pm.hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN)) return true
+
+        // 4. فحص إضافي: الـ layout-television نشط؟
+        // إذا الشاشة عريضة جداً ولا توجد كاميرا أمامية = TV Box محتمل
+        val config = context.resources.configuration
+        val isLandscapeOnly = config.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+            && config.screenWidthDp > 800
+            && !pm.hasSystemFeature(PackageManager.FEATURE_CAMERA_FRONT)
+        if (isLandscapeOnly) return true
 
         return false
     }

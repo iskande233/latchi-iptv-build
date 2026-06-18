@@ -310,23 +310,24 @@ class HomeFragment : Fragment() {
     }
 
     private fun setupClicks(view: View) {
-        val isTv = com.latchi.iptv.utils.TvUtils.isTv(requireContext())
+        // isTv: نجمع بين TvUtils + فحص إضافي من layout
+        // إذا cardBeInSports موجود ويشتغل = نحن على TV بيقين
+        val isTv = com.latchi.iptv.utils.TvUtils.isTv(requireContext()) || (cardBeInSports != null)
 
         // 🎬 البث المباشر
         cardLive?.setOnClickListener {
-            // على التلفاز دائماً → الواجهة الموحدة
-            // على الهاتف → القائمة العادية
+            val liveChannels = (channelsProvider.channels.value
+                ?.filter { it.contentType == "live" }
+                ?.takeIf { it.isNotEmpty() })
+                ?: run {
+                    val active = com.latchi.iptv.utils.SourcePrefs.getActiveProfile(requireContext())
+                    active?.let {
+                        com.latchi.iptv.utils.ChannelCache.load(requireContext(), it.id)
+                            .filter { ch -> ch.contentType == "live" }
+                    } ?: emptyList()
+                }
+
             if (isTv) {
-                val liveChannels = (channelsProvider.channels.value
-                    ?.filter { it.contentType == "live" }
-                    ?.takeIf { it.isNotEmpty() })
-                    ?: run {
-                        val active = com.latchi.iptv.utils.SourcePrefs.getActiveProfile(requireContext())
-                        active?.let {
-                            com.latchi.iptv.utils.ChannelCache.load(requireContext(), it.id)
-                                .filter { ch -> ch.contentType == "live" }
-                        } ?: emptyList()
-                    }
                 TvLivePreviewActivity.startAllChannels(requireContext(), liveChannels)
             } else {
                 ChannelListActivity.start(requireContext(), "live", getString(R.string.live_tv))
