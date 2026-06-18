@@ -93,6 +93,16 @@ class UserListActivity : AppCompatActivity() {
         accountsRecyclerView.adapter = accountsAdapter
 
         activateCodeButton.setOnClickListener { activateCode() }
+        
+        codeInput.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                if ((s?.length ?: 0) >= 6) {
+                    activateCodeButton.requestFocus()
+                }
+            }
+            override fun afterTextChanged(s: android.text.Editable?) {}
+        })
         addXtreamButton.setOnClickListener { openAddXtream() }
         addM3uButton.setOnClickListener { openAddM3u() }
         noCodeButton.setOnClickListener { openWhatsApp() }
@@ -151,14 +161,18 @@ class UserListActivity : AppCompatActivity() {
     private fun refreshScreen() {
         activeProfile = SourcePrefs.getActiveProfile(this)
 
-        // 1️⃣ Requirement 3: When reopening app, ALWAYS boot into this Multi-Account root dashboard
         val profiles = SourcePrefs.getProfiles(this)
         accountsAdapter.update(profiles, activeProfile?.id)
 
-        if (profiles.isNotEmpty()) {
-            accountsSection.visibility = View.VISIBLE
+        accountsSection.visibility = if (profiles.isNotEmpty()) View.VISIBLE else View.GONE
+
+        refreshScreen()
+
+        // 👑 توجيه الفوكس المباشر إلى زر دخول
+        if (profiles.isNotEmpty() || codeInput.text.isNotBlank()) {
+            activateCodeButton.postDelayed({ activateCodeButton.requestFocus() }, 100L)
         } else {
-            accountsSection.visibility = View.GONE
+            codeInput.postDelayed({ codeInput.requestFocus() }, 100L)
         }
 
         additionToolsSection.visibility = View.VISIBLE

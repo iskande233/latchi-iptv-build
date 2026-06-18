@@ -141,21 +141,28 @@ class TvLivePreviewActivity : AppCompatActivity() {
      * 2. يعثر على فئة beIN Sports (حتى لو كان اسمها sport ar)
      * 3. يجعلها الفئة الأولى في القائمة والمحددة تلقائياً عند الدخول
      */
+    private fun getHiddenSet(): Set<String> {
+        val active = SourcePrefs.getActiveProfile(this) ?: return emptySet()
+        val hiddenStr = getSharedPreferences("server_sync_prefs", Context.MODE_PRIVATE)
+            .getString("hidden_categories_${active.id}", "") ?: ""
+        return hiddenStr.split(",").map { it.trim().lowercase() }.filter { it.isNotBlank() }.toSet()
+    }
+
     private fun prepareSmartCategories() {
-        val rawCats = allLiveChannels.map { it.category }.distinct().filter { it.isNotBlank() }
+        val hiddenSet = getHiddenSet()
+        val rawCats = allLiveChannels.filter { !hiddenSet.contains(it.category.trim().lowercase()) }
+            .map { it.category }.distinct().filter { it.isNotBlank() }
         
-        // البحث عن فئة beIN Sports
         val beinCat = rawCats.firstOrNull { cat ->
             val lower = cat.lowercase()
             lower.contains("sport ar") || lower.contains("bein") || lower.contains("sports")
-        } ?: selected.category
+        } ?: (if (rawCats.isNotEmpty()) rawCats.first() else selected.category)
 
         val otherCats = rawCats.filter { !it.equals(beinCat, true) }.sorted()
         
         currentCategories = listOf(beinCat) + otherCats
         selectedCategoryName = beinCat
 
-        // تحميل قنوات الفئة الذكية الأولى
         loadCategoryChannels(beinCat)
     }
 

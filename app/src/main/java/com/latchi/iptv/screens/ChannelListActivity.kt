@@ -480,7 +480,8 @@ class ChannelListActivity : AppCompatActivity() {
                 return
             }
 
-            val filtered = data.filter { it.contentType == contentType }
+            val hiddenSet = getHiddenSet()
+            val filtered = data.filter { it.contentType == contentType && !hiddenSet.contains(it.category.trim().lowercase()) }
             val cats = mutableListOf("All", "Favorites")
             cats.addAll(filtered.map { it.category }.distinct())
 
@@ -527,10 +528,33 @@ class ChannelListActivity : AppCompatActivity() {
         applyFilter()
     }
 
+    private fun getHiddenSet(): Set<String> {
+        val hiddenStr = getSharedPreferences("server_sync_prefs", Context.MODE_PRIVATE)
+            .getString("hidden_categories_${activeId()}", "") ?: ""
+        return hiddenStr.split(",").map { it.trim().lowercase() }.filter { it.isNotBlank() }.toSet()
+    }
+
     private fun applyFilter() {
         try {
+            val hiddenSet = getHiddenSet()
             val favs = activeId()?.let { FavoritesPrefs.getFavorites(this, it) } ?: emptySet()
-            channelsProvider.filterChannels(currentQuery, contentType, currentCategory, favs)
+            
+            // 👑 تصفية الفئات المخفية من قائمة القنوات
+            val allChannels = channelsProvider.channels.value ?: emptyList()
+            val searching = currentQuery.isNotBlank()
+            val filteredData = allChannels.filter { c ->
+                val notHidden = !hiddenSet.contains(c.category.trim().lowercase())
+                val typeOk = contentType == "all" || c.contentType == contentType
+                val catOk = when {
+                    currentCategory == "All" -> true
+                    currentCategory == "Favorites" -> favs.contains(c.streamUrl)
+                    else -> c.category.equals(currentCategory, ignoreCase = true)
+                }
+                val searchOk = !searching || c.name.contains(currentQuery, true) || c.category.contains(currentQuery, true)
+                notHidden && typeOk && catOk && searchOk
+            }
+            adapter.updateChannels(filteredData)
+            
         } catch (e: Exception) { Log.e("ChannelList", "Apply Filter Error: ${e.message}") }
     }
 

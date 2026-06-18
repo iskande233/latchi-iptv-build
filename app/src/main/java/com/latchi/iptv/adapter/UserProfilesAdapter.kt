@@ -19,7 +19,6 @@ class UserProfilesAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ProfileViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_user_profile, parent, false)
-        TvFocusHelper.setupFocusableItem(view)
         return ProfileViewHolder(view)
     }
 
@@ -48,7 +47,7 @@ class UserProfilesAdapter(
                 activeMarker.visibility = View.GONE
             }
 
-            itemView.setOnClickListener { onOpen(profile) }
+            itemView.findViewById<View?>(R.id.cardOpenProfile)?.setOnClickListener { onOpen(profile) }
             deleteButton.setOnClickListener { onDelete(profile) }
         }
     }

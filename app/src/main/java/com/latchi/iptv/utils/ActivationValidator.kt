@@ -15,7 +15,8 @@ data class ActivationValidationResult(
     val playlistUrl: String = "",
     val expiresAt: String = "",
     val maxDevices: Int = 1,
-    val serverRevision: Long = 0L
+    val serverRevision: Long = 0L,
+    val hiddenCategories: String = ""
 )
 
 object ActivationValidator {
@@ -78,7 +79,8 @@ object ActivationValidator {
             playlistUrl = playlist,
             expiresAt = ActivationConfig.extractExpiry(json, existingProfile?.expiresAt ?: ""),
             maxDevices = ActivationConfig.extractMaxDevices(json, existingProfile?.maxDevices ?: 1),
-            serverRevision = ActivationConfig.extractRevision(json, existingProfile?.serverRevision ?: 0L)
+            serverRevision = ActivationConfig.extractRevision(json, existingProfile?.serverRevision ?: 0L),
+            hiddenCategories = json.optString("hidden_categories", json.optString("hiddenCategories", ""))
         )
     }
 }
