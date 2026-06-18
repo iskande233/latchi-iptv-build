@@ -332,21 +332,20 @@ class TvLivePreviewActivity : AppCompatActivity() {
         firstCh?.let { playChannel(it) }
     }
 
-    // ── عمود الفئات (أيمن) ───────────────────────────────────────
     private fun buildCategoriesPanel() {
         categoriesPanel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(10), dp(10), dp(8), dp(10))
+            setPadding(dp(6), dp(8), dp(6), dp(8))
         }
         mainContainer.addView(
             categoriesPanel,
-            LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 0.26f)
+            LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 0.22f)
         )
 
         // عنوان العمود
         categoriesPanel.addView(buildColumnTitle("📁 الفئات"))
 
-        // شريط الحروف المشترك — يتحكم في الفئات أو القنوات حسب الفوكس
+        // شريط الحروف
         buildAlphabetBar()
         categoriesPanel.addView(buildAlphabetScrollView())
 
@@ -357,17 +356,16 @@ class TvLivePreviewActivity : AppCompatActivity() {
         }
         categoriesAdapter = CategoriesAdapter(currentCategories, selectedCategoryName) { cat ->
             loadCategoryChannels(cat, null)
-            updateAlphabetForPanel(ActivePanel.CATEGORIES)
-            channelsRecycler.post {
+            // انتقل الفوكس لأول قناة في العمود الأوسط
+            channelsRecycler.postDelayed({
                 channelsRecycler.findViewHolderForAdapterPosition(0)?.itemView?.requestFocus()
                 activePanel = ActivePanel.CHANNELS
                 updateAlphabetForPanel(ActivePanel.CHANNELS)
-            }
+            }, 80)
         }
         categoriesRecycler.adapter = categoriesAdapter
         TvFocusHelper.setupRecycler(categoriesRecycler)
 
-        // عند الفوكس على الفئات → الحروف تتحكم في الفئات
         categoriesRecycler.setOnFocusChangeListener { _, hasFocus ->
             if (hasFocus) {
                 activePanel = ActivePanel.CATEGORIES
@@ -381,40 +379,41 @@ class TvLivePreviewActivity : AppCompatActivity() {
         )
     }
 
-    // ── عمود القنوات (أوسط) ──────────────────────────────────────
     private fun buildChannelsPanel() {
         channelsPanel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(6), dp(10), dp(8), dp(10))
+            setPadding(dp(4), dp(8), dp(6), dp(8))
         }
         mainContainer.addView(
             channelsPanel,
-            LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 0.36f)
+            LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 0.33f)
         )
 
-        // عنوان العمود
         channelsPanel.addView(buildColumnTitle("📺 القنوات"))
 
-        // spacer بنفس ارتفاع شريط الحروف للمحاذاة
+        // spacer محاذاة شريط الحروف
         channelsPanel.addView(View(this).apply {
             layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, dp(44)
-            ).apply { bottomMargin = dp(8) }
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(36)
+            ).apply { bottomMargin = dp(6) }
         })
 
-        // قائمة القنوات
         channelsRecycler = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@TvLivePreviewActivity)
             clipToPadding = false
         }
         channelsAdapter = ChannelsAdapter(currentCategoryChannels) { ch ->
-            if (currentPlayingUrl == ch.streamUrl) toggleFullscreen(true)
-            else playChannel(ch)
+            if (currentPlayingUrl == ch.streamUrl && player?.isPlaying == true) {
+                // نفس القناة شغالة → كبّر الفيديو
+                toggleFullscreen(true)
+            } else {
+                // قناة جديدة → شغّلها
+                playChannel(ch)
+            }
         }
         channelsRecycler.adapter = channelsAdapter
         TvFocusHelper.setupRecycler(channelsRecycler)
 
-        // عند الفوكس على القنوات → الحروف تتحكم في القنوات
         channelsRecycler.setOnFocusChangeListener { _, hasFocus ->
             if (hasFocus) {
                 activePanel = ActivePanel.CHANNELS
@@ -428,22 +427,21 @@ class TvLivePreviewActivity : AppCompatActivity() {
         )
     }
 
-    // ── عمود الفيديو (أيسر) ──────────────────────────────────────
     private fun buildPlayerPanel() {
         playerPanel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            setPadding(dp(8), dp(10), dp(10), dp(10))
+            setPadding(dp(6), dp(8), dp(8), dp(8))
         }
         mainContainer.addView(
             playerPanel,
-            LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 0.38f)
+            LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 0.45f)
         )
 
         titleText = TextView(this).apply {
             text = selected?.name ?: ""
             setTextColor(Color.parseColor("#FFD700"))
-            textSize = 17f
+            textSize = 13f
             gravity = Gravity.CENTER
             setTypeface(null, Typeface.BOLD)
             maxLines = 1
@@ -454,20 +452,20 @@ class TvLivePreviewActivity : AppCompatActivity() {
         catSubtitleText = TextView(this).apply {
             text = "📂 $selectedCategoryName"
             setTextColor(Color.parseColor("#7FE6FF"))
-            textSize = 12f
+            textSize = 10f
             gravity = Gravity.CENTER
             maxLines = 1
-            setPadding(0, 0, 0, dp(4))
+            setPadding(0, 0, 0, dp(2))
         }
         playerPanel.addView(catSubtitleText, lp())
 
         epgText = TextView(this).apply {
             text = "⏳ جاري التحميل..."
             setTextColor(Color.parseColor("#A5B4FC"))
-            textSize = 11f
+            textSize = 10f
             gravity = Gravity.CENTER
             maxLines = 1
-            setPadding(0, 0, 0, dp(6))
+            setPadding(0, 0, 0, dp(4))
         }
         playerPanel.addView(epgText, lp())
 
@@ -478,7 +476,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
             isClickable = true
             background = GradientDrawable().apply {
                 setColor(Color.BLACK)
-                cornerRadius = dp(12).toFloat()
+                cornerRadius = dp(10).toFloat()
                 setStroke(dp(2), Color.parseColor("#FFD700"))
             }
             clipToOutline = true
@@ -497,24 +495,30 @@ class TvLivePreviewActivity : AppCompatActivity() {
             isFocusable = false
             isClickable = false
         }
-        videoFrame.addView(playerView, FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
-        playerPanel.addView(videoFrame, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
+        videoFrame.addView(
+            playerView,
+            FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+        )
+        playerPanel.addView(
+            videoFrame,
+            LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
+        )
 
         detailsText = TextView(this).apply {
             text = ""
             setTextColor(Color.parseColor("#39FF8B"))
-            textSize = 11f
+            textSize = 10f
             gravity = Gravity.CENTER
             setTypeface(null, Typeface.BOLD)
             maxLines = 1
-            setPadding(0, dp(6), 0, dp(2))
+            setPadding(0, dp(4), 0, dp(2))
         }
         playerPanel.addView(detailsText, lp())
 
         hintText = TextView(this).apply {
-            text = "💡 OK على المشغل = ملء الشاشة  |  Back = رجوع"
+            text = "OK = ملء الشاشة  |  Back = رجوع"
             setTextColor(Color.parseColor("#555A7A"))
-            textSize = 10f
+            textSize = 9f
             gravity = Gravity.CENTER
         }
         playerPanel.addView(hintText, lp())
@@ -610,26 +614,33 @@ class TvLivePreviewActivity : AppCompatActivity() {
     // Fullscreen داخلي
     // ─────────────────────────────────────────────────────────────
     private fun toggleFullscreen(enable: Boolean) {
+        if (isFullscreenMode == enable) return  // منع الاستدعاء المزدوج
         isFullscreenMode = enable
         try {
             if (enable) {
+                // إخفاء عموديّ الفئات والقنوات
                 categoriesPanel.visibility = View.GONE
                 channelsPanel.visibility   = View.GONE
+                // إخفاء نصوص العمود الأيسر
                 titleText.visibility       = View.GONE
                 catSubtitleText.visibility = View.GONE
                 epgText.visibility         = View.GONE
                 detailsText.visibility     = View.GONE
                 hintText.visibility        = View.GONE
-                playerPanel.layoutParams   = LinearLayout.LayoutParams(
+                // تمديد عمود الفيديو
+                playerPanel.layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.MATCH_PARENT
                 )
-                videoFrame.layoutParams    = LinearLayout.LayoutParams(
+                videoFrame.layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.MATCH_PARENT
                 )
-                videoFrame.requestFocus()
+                mainContainer.requestLayout()
+                videoFrame.postDelayed({ videoFrame.requestFocus() }, 100)
+
             } else {
+                // إعادة الأعمدة
                 categoriesPanel.visibility = View.VISIBLE
                 channelsPanel.visibility   = View.VISIBLE
                 titleText.visibility       = View.VISIBLE
@@ -637,9 +648,20 @@ class TvLivePreviewActivity : AppCompatActivity() {
                 epgText.visibility         = View.VISIBLE
                 detailsText.visibility     = View.VISIBLE
                 hintText.visibility        = View.VISIBLE
-                playerPanel.layoutParams   = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 0.38f)
-                videoFrame.layoutParams    = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
+                playerPanel.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 0.45f)
+                videoFrame.layoutParams  = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
                 mainContainer.requestLayout()
+                // الفوكس يرجع للقناة الحالية في القائمة
+                channelsRecycler.postDelayed({
+                    val pos = channelsAdapter.playingPosition()
+                    if (pos >= 0) {
+                        (channelsRecycler.layoutManager as? LinearLayoutManager)
+                            ?.scrollToPositionWithOffset(pos, 0)
+                        channelsRecycler.findViewHolderForAdapterPosition(pos)?.itemView?.requestFocus()
+                    } else {
+                        channelsRecycler.findViewHolderForAdapterPosition(0)?.itemView?.requestFocus()
+                    }
+                }, 150)
             }
         } catch (_: Exception) {}
     }
@@ -808,6 +830,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
 
         fun update(list: List<Channel>) { items = list; notifyDataSetChanged() }
         fun setPlayingUrl(url: String)  { playingUrl = url; notifyDataSetChanged() }
+        fun playingPosition(): Int = items.indexOfFirst { it.streamUrl == playingUrl }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
             val row = LinearLayout(parent.context).apply {
