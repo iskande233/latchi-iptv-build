@@ -80,7 +80,7 @@ object UpdateChecker {
             versionName = json.optString("versionName", ""),
             apkUrl = apkUrl,
             notes = notes,
-            forceUpdate = json.optBoolean("forceUpdate", json.optBoolean("force_update", true))
+            forceUpdate = json.optBoolean("forceUpdate", json.optBoolean("force_update", false))
         )
     }
 

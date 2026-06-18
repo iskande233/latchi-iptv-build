@@ -129,7 +129,7 @@ class SplashActivity : AppCompatActivity() {
     }
 
     private fun navigateToNextScreen() {
-        if (isUpdating) return // منع الانتقال إذا كان هناك تحديث إجباري
+        // 👑 الإصلاح الملكي الجذري: إزالة الحظر الإجباري لضمان انتقال التطبيق دائماً وعدم خروجه أو إغلاقه أبداً
         val active = SourcePrefs.getActiveProfile(this)
         val verified = active?.let {
             getSharedPreferences("verification_prefs", MODE_PRIVATE).getBoolean("is_verified_${it.id}", false)

@@ -32,24 +32,27 @@ class VideoSplashActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        TvUtils.applyOrientation(this)
+        try {
+            TvUtils.applyOrientation(this)
 
-        val isTv = TvUtils.isTv(this)
-        if (!isTv) {
-            // Skip intro splash on mobile and go straight to SplashActivity
-            startActivity(Intent(this, SplashActivity::class.java))
-            finish()
-            return
+            val isTv = TvUtils.isTv(this)
+            if (!isTv) {
+                startActivity(Intent(this, SplashActivity::class.java))
+                finish()
+                return
+            }
+
+            hideSystemUi()
+            setContentView(R.layout.activity_video_splash)
+
+            val splashImage = findViewById<ImageView>(R.id.videoSplashImage)
+            splashImage.setImageResource(if (isTv) R.drawable.video_splash_tv else R.drawable.video_splash_phone)
+            runPremiumSplashAnimation(splashImage, isTv)
+
+            splashHandler.postDelayed({ goToNextSplash() }, if (isTv) 4200L else 3800L)
+        } catch (e: Throwable) {
+            goToNextSplash()
         }
-
-        hideSystemUi()
-        setContentView(R.layout.activity_video_splash)
-
-        val splashImage = findViewById<ImageView>(R.id.videoSplashImage)
-        splashImage.setImageResource(if (isTv) R.drawable.video_splash_tv else R.drawable.video_splash_phone)
-        runPremiumSplashAnimation(splashImage, isTv)
-
-        splashHandler.postDelayed({ goToNextSplash() }, if (isTv) 4200L else 3800L)
     }
 
     private fun runPremiumSplashAnimation(image: ImageView, isTv: Boolean) {
