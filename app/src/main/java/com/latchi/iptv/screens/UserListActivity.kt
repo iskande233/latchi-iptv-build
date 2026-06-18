@@ -166,8 +166,6 @@ class UserListActivity : AppCompatActivity() {
 
         accountsSection.visibility = if (profiles.isNotEmpty()) View.VISIBLE else View.GONE
 
-        refreshScreen()
-
         // 👑 توجيه الفوكس المباشر إلى زر دخول
         if (profiles.isNotEmpty() || codeInput.text.isNotBlank()) {
             activateCodeButton.postDelayed({ activateCodeButton.requestFocus() }, 100L)
