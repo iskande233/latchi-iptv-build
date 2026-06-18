@@ -131,14 +131,13 @@ class TvLivePreviewActivity : AppCompatActivity() {
 
         /** يُستدعى من HomeFragment على TV بكل القنوات الحية */
         fun startAllChannels(context: Context, channels: List<Channel>) {
-            if (channels.isEmpty()) {
-                Toast.makeText(context, "⏳ لا توجد قنوات محملة بعد", Toast.LENGTH_SHORT).show()
-                return
-            }
-            val first = channels.firstOrNull { it.contentType == "live" } ?: channels.first()
+            // نفتح الشاشة دائماً — حتى لو القنوات فارغة ستُحمل من الكاش داخلياً
+            val liveChannels = channels.filter { it.contentType == "live" }.ifEmpty { channels }
+            val first = liveChannels.firstOrNull()
+
             context.startActivity(Intent(context, TvLivePreviewActivity::class.java).apply {
-                putExtra("channel", first)
-                putExtra("extra_channels", ArrayList(channels.filter { it.contentType == "live" }))
+                if (first != null) putExtra("channel", first)
+                putExtra("extra_channels", ArrayList(liveChannels))
                 putExtra("category", "")
                 putExtra("load_all", true)
             })
@@ -155,17 +154,32 @@ class TvLivePreviewActivity : AppCompatActivity() {
 
         // جلب البيانات
         selected = intent.getParcelableExtra("channel")
-        if (selected == null) { finish(); return }
 
         val customList = intent.getParcelableArrayListExtra<Channel>("extra_channels")
         val active = SourcePrefs.getActiveProfile(this)
-        val cached = when {
-            !customList.isNullOrEmpty() -> customList
-            active != null -> ChannelCache.load(this, active.id)
-                .filter { it.contentType == "live" }
-            else -> emptyList()
+
+        // نحمل القنوات: من الـ intent أولاً، ثم الكاش، ثم القناة الواحدة
+        val fromIntent = customList?.filter { it.contentType == "live" }?.ifEmpty { customList }
+        val fromCache = if (active != null) {
+            ChannelCache.load(this, active.id).filter { it.contentType == "live" }
+        } else emptyList()
+
+        allLiveChannels = when {
+            !fromIntent.isNullOrEmpty() -> fromIntent
+            fromCache.isNotEmpty()      -> fromCache
+            selected != null            -> listOf(selected!!)
+            else                        -> emptyList()
         }
-        allLiveChannels = cached.ifEmpty { listOfNotNull(selected) }
+
+        // إذا ما في قنوات خالص → نخرج
+        if (allLiveChannels.isEmpty()) {
+            Toast.makeText(this, "⏳ القنوات لم تُحمل بعد، افتح التطبيق وانتظر لحظة", Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
+
+        // نختار أول قناة إذا لم تُحدد
+        if (selected == null) selected = allLiveChannels.first()
 
         // تحضير الفئات
         prepareSmartCategories()

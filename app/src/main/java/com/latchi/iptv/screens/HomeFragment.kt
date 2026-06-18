@@ -315,15 +315,21 @@ class HomeFragment : Fragment() {
         // 🎬 البث المباشر
         cardLive?.setOnClickListener {
             if (isTv) {
-                // التلفاز → الواجهة الموحدة الثلاثية مباشرة
-                val active = com.latchi.iptv.utils.SourcePrefs.getActiveProfile(requireContext())
-                val cached = active?.let {
-                    com.latchi.iptv.utils.ChannelCache.load(requireContext(), it.id)
-                        .filter { ch -> ch.contentType == "live" }
-                } ?: emptyList()
-                TvLivePreviewActivity.startAllChannels(requireContext(), cached)
+                // التلفاز → الواجهة الموحدة — نأخذ القنوات من LiveData أولاً ثم الكاش
+                val liveFromProvider = channelsProvider.channels.value
+                    ?.filter { it.contentType == "live" } ?: emptyList()
+
+                val channels = if (liveFromProvider.isNotEmpty()) {
+                    liveFromProvider
+                } else {
+                    val active = com.latchi.iptv.utils.SourcePrefs.getActiveProfile(requireContext())
+                    active?.let {
+                        com.latchi.iptv.utils.ChannelCache.load(requireContext(), it.id)
+                            .filter { ch -> ch.contentType == "live" }
+                    } ?: emptyList()
+                }
+                TvLivePreviewActivity.startAllChannels(requireContext(), channels)
             } else {
-                // الهاتف → القائمة العادية
                 ChannelListActivity.start(requireContext(), "live", getString(R.string.live_tv))
             }
         }
