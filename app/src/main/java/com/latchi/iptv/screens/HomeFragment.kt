@@ -630,7 +630,7 @@ class HomeFragment : Fragment() {
 
     private fun updateCacheTime(profileId: String) {
         val time = ChannelCache.updatedAt(requireContext().applicationContext, profileId)
-        val timeStr = if (time == 0L) "--" else java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date(time))
+        val timeStr = if (time == 0L) "--" else com.latchi.iptv.utils.DigitNormalizer.normalizeDigits(java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.US).format(java.util.Date(time)))
         updatedText?.text = "Last Server Update:  $timeStr  :آخر تحديث للسيرفر"
     }
 

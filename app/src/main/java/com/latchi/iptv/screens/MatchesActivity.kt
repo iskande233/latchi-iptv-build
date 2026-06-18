@@ -60,7 +60,7 @@ class MatchesActivity : AppCompatActivity() {
     private fun load() { progressBar.visibility=View.VISIBLE; emptyText.visibility=View.GONE
         val a=SourcePrefs.getActiveProfile(this); allChannels=if(a!=null) ChannelCache.load(this,a.id) else emptyList()
         thread{try{val m=YacineTvHelper.fetchMatches(); val n=m.map{mt->SmartMatchItem(mt,if(allChannels.isNotEmpty()&&mt.channelName.isNotBlank()) MatchChannelMapper.findChannelInSportsGroups(mt.channelName,allChannels) else null,mt.channelName)}.toMutableList()
-            runOnUiThread{items.clear();items.addAll(n);adapter.notifyDataSetChanged();progressBar.visibility=View.GONE;if(items.isEmpty()){emptyText.visibility=View.VISIBLE;emptyText.text=getString(R.string.no_matches)};lastUpdateText.text="🔄 ${getString(R.string.last_update)}: ${SimpleDateFormat("HH:mm:ss",Locale.getDefault()).format(Date())}"}
+            runOnUiThread{items.clear();items.addAll(n);adapter.notifyDataSetChanged();progressBar.visibility=View.GONE;if(items.isEmpty()){emptyText.visibility=View.VISIBLE;emptyText.text=getString(R.string.no_matches)};lastUpdateText.text="🔄 ${getString(R.string.last_update)}: ${com.latchi.iptv.utils.DigitNormalizer.normalizeDigits(SimpleDateFormat("HH:mm:ss",Locale.US).format(Date()))}"}
         }catch(e:Exception){runOnUiThread{progressBar.visibility=View.GONE;emptyText.visibility=View.VISIBLE;emptyText.text=getString(R.string.matches_load_failed)}}}}
     override fun onDestroy(){super.onDestroy();autoRefreshRunnable?.let{uiHandler.removeCallbacks(it)}}
     data class SmartMatchItem(val yacineMatch: YacineTvHelper.YacineMatch, val channel: Channel?, val channelName: String?)
