@@ -310,8 +310,23 @@ class HomeFragment : Fragment() {
     }
 
     private fun setupClicks(view: View) {
-        // 🎬 الصف الأول
-        cardLive?.setOnClickListener { ChannelListActivity.start(requireContext(), "live", getString(R.string.live_tv)) }
+        val isTv = com.latchi.iptv.utils.TvUtils.isTv(requireContext())
+
+        // 🎬 البث المباشر
+        cardLive?.setOnClickListener {
+            if (isTv) {
+                // التلفاز → الواجهة الموحدة الثلاثية مباشرة
+                val active = com.latchi.iptv.utils.SourcePrefs.getActiveProfile(requireContext())
+                val cached = active?.let {
+                    com.latchi.iptv.utils.ChannelCache.load(requireContext(), it.id)
+                        .filter { ch -> ch.contentType == "live" }
+                } ?: emptyList()
+                TvLivePreviewActivity.startAllChannels(requireContext(), cached)
+            } else {
+                // الهاتف → القائمة العادية
+                ChannelListActivity.start(requireContext(), "live", getString(R.string.live_tv))
+            }
+        }
         cardMovies?.setOnClickListener { ChannelListActivity.start(requireContext(), "movie", getString(R.string.movies)) }
         cardSeries?.setOnClickListener { ChannelListActivity.start(requireContext(), "series", getString(R.string.series)) }
         cardMatches?.setOnClickListener { startActivity(Intent(requireContext(), MatchesActivity::class.java)) }

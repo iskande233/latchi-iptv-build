@@ -15,6 +15,7 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -35,58 +36,77 @@ import com.latchi.iptv.R
 import com.latchi.iptv.model.Channel
 import com.latchi.iptv.utils.ChannelCache
 import com.latchi.iptv.utils.DigitNormalizer
-import com.latchi.iptv.utils.PlayerServerSyncHelper
 import com.latchi.iptv.utils.SourcePrefs
 import com.latchi.iptv.utils.ThemeManager
 import com.latchi.iptv.utils.TvFocusHelper
 
 /**
- * Android TV VIP Unified All-in-One Live TV Dashboard (v3.0 Royal).
- * 
- * الميزات الملكية الجذرية:
- * 1. واجهة ثلاثية موحدة (الفئات على اليمين، القنوات في الوسط، والفيديو والتفاصيل على اليسار).
- * 2. التخلص من صفحة الفئات القديمة المنفصلة نهائياً.
- * 3. استمرار البث المباشر (Seamless Return): تكبير الفيديو داخلياً، وعند الرجوع يتقلص وتظل المباراة شغالة بدون انقطاع.
- * 4. الذكاء الاصطناعي في التعرف على فئة beIN Sports وتصدرها تلقائياً عند الدخول.
- * 5. تنظيف قسم beIN Sports الصافي وتصدر قنوات beIN MAX في المرتبة الأولى.
- * 6. تفعيل شريط الحروف الأبجدية الذكي للبحث السريع في القنوات والفئات.
+ * 📺 TvLivePreviewActivity — الواجهة الموحدة الاحترافية للتلفاز
+ *
+ * الهيكل (RTL — من اليمين لليسار بالعربية):
+ * ┌─────────────────────────────────────────────────────────────┐
+ * │  الأيمن (0.26f)  │  الأوسط (0.36f)  │  الأيسر (0.38f)   │
+ * │  📁 الفئات       │  📺 القنوات       │  ▶ الفيديو         │
+ * │  + حروف فئات    │  + حروف قنوات    │  + تفاصيل           │
+ * └─────────────────────────────────────────────────────────────┘
+ *
+ * الحروف الأبجدية:
+ * - عند الفوكس على عمود الفئات → الحروف تفلتر الفئات
+ * - عند الفوكس على عمود القنوات → الحروف تفلتر القنوات
+ *
+ * ميزات:
+ * 1. تكبير داخلي (In-place Fullscreen) — البث لا ينقطع أبداً
+ * 2. تصدر beIN Sports أوتوماتيكياً
+ * 3. لا كراش — كل شيء محاط بـ try-catch
  */
 class TvLivePreviewActivity : AppCompatActivity() {
+
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(com.latchi.iptv.utils.LocaleHelper.wrap(newBase))
     }
 
-    private lateinit var selected: Channel
+    // ── State ────────────────────────────────────────────────────
+    private var selected: Channel? = null
     private var allLiveChannels: List<Channel> = emptyList()
     private var currentCategories: List<String> = emptyList()
-    private var selectedCategoryName: String = "All"
+    private var selectedCategoryName: String = ""
     private var currentCategoryChannels: List<Channel> = emptyList()
 
-    // ExoPlayer & Views
+    // ── تتبع الفوكس — أي عمود نشط حالياً
+    private enum class ActivePanel { CATEGORIES, CHANNELS }
+    private var activePanel: ActivePanel = ActivePanel.CATEGORIES
+
+    // ── الحرف النشط لكل عمود
+    private var activeCatLetter: String? = null
+    private var activeChLetter: String? = null
+
+    // ── ExoPlayer ────────────────────────────────────────────────
     private var player: ExoPlayer? = null
     private lateinit var playerView: PlayerView
     private lateinit var videoFrame: FrameLayout
+    private var currentPlayingUrl: String? = null
+    private var isFullscreenMode = false
+
+    // ── Views ─────────────────────────────────────────────────────
+    private lateinit var mainContainer: LinearLayout
+    private lateinit var categoriesPanel: LinearLayout
+    private lateinit var channelsPanel: LinearLayout
+    private lateinit var playerPanel: LinearLayout
+
+    private lateinit var categoriesRecycler: RecyclerView
+    private lateinit var categoriesAdapter: CategoriesAdapter
+    private lateinit var channelsRecycler: RecyclerView
+    private lateinit var channelsAdapter: ChannelsAdapter
+
     private lateinit var titleText: TextView
     private lateinit var catSubtitleText: TextView
     private lateinit var epgText: TextView
     private lateinit var detailsText: TextView
     private lateinit var hintText: TextView
 
-    // Layout Panels
-    private lateinit var mainContainer: LinearLayout
-    private lateinit var categoriesPanel: LinearLayout
-    private lateinit var channelsPanel: LinearLayout
-    private lateinit var playerPanel: LinearLayout
-
-    // Adapters
-    private lateinit var categoriesRecycler: RecyclerView
-    private lateinit var categoriesAdapter: CategoriesAdapter
-    private lateinit var channelsRecycler: RecyclerView
-    private lateinit var channelsAdapter: ChannelsAdapter
-
-    private var currentPlayingUrl: String? = null
-    private var isFullscreenMode = false
-    private var activeFilterLetter: String? = null
+    // شريط الحروف المشترك
+    private lateinit var alphabetContainer: LinearLayout
+    private var letterButtons: List<TextView> = emptyList()
 
     companion object {
         fun start(context: Context, channel: Channel, category: String) {
@@ -96,224 +116,277 @@ class TvLivePreviewActivity : AppCompatActivity() {
             })
         }
 
-        fun startWithChannels(context: Context, channel: Channel, channels: List<Channel>, categoryLabel: String) {
+        fun startWithChannels(
+            context: Context,
+            channel: Channel,
+            channels: List<Channel>,
+            categoryLabel: String
+        ) {
             context.startActivity(Intent(context, TvLivePreviewActivity::class.java).apply {
                 putExtra("channel", channel)
+                putExtra("extra_channels", ArrayList(channels))
                 putExtra("category", categoryLabel)
-                putParcelableArrayListExtra("extra_channels", ArrayList(channels))
+            })
+        }
+
+        /** يُستدعى من HomeFragment على TV بكل القنوات الحية */
+        fun startAllChannels(context: Context, channels: List<Channel>) {
+            if (channels.isEmpty()) {
+                Toast.makeText(context, "⏳ لا توجد قنوات محملة بعد", Toast.LENGTH_SHORT).show()
+                return
+            }
+            val first = channels.firstOrNull { it.contentType == "live" } ?: channels.first()
+            context.startActivity(Intent(context, TvLivePreviewActivity::class.java).apply {
+                putExtra("channel", first)
+                putExtra("extra_channels", ArrayList(channels.filter { it.contentType == "live" }))
+                putExtra("category", "")
+                putExtra("load_all", true)
             })
         }
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // onCreate
+    // ─────────────────────────────────────────────────────────────
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-        ThemeManager.apply(this)
+        try { ThemeManager.apply(this) } catch (_: Exception) {}
 
-        selected = intent.getParcelableExtra("channel") ?: run { finish(); return }
-        
-        // جلب كل القنوات المباشرة
+        // جلب البيانات
+        selected = intent.getParcelableExtra("channel")
+        if (selected == null) { finish(); return }
+
         val customList = intent.getParcelableArrayListExtra<Channel>("extra_channels")
         val active = SourcePrefs.getActiveProfile(this)
-        val cached = if (!customList.isNullOrEmpty()) customList else (active?.let { ChannelCache.load(this, it.id) }.orEmpty())
-        allLiveChannels = cached.filter { it.contentType == "live" }.ifEmpty { listOf(selected) }
+        val cached = when {
+            !customList.isNullOrEmpty() -> customList
+            active != null -> ChannelCache.load(this, active.id)
+                .filter { it.contentType == "live" }
+            else -> emptyList()
+        }
+        allLiveChannels = cached.ifEmpty { listOfNotNull(selected) }
 
-        // تحضير الفئات الذكي
+        // تحضير الفئات
         prepareSmartCategories()
 
-        buildRoyalUi()
+        // بناء الواجهة
+        buildUi()
 
-        // اعتراض زر الرجوع للتكبير الداخلي
+        // معالج زر Back
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (isFullscreenMode) {
-                    toggleFullscreen(false)
-                } else {
-                    finish()
-                }
+                if (isFullscreenMode) toggleFullscreen(false)
+                else finish()
             }
         })
     }
 
-    /**
-     * 🧠 محرك الذكاء الاصطناعي الملكي:
-     * 1. يستخرج كل الفئات
-     * 2. يعثر على فئة beIN Sports (حتى لو كان اسمها sport ar)
-     * 3. يجعلها الفئة الأولى في القائمة والمحددة تلقائياً عند الدخول
-     */
+    // ─────────────────────────────────────────────────────────────
+    // تحضير الفئات الذكي
+    // ─────────────────────────────────────────────────────────────
     private fun getHiddenSet(): Set<String> {
-        val active = SourcePrefs.getActiveProfile(this) ?: return emptySet()
-        val hiddenStr = getSharedPreferences("server_sync_prefs", Context.MODE_PRIVATE)
-            .getString("hidden_categories_${active.id}", "") ?: ""
-        return hiddenStr.split(",").map { it.trim().lowercase() }.filter { it.isNotBlank() }.toSet()
+        return try {
+            val active = SourcePrefs.getActiveProfile(this) ?: return emptySet()
+            val s = getSharedPreferences("server_sync_prefs", Context.MODE_PRIVATE)
+                .getString("hidden_categories_${active.id}", "") ?: ""
+            s.split(",").map { it.trim().lowercase() }.filter { it.isNotBlank() }.toSet()
+        } catch (_: Exception) { emptySet() }
     }
 
     private fun prepareSmartCategories() {
-        val hiddenSet = getHiddenSet()
-        val rawCats = allLiveChannels.filter { !hiddenSet.contains(it.category.trim().lowercase()) }
-            .map { it.category }.distinct().filter { it.isNotBlank() }
-        
-        val beinCat = rawCats.firstOrNull { cat ->
-            val lower = cat.lowercase()
-            lower.contains("sport ar") || lower.contains("bein") || lower.contains("sports")
-        } ?: (if (rawCats.isNotEmpty()) rawCats.first() else selected.category)
+        try {
+            val hiddenSet = getHiddenSet()
+            val rawCats = allLiveChannels
+                .filter { !hiddenSet.contains(it.category.trim().lowercase()) }
+                .map { it.category }
+                .distinct()
+                .filter { it.isNotBlank() }
 
-        val otherCats = rawCats.filter { !it.equals(beinCat, true) }.sorted()
-        
-        currentCategories = listOf(beinCat) + otherCats
-        selectedCategoryName = beinCat
+            // تصدر beIN Sports أوتوماتيكياً
+            val beinCat = rawCats.firstOrNull { cat ->
+                val l = cat.lowercase()
+                l.contains("sport ar") || l.contains("bein") || l.contains("sports")
+            } ?: rawCats.firstOrNull() ?: ""
 
-        loadCategoryChannels(beinCat)
-    }
+            val others = rawCats.filter { !it.equals(beinCat, true) }.sorted()
+            currentCategories = if (beinCat.isNotBlank()) listOf(beinCat) + others else others
 
-    /**
-     * 🧹 محرك تنظيف قسم beIN Sports وتصدر قنوات MAX:
-     * 1. يصفي القنوات ليعرض فقط قنوات beIN
-     * 2. يفرز القنوات لكي يضع قنوات beIN MAX هي الأولى في الواجهة
-     */
-    private fun loadCategoryChannels(catName: String, filterLetter: String? = null) {
-        selectedCategoryName = catName
-        activeFilterLetter = filterLetter
-
-        var rawChannels = allLiveChannels.filter { it.category.equals(catName, true) }
-        if (rawChannels.isEmpty()) rawChannels = allLiveChannels
-
-        // تطبيق التنظيف وترتيب الماكس إذا كانت الفئة هي beIN
-        val isBeinSection = catName.lowercase().let { it.contains("sport ar") || it.contains("bein") || it.contains("sports") }
-        
-        if (isBeinSection) {
-            // تصفية صارمة: فقط قنوات beIN
-            val pureBein = rawChannels.filter { it.name.lowercase().contains("bein") }
-            val baseList = if (pureBein.isNotEmpty()) pureBein else rawChannels
-
-            // قاعدة تصدر الماكس (MAX First Rule)
-            rawChannels = baseList.sortedWith(
-                compareByDescending<Channel> { ch ->
-                    val n = ch.name.lowercase()
-                    n.contains("max") || n.contains("max1") || n.contains("max2") || n.contains("beinmax")
-                }.thenBy { it.name }
-            )
-        }
-
-        // تطبيق الفرز الأبجدي إذا اختار المستخدم حرفاً
-        if (!filterLetter.isNullOrBlank()) {
-            rawChannels = rawChannels.filter { it.name.trim().startsWith(filterLetter, true) }
-        }
-
-        currentCategoryChannels = rawChannels.ifEmpty { allLiveChannels.take(5) }
-
-        // تحديث الواجهة
-        if (::channelsAdapter.isInitialized) {
-            channelsAdapter.update(currentCategoryChannels)
-        }
-        if (::catSubtitleText.isInitialized) {
-            val filterSuffix = if (filterLetter != null) " (حرف $filterLetter)" else ""
-            catSubtitleText.text = "📂 الفئة: $catName$filterSuffix"
-        }
-
-        // تشغيل أول قناة تلقائياً إذا تغيرت الفئة ولم يكن المشغل شغالاً
-        if (currentCategoryChannels.isNotEmpty() && currentPlayingUrl == null) {
-            playRoyalPreview(currentCategoryChannels.first())
+            selectedCategoryName = beinCat.ifBlank { currentCategories.firstOrNull() ?: "" }
+            loadCategoryChannels(selectedCategoryName, null)
+        } catch (_: Exception) {
+            currentCategories = allLiveChannels.map { it.category }.distinct().sorted()
+            selectedCategoryName = currentCategories.firstOrNull() ?: ""
+            currentCategoryChannels = allLiveChannels
         }
     }
 
+    private fun loadCategoryChannels(catName: String, filterLetter: String?) {
+        try {
+            selectedCategoryName = catName
+            activeCatLetter = null // reset حرف الفئات
+
+            var channels = if (catName.isBlank()) allLiveChannels
+            else allLiveChannels.filter { it.category.equals(catName, true) }
+            if (channels.isEmpty()) channels = allLiveChannels
+
+            // ذكاء beIN — تصدر MAX
+            val isBein = catName.lowercase().let {
+                it.contains("sport ar") || it.contains("bein") || it.contains("sports")
+            }
+            if (isBein) {
+                val pureBein = channels.filter { it.name.lowercase().contains("bein") }
+                val base = if (pureBein.isNotEmpty()) pureBein else channels
+                channels = base.sortedWith(
+                    compareByDescending<Channel> {
+                        it.name.lowercase().let { n -> n.contains("max") || n.contains("beinmax") }
+                    }.thenBy { it.name }
+                )
+            }
+
+            // تطبيق فلتر الحرف إن وجد
+            currentCategoryChannels = if (filterLetter != null && filterLetter != "All")
+                channels.filter { it.name.startsWith(filterLetter, ignoreCase = true) }
+            else channels
+
+            // تحديث UI إذا جاهز
+            if (::channelsAdapter.isInitialized) {
+                channelsAdapter.update(currentCategoryChannels)
+                if (::channelsRecycler.isInitialized)
+                    channelsRecycler.scrollToPosition(0)
+            }
+            if (::categoriesAdapter.isInitialized)
+                categoriesAdapter.setSelected(catName)
+
+        } catch (_: Exception) {}
+    }
+
+    private fun filterChannelsByLetter(letter: String?) {
+        try {
+            activeChLetter = letter
+            val channels = if (selectedCategoryName.isBlank()) allLiveChannels
+            else allLiveChannels.filter { it.category.equals(selectedCategoryName, true) }
+
+            val filtered = if (letter != null && letter != "All")
+                channels.filter { it.name.startsWith(letter, ignoreCase = true) }
+            else channels
+
+            if (::channelsAdapter.isInitialized) {
+                channelsAdapter.update(filtered)
+                if (::channelsRecycler.isInitialized) channelsRecycler.scrollToPosition(0)
+            }
+        } catch (_: Exception) {}
+    }
+
+    private fun filterCategoriesByLetter(letter: String?) {
+        try {
+            activeCatLetter = letter
+            val filtered = if (letter != null && letter != "All")
+                currentCategories.filter { it.startsWith(letter, ignoreCase = true) }
+            else currentCategories
+
+            if (::categoriesAdapter.isInitialized) categoriesAdapter.updateList(filtered)
+        } catch (_: Exception) {}
+    }
+
     // ─────────────────────────────────────────────────────────────
-    // بناء الواجهة الملكية (Royal Tri-Panel UI)
+    // بناء الواجهة
     // ─────────────────────────────────────────────────────────────
-    private fun buildRoyalUi() {
+    private fun buildUi() {
+        // الحاوية الرئيسية الأفقية
         mainContainer = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            setPadding(dp(16), dp(16), dp(16), dp(16))
             setBackgroundResource(R.drawable.bg_app)
         }
         setContentView(mainContainer)
 
-        // ══════════════════════════════════════════════════════════
-        // 1. العمود الأيمن (قائمة الفئات Categories) — Width: 0.28f
-        // ══════════════════════════════════════════════════════════
+        buildCategoriesPanel()   // الأيمن
+        buildChannelsPanel()     // الأوسط
+        buildPlayerPanel()       // الأيسر
+
+        // فوكس تلقائي على أول فئة
+        categoriesRecycler.post {
+            try {
+                categoriesRecycler.findViewHolderForAdapterPosition(0)?.itemView?.requestFocus()
+                activePanel = ActivePanel.CATEGORIES
+                updateAlphabetForPanel(ActivePanel.CATEGORIES)
+            } catch (_: Exception) {}
+        }
+
+        // تشغيل أول قناة تلقائياً
+        val firstCh = currentCategoryChannels.firstOrNull() ?: selected
+        firstCh?.let { playChannel(it) }
+    }
+
+    // ── عمود الفئات (أيمن) ───────────────────────────────────────
+    private fun buildCategoriesPanel() {
         categoriesPanel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(0, 0, dp(12), 0)
+            setPadding(dp(10), dp(10), dp(8), dp(10))
         }
-        mainContainer.addView(categoriesPanel, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 0.28f))
+        mainContainer.addView(
+            categoriesPanel,
+            LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 0.26f)
+        )
 
-        categoriesPanel.addView(TextView(this).apply {
-            text = "📁 الفئات / Categories"
-            setTextColor(Color.parseColor("#FFD700"))
-            textSize = 15f
-            setTypeface(null, Typeface.BOLD)
-            gravity = Gravity.CENTER
-            setPadding(0, dp(6), 0, dp(12))
-        })
+        // عنوان العمود
+        categoriesPanel.addView(buildColumnTitle("📁 الفئات"))
 
+        // شريط الحروف المشترك — يتحكم في الفئات أو القنوات حسب الفوكس
+        buildAlphabetBar()
+        categoriesPanel.addView(buildAlphabetScrollView())
+
+        // قائمة الفئات
         categoriesRecycler = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@TvLivePreviewActivity)
             clipToPadding = false
         }
-        categoriesAdapter = CategoriesAdapter(currentCategories) { cat ->
+        categoriesAdapter = CategoriesAdapter(currentCategories, selectedCategoryName) { cat ->
             loadCategoryChannels(cat, null)
-            channelsRecycler.scrollToPosition(0)
+            updateAlphabetForPanel(ActivePanel.CATEGORIES)
+            channelsRecycler.post {
+                channelsRecycler.findViewHolderForAdapterPosition(0)?.itemView?.requestFocus()
+                activePanel = ActivePanel.CHANNELS
+                updateAlphabetForPanel(ActivePanel.CHANNELS)
+            }
         }
         categoriesRecycler.adapter = categoriesAdapter
         TvFocusHelper.setupRecycler(categoriesRecycler)
-        categoriesPanel.addView(categoriesRecycler, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
 
-        // ══════════════════════════════════════════════════════════
-        // 2. العمود الأوسط (قائمة القنوات + الحروف) — Width: 0.36f
-        // ══════════════════════════════════════════════════════════
+        // عند الفوكس على الفئات → الحروف تتحكم في الفئات
+        categoriesRecycler.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                activePanel = ActivePanel.CATEGORIES
+                updateAlphabetForPanel(ActivePanel.CATEGORIES)
+            }
+        }
+
+        categoriesPanel.addView(
+            categoriesRecycler,
+            LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
+        )
+    }
+
+    // ── عمود القنوات (أوسط) ──────────────────────────────────────
+    private fun buildChannelsPanel() {
         channelsPanel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(0, 0, dp(12), 0)
+            setPadding(dp(6), dp(10), dp(8), dp(10))
         }
-        mainContainer.addView(channelsPanel, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 0.36f))
+        mainContainer.addView(
+            channelsPanel,
+            LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 0.36f)
+        )
 
-        // شريط الحروف الأبجدية الأفقي الأنيق (A, B, C...)
-        val alphabetScroll = ScrollView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(44)).apply { bottomMargin = dp(8) }
-            isHorizontalScrollBarEnabled = false
-        }
-        val alphabetContainer = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-        alphabetScroll.addView(alphabetContainer)
+        // عنوان العمود
+        channelsPanel.addView(buildColumnTitle("📺 القنوات"))
 
-        val letters = listOf("All", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z")
-        letters.forEach { letter ->
-            val btnLetter = TextView(this).apply {
-                text = letter
-                setTextColor(Color.parseColor("#A5B4FC"))
-                textSize = 12f
-                setTypeface(null, Typeface.BOLD)
-                gravity = Gravity.CENTER
-                isClickable = true
-                isFocusable = true
-                setPadding(dp(12), dp(6), dp(12), dp(6))
-                background = GradientDrawable().apply {
-                    setColor(Color.parseColor("#121228"))
-                    cornerRadius = dp(12).toFloat()
-                    setStroke(dp(1), Color.parseColor("#3d3d5c"))
-                }
-                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(34)).apply { marginEnd = dp(6) }
-                
-                setOnClickListener {
-                    if (letter == "All") loadCategoryChannels(selectedCategoryName, null)
-                    else loadCategoryChannels(selectedCategoryName, letter)
-                }
-                setOnFocusChangeListener { v, has ->
-                    v.animate().scaleX(if (has) 1.1f else 1f).scaleY(if (has) 1.1f else 1f).setDuration(100).start()
-                    if (has) {
-                        (v.background as? GradientDrawable)?.setColor(Color.parseColor("#FFD700"))
-                        setTextColor(Color.parseColor("#050A1A"))
-                    } else {
-                        (v.background as? GradientDrawable)?.setColor(Color.parseColor("#121228"))
-                        setTextColor(Color.parseColor("#A5B4FC"))
-                    }
-                }
-            }
-            alphabetContainer.addView(btnLetter)
-        }
-        channelsPanel.addView(alphabetScroll)
+        // spacer بنفس ارتفاع شريط الحروف للمحاذاة
+        channelsPanel.addView(View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(44)
+            ).apply { bottomMargin = dp(8) }
+        })
 
         // قائمة القنوات
         channelsRecycler = RecyclerView(this).apply {
@@ -321,74 +394,85 @@ class TvLivePreviewActivity : AppCompatActivity() {
             clipToPadding = false
         }
         channelsAdapter = ChannelsAdapter(currentCategoryChannels) { ch ->
-            if (currentPlayingUrl == ch.streamUrl) {
-                toggleFullscreen(true)
-            } else {
-                playRoyalPreview(ch)
-            }
+            if (currentPlayingUrl == ch.streamUrl) toggleFullscreen(true)
+            else playChannel(ch)
         }
         channelsRecycler.adapter = channelsAdapter
         TvFocusHelper.setupRecycler(channelsRecycler)
-        channelsPanel.addView(channelsRecycler, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
 
-        // ══════════════════════════════════════════════════════════
-        // 3. العمود الأيسر (الفيديو والمشغل والتفاصيل) — Width: 0.36f
-        // ══════════════════════════════════════════════════════════
+        // عند الفوكس على القنوات → الحروف تتحكم في القنوات
+        channelsRecycler.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                activePanel = ActivePanel.CHANNELS
+                updateAlphabetForPanel(ActivePanel.CHANNELS)
+            }
+        }
+
+        channelsPanel.addView(
+            channelsRecycler,
+            LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
+        )
+    }
+
+    // ── عمود الفيديو (أيسر) ──────────────────────────────────────
+    private fun buildPlayerPanel() {
         playerPanel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
+            setPadding(dp(8), dp(10), dp(10), dp(10))
         }
-        mainContainer.addView(playerPanel, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 0.36f))
+        mainContainer.addView(
+            playerPanel,
+            LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 0.38f)
+        )
 
         titleText = TextView(this).apply {
-            text = selected.name
+            text = selected?.name ?: ""
             setTextColor(Color.parseColor("#FFD700"))
-            textSize = 20f
+            textSize = 17f
             gravity = Gravity.CENTER
             setTypeface(null, Typeface.BOLD)
             maxLines = 1
-            setPadding(0, 0, 0, dp(4))
+            setPadding(0, 0, 0, dp(2))
         }
-        playerPanel.addView(titleText, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+        playerPanel.addView(titleText, lp())
 
         catSubtitleText = TextView(this).apply {
-            text = "📂 الفئة: $selectedCategoryName"
+            text = "📂 $selectedCategoryName"
             setTextColor(Color.parseColor("#7FE6FF"))
-            textSize = 13f
-            gravity = Gravity.CENTER
-            maxLines = 1
-            setPadding(0, 0, 0, dp(4))
-        }
-        playerPanel.addView(catSubtitleText, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
-
-        epgText = TextView(this).apply {
-            text = "EPG: جاري جلب تفاصيل البرنامج..."
-            setTextColor(Color.parseColor("#A5B4FC"))
             textSize = 12f
             gravity = Gravity.CENTER
             maxLines = 1
-            setPadding(0, 0, 0, dp(8))
+            setPadding(0, 0, 0, dp(4))
         }
-        playerPanel.addView(epgText, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+        playerPanel.addView(catSubtitleText, lp())
 
-        // مشغل الفيديو الملكي (In-place video frame)
+        epgText = TextView(this).apply {
+            text = "⏳ جاري التحميل..."
+            setTextColor(Color.parseColor("#A5B4FC"))
+            textSize = 11f
+            gravity = Gravity.CENTER
+            maxLines = 1
+            setPadding(0, 0, 0, dp(6))
+        }
+        playerPanel.addView(epgText, lp())
+
+        // مشغل الفيديو
         videoFrame = FrameLayout(this).apply {
             setBackgroundColor(Color.BLACK)
             isFocusable = true
             isClickable = true
-            foreground = getDrawable(R.drawable.focus_ring_vip)
             background = GradientDrawable().apply {
                 setColor(Color.BLACK)
-                cornerRadius = dp(14).toFloat()
+                cornerRadius = dp(12).toFloat()
                 setStroke(dp(2), Color.parseColor("#FFD700"))
             }
             clipToOutline = true
-
             setOnClickListener { toggleFullscreen(true) }
             setOnKeyListener { _, keyCode, event ->
-                if (event.action == KeyEvent.ACTION_DOWN && (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER)) {
-                    toggleFullscreen(true); true
-                } else false
+                if (event.action == KeyEvent.ACTION_DOWN &&
+                    (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER)
+                ) { toggleFullscreen(true); true } else false
             }
         }
         playerView = PlayerView(this).apply {
@@ -399,195 +483,302 @@ class TvLivePreviewActivity : AppCompatActivity() {
             isFocusable = false
             isClickable = false
         }
-        videoFrame.addView(playerView, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+        videoFrame.addView(playerView, FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
         playerPanel.addView(videoFrame, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
 
         detailsText = TextView(this).apply {
+            text = ""
             setTextColor(Color.parseColor("#39FF8B"))
-            textSize = 12f
+            textSize = 11f
             gravity = Gravity.CENTER
             setTypeface(null, Typeface.BOLD)
             maxLines = 1
-            setPadding(0, dp(8), 0, dp(4))
+            setPadding(0, dp(6), 0, dp(2))
         }
-        playerPanel.addView(detailsText, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+        playerPanel.addView(detailsText, lp())
 
         hintText = TextView(this).apply {
-            text = "💡 اضغط OK على المشغل = تكبير الشاشة (Fullscreen)"
-            setTextColor(Color.parseColor("#8891B8"))
-            textSize = 11f
+            text = "💡 OK على المشغل = ملء الشاشة  |  Back = رجوع"
+            setTextColor(Color.parseColor("#555A7A"))
+            textSize = 10f
             gravity = Gravity.CENTER
         }
-        playerPanel.addView(hintText, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+        playerPanel.addView(hintText, lp())
+    }
 
-        // تحديد أول فئة في اليمين
-        categoriesRecycler.post {
-            categoriesRecycler.findViewHolderForAdapterPosition(0)?.itemView?.requestFocus()
+    // ── شريط الحروف المشترك ───────────────────────────────────────
+    private lateinit var alphabetScrollView: HorizontalScrollView
+
+    private fun buildAlphabetBar() {
+        alphabetContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
         }
+        val letters = listOf("الكل", "A","B","C","D","E","F","G","H","I","J","K","L","M",
+                             "N","O","P","Q","R","S","T","U","V","W","X","Y","Z")
+        val btns = mutableListOf<TextView>()
+        letters.forEach { letter ->
+            val btn = TextView(this).apply {
+                text = letter
+                setTextColor(Color.parseColor("#A5B4FC"))
+                textSize = 11f
+                setTypeface(null, Typeface.BOLD)
+                gravity = Gravity.CENTER
+                isClickable = true
+                isFocusable = true
+                setPadding(dp(10), dp(4), dp(10), dp(4))
+                background = GradientDrawable().apply {
+                    setColor(Color.parseColor("#121228"))
+                    cornerRadius = dp(10).toFloat()
+                    setStroke(dp(1), Color.parseColor("#3d3d5c"))
+                }
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, dp(32)
+                ).apply { marginEnd = dp(5) }
+
+                setOnClickListener {
+                    val rawLetter = if (letter == "الكل") null else letter
+                    when (activePanel) {
+                        ActivePanel.CATEGORIES -> filterCategoriesByLetter(rawLetter)
+                        ActivePanel.CHANNELS   -> filterChannelsByLetter(rawLetter)
+                    }
+                    // تحديث اللون النشط
+                    btns.forEach { b ->
+                        (b.background as? GradientDrawable)?.setColor(Color.parseColor("#121228"))
+                        b.setTextColor(Color.parseColor("#A5B4FC"))
+                    }
+                    (background as? GradientDrawable)?.setColor(Color.parseColor("#FFD700"))
+                    setTextColor(Color.parseColor("#050A1A"))
+                }
+                setOnFocusChangeListener { v, has ->
+                    v.animate().scaleX(if (has) 1.1f else 1f)
+                        .scaleY(if (has) 1.1f else 1f).setDuration(80).start()
+                }
+            }
+            btns.add(btn)
+            alphabetContainer.addView(btn)
+        }
+        letterButtons = btns
+    }
+
+    private fun buildAlphabetScrollView(): HorizontalScrollView {
+        alphabetScrollView = HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(44)
+            ).apply { bottomMargin = dp(8) }
+        }
+        alphabetScrollView.addView(alphabetContainer)
+        return alphabetScrollView
+    }
+
+    /** يحدّث تلميح شريط الحروف حسب العمود النشط */
+    private fun updateAlphabetForPanel(panel: ActivePanel) {
+        try {
+            val hint = when (panel) {
+                ActivePanel.CATEGORIES -> "🔤 الحروف تفلتر الفئات"
+                ActivePanel.CHANNELS   -> "🔤 الحروف تفلتر القنوات"
+            }
+            // reset الألوان
+            letterButtons.forEach { b ->
+                (b.background as? GradientDrawable)?.setColor(Color.parseColor("#121228"))
+                b.setTextColor(Color.parseColor("#A5B4FC"))
+            }
+            // لون مميز للزر "الكل"
+            letterButtons.firstOrNull()?.apply {
+                (background as? GradientDrawable)?.setColor(Color.parseColor("#1A2A4A"))
+                setTextColor(Color.parseColor("#7FE6FF"))
+            }
+        } catch (_: Exception) {}
     }
 
     // ─────────────────────────────────────────────────────────────
-    // استمرار البث المباشر والتكبير الداخلي (In-place Fullscreen)
+    // Fullscreen داخلي
     // ─────────────────────────────────────────────────────────────
     private fun toggleFullscreen(enable: Boolean) {
         isFullscreenMode = enable
-        if (enable) {
-            // تكبير المشغل ليملا الشاشة بالكامل
-            categoriesPanel.visibility = View.GONE
-            channelsPanel.visibility = View.GONE
-            titleText.visibility = View.GONE
-            catSubtitleText.visibility = View.GONE
-            epgText.visibility = View.GONE
-            detailsText.visibility = View.GONE
-            hintText.visibility = View.GONE
-
-            playerPanel.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT)
-            videoFrame.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT)
-            (videoFrame.background as? GradientDrawable)?.setStroke(0, Color.TRANSPARENT)
-            
-            Toast.makeText(this, "وضع الشاشة الكامله • اضغط Back للعودة", Toast.LENGTH_SHORT).show()
-        } else {
-            // العودة للشاشة المصغرة مع استمرار البث المباشر بدون أي انقطاع
-            categoriesPanel.visibility = View.VISIBLE
-            channelsPanel.visibility = View.VISIBLE
-            titleText.visibility = View.VISIBLE
-            catSubtitleText.visibility = View.VISIBLE
-            epgText.visibility = View.VISIBLE
-            detailsText.visibility = View.VISIBLE
-            hintText.visibility = View.VISIBLE
-
-            playerPanel.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 0.36f)
-            videoFrame.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
-            (videoFrame.background as? GradientDrawable)?.setStroke(dp(2), Color.parseColor("#FFD700"))
-        }
-    }
-
-    // ─────────────────────────────────────────────────────────────
-    // تشغيل القناة في المشغل (ExoPlayer)
-    // ─────────────────────────────────────────────────────────────
-    private fun playRoyalPreview(ch: Channel) {
-        selected = ch
-        currentPlayingUrl = ch.streamUrl
-        titleText.text = ch.name
-        epgText.text = "EPG: جاري جلب تفاصيل البرنامج..."
-        detailsText.text = "▶ البث المباشر: ${ch.name}"
-        
-        channelsAdapter.setPlayingUrl(ch.streamUrl)
-        loadPreviewEpg(ch)
-
-        val dataSourceFactory = DefaultHttpDataSource.Factory()
-            .setUserAgent("Mozilla/5.0 (Linux; Android TV) AppleWebKit/537.36")
-            .setAllowCrossProtocolRedirects(true)
-        val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
-        val streamUrl = ch.streamUrl.trim().replace("&amp;", "&")
-
-        player?.release()
-        val loadControl = com.google.android.exoplayer2.DefaultLoadControl.Builder()
-            .setBufferDurationsMs(15000, 30000, 2500, 5000)
-            .build()
-        player = ExoPlayer.Builder(this)
-            .setMediaSourceFactory(mediaSourceFactory)
-            .setLoadControl(loadControl)
-            .build()
-            .also { exo ->
-                playerView.player = exo
-                exo.volume = 0.85f
-                exo.setMediaItem(MediaItem.fromUri(Uri.parse(streamUrl)))
-                exo.playWhenReady = true
-                exo.prepare()
+        try {
+            if (enable) {
+                categoriesPanel.visibility = View.GONE
+                channelsPanel.visibility   = View.GONE
+                titleText.visibility       = View.GONE
+                catSubtitleText.visibility = View.GONE
+                epgText.visibility         = View.GONE
+                detailsText.visibility     = View.GONE
+                hintText.visibility        = View.GONE
+                playerPanel.layoutParams   = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.MATCH_PARENT
+                )
+                videoFrame.layoutParams    = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.MATCH_PARENT
+                )
+                videoFrame.requestFocus()
+            } else {
+                categoriesPanel.visibility = View.VISIBLE
+                channelsPanel.visibility   = View.VISIBLE
+                titleText.visibility       = View.VISIBLE
+                catSubtitleText.visibility = View.VISIBLE
+                epgText.visibility         = View.VISIBLE
+                detailsText.visibility     = View.VISIBLE
+                hintText.visibility        = View.VISIBLE
+                playerPanel.layoutParams   = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 0.38f)
+                videoFrame.layoutParams    = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
+                mainContainer.requestLayout()
             }
+        } catch (_: Exception) {}
     }
 
-    private fun loadPreviewEpg(ch: Channel) {
-        val active = SourcePrefs.getActiveProfile(this)
-        val creds = active?.let { com.latchi.iptv.utils.XtreamHelper.parseCreds(it.m3uUrl) }
-        val streamId = com.latchi.iptv.utils.XtreamHelper.liveStreamId(ch.streamUrl)
-        if (creds == null || streamId == null) {
-            epgText.text = "EPG: غير متوفر لهذا المصدر"
-            return
-        }
-        val expectedUrl = ch.streamUrl
-        Thread {
-            val items = try {
-                com.latchi.iptv.utils.XtreamHelper.fetchShortEpg(creds, streamId, 2)
-            } catch (_: Exception) { emptyList() }
-            
-            runOnUiThread {
-                if (currentPlayingUrl != expectedUrl) return@runOnUiThread
-                epgText.text = when {
-                    items.isEmpty() -> "EPG: لا توجد تفاصيل برنامج متاحة الآن"
-                    items.size == 1 -> "EPG الآن: ${DigitNormalizer.normalizeDigits(items[0].title)}"
-                    else -> "EPG الآن: ${DigitNormalizer.normalizeDigits(items[0].title)}"
+    // ─────────────────────────────────────────────────────────────
+    // تشغيل القناة
+    // ─────────────────────────────────────────────────────────────
+    private fun playChannel(ch: Channel) {
+        try {
+            selected = ch
+            currentPlayingUrl = ch.streamUrl
+            titleText.text = ch.name
+            catSubtitleText.text = "📂 ${ch.category.ifBlank { selectedCategoryName }}"
+            epgText.text = "⏳ جاري جلب البرنامج..."
+            detailsText.text = "▶ ${ch.name}"
+            channelsAdapter.setPlayingUrl(ch.streamUrl)
+            loadEpg(ch)
+
+            val url = ch.streamUrl.trim().replace("&amp;", "&")
+            val dsf = DefaultHttpDataSource.Factory()
+                .setUserAgent("Mozilla/5.0 (Linux; Android TV) AppleWebKit/537.36")
+                .setAllowCrossProtocolRedirects(true)
+            player?.release()
+            player = ExoPlayer.Builder(this)
+                .setMediaSourceFactory(DefaultMediaSourceFactory(dsf))
+                .setLoadControl(
+                    com.google.android.exoplayer2.DefaultLoadControl.Builder()
+                        .setBufferDurationsMs(15000, 30000, 2500, 5000)
+                        .build()
+                )
+                .build().also { exo ->
+                    playerView.player = exo
+                    exo.volume = 0.9f
+                    exo.setMediaItem(MediaItem.fromUri(Uri.parse(url)))
+                    exo.playWhenReady = true
+                    exo.prepare()
                 }
-            }
-        }.start()
+        } catch (e: Exception) {
+            epgText.text = "❌ خطأ: ${e.localizedMessage?.take(60)}"
+        }
     }
 
-    override fun onResume() {
-        super.onResume()
-        player?.playWhenReady = true
+    private fun loadEpg(ch: Channel) {
+        try {
+            val active = SourcePrefs.getActiveProfile(this)
+            val creds = active?.let { com.latchi.iptv.utils.XtreamHelper.parseCreds(it.m3uUrl) }
+            val streamId = com.latchi.iptv.utils.XtreamHelper.liveStreamId(ch.streamUrl)
+            if (creds == null || streamId == null) { epgText.text = "EPG: غير متوفر"; return }
+            val expectedUrl = ch.streamUrl
+            Thread {
+                val items = try {
+                    com.latchi.iptv.utils.XtreamHelper.fetchShortEpg(creds, streamId, 2)
+                } catch (_: Exception) { emptyList() }
+                runOnUiThread {
+                    if (currentPlayingUrl != expectedUrl) return@runOnUiThread
+                    epgText.text = when {
+                        items.isEmpty() -> "EPG: لا توجد تفاصيل"
+                        else -> "📺 الآن: ${DigitNormalizer.normalizeDigits(items[0].title)}"
+                    }
+                }
+            }.start()
+        } catch (_: Exception) { epgText.text = "EPG: غير متوفر" }
     }
-
-    override fun onPause() {
-        super.onPause()
-        player?.playWhenReady = false
-    }
-
-    override fun onDestroy() {
-        player?.release()
-        player = null
-        super.onDestroy()
-    }
-
-    private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
 
     // ─────────────────────────────────────────────────────────────
-    // المحولات الملكية (Adapters)
+    // Lifecycle
     // ─────────────────────────────────────────────────────────────
+    override fun onResume()  { super.onResume();  player?.playWhenReady = true  }
+    override fun onPause()   { super.onPause();   player?.playWhenReady = false }
+    override fun onDestroy() { player?.release(); player = null; super.onDestroy() }
+
+    // ─────────────────────────────────────────────────────────────
+    // Helpers
+    // ─────────────────────────────────────────────────────────────
+    private fun buildColumnTitle(text: String) = TextView(this).apply {
+        this.text = text
+        setTextColor(Color.parseColor("#FFD700"))
+        textSize = 13f
+        setTypeface(null, Typeface.BOLD)
+        gravity = Gravity.CENTER
+        setPadding(0, dp(4), 0, dp(8))
+    }
+
+    private fun lp() = LinearLayout.LayoutParams(
+        LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+    )
+
+    private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
+
+    // ─────────────────────────────────────────────────────────────
+    // Adapters
+    // ─────────────────────────────────────────────────────────────
+
     private inner class CategoriesAdapter(
-        private val items: List<String>,
+        private var items: List<String>,
+        private var selectedCat: String,
         private val onClick: (String) -> Unit
     ) : RecyclerView.Adapter<CategoriesAdapter.VH>() {
-        
+
+        fun setSelected(cat: String) { selectedCat = cat; notifyDataSetChanged() }
+        fun updateList(list: List<String>) { items = list; notifyDataSetChanged() }
+
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
             val tv = TextView(parent.context).apply {
-                setTextColor(Color.WHITE); textSize = 14f; setTypeface(null, Typeface.BOLD)
+                setTextColor(Color.WHITE)
+                textSize = 13f
+                setTypeface(null, Typeface.BOLD)
                 gravity = Gravity.CENTER_VERTICAL
-                setPadding(dp(14), dp(12), dp(14), dp(12))
+                setPadding(dp(12), dp(10), dp(12), dp(10))
                 isClickable = true; isFocusable = true
+                maxLines = 1
                 background = GradientDrawable().apply {
                     setColor(Color.parseColor("#1A1B3A"))
-                    cornerRadius = dp(12).toFloat()
+                    cornerRadius = dp(10).toFloat()
                     setStroke(dp(1), Color.parseColor("#3d3d5c"))
                 }
-                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-                    bottomMargin = dp(8)
-                }
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { bottomMargin = dp(6) }
             }
             return VH(tv)
         }
 
-        override fun onBindViewHolder(holder: VH, position: Int) = holder.bind(items[position])
+        override fun onBindViewHolder(h: VH, pos: Int) = h.bind(items[pos])
         override fun getItemCount() = items.size
 
         inner class VH(private val tv: TextView) : RecyclerView.ViewHolder(tv) {
             fun bind(cat: String) {
-                val isSelectedCat = cat.equals(selectedCategoryName, true)
-                val label = if (cat.lowercase().let { it.contains("sport ar") || it.contains("bein") }) "👑 beIN Sports" else cat
-                tv.text = if (isSelectedCat) "● $label" else label
-                tv.setTextColor(if (isSelectedCat) Color.parseColor("#FFD700") else Color.WHITE)
-                
-                (tv.background as? GradientDrawable)?.setColor(
-                    if (isSelectedCat) Color.parseColor("#2A2C5A") else Color.parseColor("#1A1B3A")
-                )
+                val isSel = cat.equals(selectedCat, true)
+                val label = if (cat.lowercase().let {
+                    it.contains("sport ar") || it.contains("bein") || it.contains("sports")
+                }) "👑 $cat" else cat
 
-                tv.setOnClickListener { onClick(cat); notifyDataSetChanged() }
+                tv.text = label
+                tv.setTextColor(if (isSel) Color.parseColor("#FFD700") else Color.WHITE)
+                (tv.background as? GradientDrawable)?.apply {
+                    setColor(if (isSel) Color.parseColor("#2A2C5A") else Color.parseColor("#1A1B3A"))
+                    setStroke(dp(if (isSel) 2 else 1), if (isSel) Color.parseColor("#FFD700") else Color.parseColor("#3d3d5c"))
+                }
+                tv.setOnClickListener { onClick(cat) }
                 tv.setOnFocusChangeListener { v, has ->
-                    v.animate().scaleX(if (has) 1.05f else 1f).scaleY(if (has) 1.05f else 1f).setDuration(100).start()
+                    v.animate().scaleX(if (has) 1.04f else 1f).scaleY(if (has) 1.04f else 1f).setDuration(80).start()
+                    if (!isSel) {
+                        (tv.background as? GradientDrawable)?.setStroke(
+                            dp(if (has) 2 else 1),
+                            if (has) Color.parseColor("#00E5FF") else Color.parseColor("#3d3d5c")
+                        )
+                    }
+                    // الفوكس على فئة → الحروف تتحكم في الفئات
                     if (has) {
-                        (tv.background as? GradientDrawable)?.setStroke(dp(2), Color.parseColor("#FFD700"))
-                    } else {
-                        (tv.background as? GradientDrawable)?.setStroke(dp(1), Color.parseColor("#3d3d5c"))
+                        activePanel = ActivePanel.CATEGORIES
+                        updateAlphabetForPanel(ActivePanel.CATEGORIES)
                     }
                 }
             }
@@ -598,62 +789,77 @@ class TvLivePreviewActivity : AppCompatActivity() {
         private var items: List<Channel>,
         private val onClick: (Channel) -> Unit
     ) : RecyclerView.Adapter<ChannelsAdapter.VH>() {
+
         private var playingUrl: String? = null
 
-        fun update(newItems: List<Channel>) {
-            this.items = newItems
-            notifyDataSetChanged()
-        }
-
-        fun setPlayingUrl(url: String) {
-            this.playingUrl = url
-            notifyDataSetChanged()
-        }
+        fun update(list: List<Channel>) { items = list; notifyDataSetChanged() }
+        fun setPlayingUrl(url: String)  { playingUrl = url; notifyDataSetChanged() }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
             val row = LinearLayout(parent.context).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
-                setPadding(dp(12), dp(10), dp(12), dp(10))
+                setPadding(dp(10), dp(8), dp(10), dp(8))
                 background = GradientDrawable().apply {
                     setColor(Color.parseColor("#1A1B3A"))
-                    cornerRadius = dp(12).toFloat()
+                    cornerRadius = dp(10).toFloat()
                     setStroke(dp(1), Color.parseColor("#3d3d5c"))
                 }
-                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(8) }
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { bottomMargin = dp(6) }
                 isFocusable = true; isClickable = true
             }
-            val logo = ImageView(parent.context).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
-            row.addView(logo, LinearLayout.LayoutParams(dp(44), dp(44)).apply { marginEnd = dp(12) })
+            val logo = ImageView(parent.context).apply {
+                scaleType = ImageView.ScaleType.CENTER_CROP
+            }
+            row.addView(logo, LinearLayout.LayoutParams(dp(38), dp(38)).apply { marginEnd = dp(10) })
             val name = TextView(parent.context).apply {
-                setTextColor(Color.WHITE); textSize = 14f; setTypeface(null, Typeface.BOLD); maxLines = 1
+                setTextColor(Color.WHITE); textSize = 13f
+                setTypeface(null, Typeface.BOLD); maxLines = 1
             }
             row.addView(name, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
             return VH(row, logo, name)
         }
 
-        override fun onBindViewHolder(holder: VH, position: Int) = holder.bind(items[position])
+        override fun onBindViewHolder(h: VH, pos: Int) = h.bind(items[pos])
         override fun getItemCount() = items.size
 
-        inner class VH(private val row: LinearLayout, private val logo: ImageView, private val name: TextView) : RecyclerView.ViewHolder(row) {
+        inner class VH(
+            private val row: LinearLayout,
+            private val logo: ImageView,
+            private val name: TextView
+        ) : RecyclerView.ViewHolder(row) {
             fun bind(ch: Channel) {
                 val isPlaying = ch.streamUrl == playingUrl
                 name.text = if (isPlaying) "▶ ${ch.name}" else ch.name
                 name.setTextColor(if (isPlaying) Color.parseColor("#39FF8B") else Color.WHITE)
-                
-                (row.background as? GradientDrawable)?.setColor(
-                    if (isPlaying) Color.parseColor("#2A3A4A") else Color.parseColor("#1A1B3A")
-                )
-
-                Glide.with(row.context).load(ch.logoUrl.ifBlank { null }).placeholder(R.drawable.ic_tv).error(R.drawable.ic_tv).into(logo)
+                (row.background as? GradientDrawable)?.apply {
+                    setColor(if (isPlaying) Color.parseColor("#0D2A1A") else Color.parseColor("#1A1B3A"))
+                    setStroke(dp(if (isPlaying) 2 else 1),
+                        if (isPlaying) Color.parseColor("#39FF8B") else Color.parseColor("#3d3d5c"))
+                }
+                try {
+                    Glide.with(row.context)
+                        .load(ch.logoUrl.ifBlank { null })
+                        .placeholder(R.drawable.ic_tv).error(R.drawable.ic_tv)
+                        .into(logo)
+                } catch (_: Exception) { logo.setImageResource(R.drawable.ic_tv) }
 
                 row.setOnClickListener { onClick(ch) }
                 row.setOnFocusChangeListener { v, has ->
-                    v.animate().scaleX(if (has) 1.04f else 1f).scaleY(if (has) 1.04f else 1f).setDuration(100).start()
+                    v.animate().scaleX(if (has) 1.03f else 1f).scaleY(if (has) 1.03f else 1f).setDuration(80).start()
+                    if (!isPlaying) {
+                        (row.background as? GradientDrawable)?.setStroke(
+                            dp(if (has) 2 else 1),
+                            if (has) Color.parseColor("#00E5FF") else Color.parseColor("#3d3d5c")
+                        )
+                    }
+                    // الفوكس على قناة → الحروف تتحكم في القنوات
                     if (has) {
-                        (row.background as? GradientDrawable)?.setStroke(dp(2), Color.parseColor("#00E5FF"))
-                    } else {
-                        (row.background as? GradientDrawable)?.setStroke(dp(1), Color.parseColor("#3d3d5c"))
+                        activePanel = ActivePanel.CHANNELS
+                        updateAlphabetForPanel(ActivePanel.CHANNELS)
                     }
                 }
             }
