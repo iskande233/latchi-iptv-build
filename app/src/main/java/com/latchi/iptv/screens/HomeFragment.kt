@@ -32,6 +32,7 @@ import com.latchi.iptv.adapter.UserProfilesAdapter
 import com.latchi.iptv.model.Channel
 import com.latchi.iptv.provider.ChannelsProvider
 import com.latchi.iptv.utils.ChannelCache
+import com.latchi.iptv.utils.ChannelRefreshHelper
 import com.latchi.iptv.utils.DateText
 import com.latchi.iptv.utils.GeminiVoiceController
 import com.latchi.iptv.utils.LastWatchedPrefs
@@ -199,11 +200,16 @@ class HomeFragment : Fragment() {
     private fun refreshChannelsSilently() {
         try {
             val active = com.latchi.iptv.utils.SourcePrefs.getActiveProfile(requireContext()) ?: return
-            // مسح الكاش القديم (الـ ServerSyncManager قد فعل ذلك بالفعل، لكن للأمان نكرر)
             com.latchi.iptv.utils.ChannelCache.clear(requireContext().applicationContext, active.id)
-            saveAfterFetch = true
-            // جلب من السيرفر الجديد بشكل صامت
-            channelsProvider.fetchM3UFile(active.m3uUrl)
+            ChannelRefreshHelper.ensureFreshChannels(requireContext(), active, onlyLive = false) { result ->
+                try {
+                    channelsProvider.setLocalChannels(result.channels)
+                    updateCacheTime(active.id)
+                    if (result.refreshedFromServer) {
+                        com.latchi.iptv.utils.CustomOverlayHelper.show(requireActivity(), "تحديث", getString(R.string.playlist_updated), true)
+                    }
+                } catch (_: Exception) {}
+            }
         } catch (e: Throwable) {
             Log.e("HomeFragment", "Silent refresh failed: ${e.message}")
         }
@@ -221,12 +227,8 @@ class HomeFragment : Fragment() {
 
             val active = com.latchi.iptv.utils.SourcePrefs.getActiveProfile(requireContext())
             if (active != null && com.latchi.iptv.utils.SourcePrefs.isPendingServerRefresh(requireContext(), active.id)) {
-                // ✅ الإصلاح: نمسح العلامة أولاً ثم نعيد تحميل القنوات مباشرة
-                com.latchi.iptv.utils.SourcePrefs.setPendingServerRefresh(requireContext(), active.id, false)
-                // مسح الكاش للأمان (قد يكون مُسح بالفعل لكن نكرر)
+                // نترك pending=true إلى أن ينجح الجلب فعلياً داخل ChannelRefreshHelper
                 com.latchi.iptv.utils.ChannelCache.clear(requireContext().applicationContext, active.id)
-                // ✅ نجلب القنوات من الرابط الجديد مباشرة بدون انتظار Sync جديد
-                // (السيرفر Sync حصل بالفعل في GlowingServerUpdateActivity)
                 view?.post { refreshChannelsSilently() }
             } else {
                 view?.post { startSilentServerSync(force = false) }
