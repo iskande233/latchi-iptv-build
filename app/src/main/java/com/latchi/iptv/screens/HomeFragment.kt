@@ -316,29 +316,10 @@ class HomeFragment : Fragment() {
 
         // 🎬 البث المباشر
         cardLive?.setOnClickListener {
-            val liveChannels = (channelsProvider.channels.value
-                ?.filter { it.contentType == "live" }
-                ?.takeIf { it.isNotEmpty() })
-                ?: run {
-                    val active = com.latchi.iptv.utils.SourcePrefs.getActiveProfile(requireContext())
-                    active?.let {
-                        com.latchi.iptv.utils.ChannelCache.load(requireContext(), it.id)
-                            .filter { ch -> ch.contentType == "live" }
-                    } ?: emptyList()
-                }
-
-            if (liveChannels.isEmpty()) {
-                com.latchi.iptv.utils.CustomOverlayHelper.show(
-                    requireActivity(),
-                    "⏳ انتظر",
-                    "لم يتم تحميل القنوات بعد، يرجى الانتظار...",
-                    false
-                )
-                return@setOnClickListener
-            }
-
+            // 🛑 لا نجيب القنوات هنا باش ما نعطلش الواجهة ولا نمرر كمية كبيرة عبر Intent
+            // TvLivePreviewActivity تجلب القنوات من الكاش داخلياً في Thread منفصل
             if (isTv) {
-                TvLivePreviewActivity.startAllChannels(requireContext(), liveChannels)
+                TvLivePreviewActivity.startAllChannels(requireContext(), emptyList())
             } else {
                 ChannelListActivity.start(requireContext(), "live", getString(R.string.live_tv))
             }

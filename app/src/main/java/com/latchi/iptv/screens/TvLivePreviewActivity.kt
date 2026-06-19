@@ -70,7 +70,8 @@ class TvLivePreviewActivity : AppCompatActivity() {
     private var activeChLetter: String? = null
     private var isFullscreenMode = false
     private var profileId: String = ""
-    private var currentPlayingUrl: String? = null
+    private     private var loadFromCache: Boolean = false
+    var currentPlayingUrl: String? = null
     private var hideCategories: Boolean = false
 
     // ExoPlayer
@@ -117,8 +118,10 @@ class TvLivePreviewActivity : AppCompatActivity() {
             val live = channels.filter { it.contentType == "live" }.ifEmpty { channels }
             context.startActivity(Intent(context, TvLivePreviewActivity::class.java).apply {
                 if (live.isNotEmpty()) putExtra("channel", live.first())
-                putParcelableArrayListExtra("extra_channels", ArrayList(live))
+                // 🛑 لا نمرر كل القنوات عبر Intent (سبب كراش TransactionTooLargeException)
+                // TvLivePreviewActivity تجلب القنوات من الكاش داخلياً
                 putExtra("category", "All")
+                putExtra("load_from_cache", true)
             })
         }
     }
@@ -137,41 +140,80 @@ class TvLivePreviewActivity : AppCompatActivity() {
             }
             profileId = active.id
             hideCategories = intent.getBooleanExtra("hide_categories", false)
+            loadFromCache = intent.getBooleanExtra("load_from_cache", false)
 
             // جلب القنوات
             val passedChannel = intent.getParcelableExtra<Channel>("channel")
             val customList = intent.getParcelableArrayListExtra<Channel>("extra_channels")
-            val cachedList = ChannelCache.load(this, profileId)
-
-            var rawLive = customList?.filter { it.contentType == "live" }
-            if (rawLive.isNullOrEmpty()) rawLive = cachedList.filter { it.contentType == "live" }
-            if (rawLive.isEmpty() && passedChannel != null) rawLive = listOf(passedChannel)
-
-            if (rawLive.isEmpty()) {
-                Toast.makeText(this, "⏳ يرجى انتظار تحميل القنوات...", Toast.LENGTH_LONG).show()
-                finish()
+            
+            if (customList != null && customList.isNotEmpty()) {
+                // القنوات مرسلة مع الـ Intent (beIN Sports - عدد قليل)
+                allLiveChannels = customList
+                selectedChannel = passedChannel ?: allLiveChannels.first()
+                initDashboard()
+            } else if (loadFromCache) {
+                // نجلب من الكاش في الخلفية (البث المباشر - قنوات كثيرة)
+                Toast.makeText(this, "⏳ جاري تحميل القنوات...", Toast.LENGTH_SHORT).show()
+                loadChannelsFromCache(passedChannel)
                 return
-            }
-
-            allLiveChannels = rawLive
-            selectedChannel = passedChannel ?: allLiveChannels.first()
-
-            setFindViewById()
-            buildUniversalAlphabetBar()
-            prepareSmartCategories()
-
-            // معالج زر Back
-            onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-                override fun handleOnBackPressed() {
-                    if (isFullscreenMode) toggleFullscreen(false)
-                    else finish()
+            } else {
+                // نجلب من الكاش مباشرة
+                val cachedList = ChannelCache.load(this, profileId)
+                var rawLive = cachedList.filter { it.contentType == "live" }
+                if (rawLive.isEmpty() && passedChannel != null) rawLive = listOf(passedChannel)
+                if (rawLive.isEmpty()) {
+                    Toast.makeText(this, "⏳ يرجى انتظار تحميل القنوات...", Toast.LENGTH_LONG).show()
+                    finish()
+                    return
                 }
-            })
+                allLiveChannels = rawLive
+                selectedChannel = passedChannel ?: allLiveChannels.first()
+                initDashboard()
+            }
         } catch (e: Exception) {
             Log.e("TvLiveDashboard", "onCreate Crash: ${e.message}")
             Toast.makeText(this, "حدث خطأ: ${e.message}", Toast.LENGTH_LONG).show()
             finish()
         }
+    }
+
+    private fun loadChannelsFromCache(passedChannel: Channel?) {
+        Thread {
+            try {
+                val ch = ChannelCache.load(this, profileId)
+                val live = ch.filter { it.contentType == "live" }
+                Handler(Looper.getMainLooper()).post {
+                    if (live.isEmpty() && passedChannel != null) {
+                        allLiveChannels = listOf(passedChannel)
+                    } else if (live.isNotEmpty()) {
+                        allLiveChannels = live
+                    } else {
+                        Toast.makeText(this, "⏳ لم يتم تحميل القنوات بعد", Toast.LENGTH_LONG).show()
+                        finish()
+                        return@post
+                    }
+                    selectedChannel = passedChannel ?: allLiveChannels.first()
+                    initDashboard()
+                }
+            } catch (e: Exception) {
+                Handler(Looper.getMainLooper()).post {
+                    Toast.makeText(this, "خطأ في تحميل القنوات: ${e.message}", Toast.LENGTH_LONG).show()
+                    finish()
+                }
+            }
+        }.start()
+    }
+
+    private fun initDashboard() {
+        setFindViewById()
+        buildUniversalAlphabetBar()
+        prepareSmartCategories()
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (isFullscreenMode) toggleFullscreen(false)
+                else finish()
+            }
+        })
     }
 
     private fun setFindViewById() {
