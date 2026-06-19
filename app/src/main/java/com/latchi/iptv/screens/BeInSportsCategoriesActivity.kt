@@ -295,7 +295,7 @@ class BeInSportsCategoriesActivity : AppCompatActivity() {
     private fun openCategoryPreview(category: String, channels: List<Channel>) {
         if (channels.isEmpty()) return
         // فتح شاشة المعاينة بالقنوات المفلترة لهذه الفئة (يتجاوز الفلتر الافتراضي)
-        TvLivePreviewActivity.startWithChannels(this, channels.first(), channels, category)
+        TvLivePreviewActivity.startWithChannels(this, channels.first(), channels, category, hideCategories = true)
         finish()
     }
 

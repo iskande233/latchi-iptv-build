@@ -71,6 +71,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
     private var isFullscreenMode = false
     private var profileId: String = ""
     private var currentPlayingUrl: String? = null
+    private var hideCategories: Boolean = false
 
     // ExoPlayer
     private var player: ExoPlayer? = null
@@ -103,10 +104,11 @@ class TvLivePreviewActivity : AppCompatActivity() {
             })
         }
 
-        fun startWithChannels(context: Context, channel: Channel, channels: List<Channel>, categoryLabel: String) {
+        fun startWithChannels(context: Context, channel: Channel, channels: List<Channel>, categoryLabel: String, hideCategories: Boolean = false) {
             context.startActivity(Intent(context, TvLivePreviewActivity::class.java).apply {
                 putExtra("channel", channel)
                 putExtra("category", categoryLabel)
+                putExtra("hide_categories", hideCategories)
                 putParcelableArrayListExtra("extra_channels", ArrayList(channels))
             })
         }
@@ -134,6 +136,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
                 return
             }
             profileId = active.id
+            hideCategories = intent.getBooleanExtra("hide_categories", false)
 
             // جلب القنوات
             val passedChannel = intent.getParcelableExtra<Channel>("channel")
@@ -469,7 +472,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
 
                 panelPlayer.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT)
                 frameVideo.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT)
-                viewPlayer.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                viewPlayer.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
                 
                 Toast.makeText(this, "وضع الشاشة الكامله • اضغط Back للعودة", Toast.LENGTH_SHORT).show()
             } else {

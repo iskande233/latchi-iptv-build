@@ -19,7 +19,7 @@
         app:player_layout_id="@layout/exo_player_view"
         app:show_buffering="never"
         app:use_controller="true"
-        app:resize_mode="fit" />
+        app:resize_mode="fill" />
 
     <ProgressBar
         android:id="@+id/progressBar"
