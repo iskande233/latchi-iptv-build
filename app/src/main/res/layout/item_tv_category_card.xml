@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/catCardRoot"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_panel_premium_focusable"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="@drawable/focus_selector"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingHorizontal="14dp"
+    android:paddingVertical="12dp"
+    android:layout_marginBottom="8dp">
+
+    <TextView
+        android:id="@+id/catIconText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="📁"
+        android:textSize="20sp"
+        android:layout_marginEnd="10dp" />
+
+    <TextView
+        android:id="@+id/catNameText"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:ellipsize="marquee"
+        android:marqueeRepeatLimit="marquee_forever"
+        android:singleLine="true"
+        android:text="Category Name"
+        android:textColor="#FFFFFF"
+        android:textSize="15sp"
+        android:textStyle="bold" />
+</LinearLayout>
