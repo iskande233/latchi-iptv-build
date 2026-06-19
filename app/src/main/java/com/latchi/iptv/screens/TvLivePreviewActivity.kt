@@ -760,6 +760,8 @@ class TvLivePreviewActivity : AppCompatActivity() {
                     topMargin = 0
                     bottomMargin = 0
                 }
+                frameVideo.foreground = null
+                frameVideo.clearFocus()
                 viewPlayer.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
 
                 Toast.makeText(this, "وضع الشاشة الكامله • اضغط Back للعودة", Toast.LENGTH_SHORT).show()
@@ -767,6 +769,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
                 mainDashboardContainer.setPadding(dp(10), dp(10), dp(10), dp(10))
                 panelPlayer.setPadding(dp(10), dp(10), dp(10), dp(10))
                 panelPlayer.setBackgroundResource(R.drawable.bg_panel)
+                frameVideo.foreground = getDrawable(R.drawable.focus_ring_vip)
                 panelCategories.visibility = if (hideCategories) View.GONE else View.VISIBLE
                 panelAlphabet.visibility = if (hideCategories) View.GONE else View.VISIBLE
                 panelChannels.visibility = View.VISIBLE
