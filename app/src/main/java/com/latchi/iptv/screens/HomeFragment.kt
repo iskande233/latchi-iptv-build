@@ -327,6 +327,16 @@ class HomeFragment : Fragment() {
                     } ?: emptyList()
                 }
 
+            if (liveChannels.isEmpty()) {
+                com.latchi.iptv.utils.CustomOverlayHelper.show(
+                    requireActivity(),
+                    "⏳ انتظر",
+                    "لم يتم تحميل القنوات بعد، يرجى الانتظار...",
+                    false
+                )
+                return@setOnClickListener
+            }
+
             if (isTv) {
                 TvLivePreviewActivity.startAllChannels(requireContext(), liveChannels)
             } else {
