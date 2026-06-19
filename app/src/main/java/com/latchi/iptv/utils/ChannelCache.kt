@@ -49,8 +49,15 @@ object ChannelCache {
                 }
             }
 
+            val latestRevision = try {
+                SourcePrefs.getActiveProfile(context)?.takeIf { it.id == profileId }?.serverRevision ?: 0L
+            } catch (_: Exception) {
+                0L
+            }
+
             context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
                 .putLong("updated_$profileId", System.currentTimeMillis())
+                .putLong("revision_$profileId", latestRevision)
                 .apply()
         } catch (e: Exception) {
             android.util.Log.e("ChannelCache", "Master DB Save Crash: ${e.message}")
@@ -106,6 +113,16 @@ object ChannelCache {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getLong("updated_$profileId", 0L)
     }
 
+    fun revision(context: Context, profileId: String): Long {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getLong("revision_$profileId", 0L)
+    }
+
+    fun markRevision(context: Context, profileId: String, revision: Long) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
+            .putLong("revision_$profileId", revision)
+            .apply()
+    }
+
     @Synchronized
     fun clear(context: Context, profileId: String) {
         try {
@@ -114,6 +131,7 @@ object ChannelCache {
             getSeriesDiskFile(context, profileId).delete()
             context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
                 .remove("updated_$profileId")
+                .remove("revision_$profileId")
                 .apply()
         } catch (_: Exception) {}
     }

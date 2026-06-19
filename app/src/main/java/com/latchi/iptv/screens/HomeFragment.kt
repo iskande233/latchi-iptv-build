@@ -317,7 +317,7 @@ class HomeFragment : Fragment() {
         // 🎬 البث المباشر
         cardLive?.setOnClickListener {
             // 🛑 لا نجيب القنوات هنا باش ما نعطلش الواجهة ولا نمرر كمية كبيرة عبر Intent
-            // TvLivePreviewActivity تجلب القنوات من الكاش داخلياً في Thread منفصل
+            // TvLivePreviewActivity يتكفل بجلب القنوات بذكاء من الكاش أو من المصدر إذا كان الكاش قديماً
             if (isTv) {
                 TvLivePreviewActivity.startAllChannels(requireContext(), emptyList())
             } else {

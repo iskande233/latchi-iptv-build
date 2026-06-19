@@ -17,7 +17,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.latchi.iptv.R
 import com.latchi.iptv.model.Channel
-import com.latchi.iptv.utils.ChannelCache
+import com.latchi.iptv.utils.ChannelRefreshHelper
 import com.latchi.iptv.utils.MatchChannelMapper
 import com.latchi.iptv.utils.SourcePrefs
 import com.latchi.iptv.utils.TvUtils
@@ -57,11 +57,58 @@ class MatchesActivity : AppCompatActivity() {
         }
         recyclerView.layoutManager=LinearLayoutManager(this); com.latchi.iptv.utils.TvFocusHelper.setupRecycler(recyclerView); recyclerView.adapter=adapter; load()
         autoRefreshRunnable=object:Runnable{override fun run(){load();uiHandler.postDelayed(this,120000L)}}; uiHandler.postDelayed(autoRefreshRunnable!!,120000L) }
-    private fun load() { progressBar.visibility=View.VISIBLE; emptyText.visibility=View.GONE
-        val a=SourcePrefs.getActiveProfile(this); allChannels=if(a!=null) ChannelCache.load(this,a.id) else emptyList()
-        thread{try{val m=YacineTvHelper.fetchMatches(); val n=m.map{mt->SmartMatchItem(mt,if(allChannels.isNotEmpty()&&mt.channelName.isNotBlank()) MatchChannelMapper.findChannelInSportsGroups(mt.channelName,allChannels) else null,mt.channelName)}.toMutableList()
-            runOnUiThread{items.clear();items.addAll(n);adapter.notifyDataSetChanged();progressBar.visibility=View.GONE;if(items.isEmpty()){emptyText.visibility=View.VISIBLE;emptyText.text=getString(R.string.no_matches)};lastUpdateText.text="🔄 ${getString(R.string.last_update)}: ${com.latchi.iptv.utils.DigitNormalizer.normalizeDigits(SimpleDateFormat("HH:mm:ss",Locale.US).format(Date()))}"}
-        }catch(e:Exception){runOnUiThread{progressBar.visibility=View.GONE;emptyText.visibility=View.VISIBLE;emptyText.text=getString(R.string.matches_load_failed)}}}}
+    private fun load() {
+        progressBar.visibility = View.VISIBLE
+        emptyText.visibility = View.GONE
+
+        val active = SourcePrefs.getActiveProfile(this)
+        if (active == null) {
+            progressBar.visibility = View.GONE
+            emptyText.visibility = View.VISIBLE
+            emptyText.text = getString(R.string.matches_load_failed)
+            return
+        }
+
+        ChannelRefreshHelper.ensureFreshChannels(this, active, onlyLive = true) { result ->
+            allChannels = result.channels
+            if (result.usedCacheFallback && result.message.isNotBlank()) {
+                Toast.makeText(this, "⚠️ تم استخدام آخر كاش متاح للقنوات الرياضية", Toast.LENGTH_SHORT).show()
+            }
+
+            thread {
+                try {
+                    val matches = YacineTvHelper.fetchMatches()
+                    val resolved = matches.map { mt ->
+                        SmartMatchItem(
+                            mt,
+                            if (allChannels.isNotEmpty() && mt.channelName.isNotBlank()) {
+                                MatchChannelMapper.findChannelInSportsGroups(mt.channelName, allChannels)
+                            } else null,
+                            mt.channelName
+                        )
+                    }.toMutableList()
+
+                    runOnUiThread {
+                        items.clear()
+                        items.addAll(resolved)
+                        adapter.notifyDataSetChanged()
+                        progressBar.visibility = View.GONE
+                        if (items.isEmpty()) {
+                            emptyText.visibility = View.VISIBLE
+                            emptyText.text = getString(R.string.no_matches)
+                        }
+                        lastUpdateText.text = "🔄 ${getString(R.string.last_update)}: ${com.latchi.iptv.utils.DigitNormalizer.normalizeDigits(SimpleDateFormat("HH:mm:ss", Locale.US).format(Date()))}"
+                    }
+                } catch (_: Exception) {
+                    runOnUiThread {
+                        progressBar.visibility = View.GONE
+                        emptyText.visibility = View.VISIBLE
+                        emptyText.text = getString(R.string.matches_load_failed)
+                    }
+                }
+            }
+        }
+    }
     override fun onDestroy(){super.onDestroy();autoRefreshRunnable?.let{uiHandler.removeCallbacks(it)}}
     data class SmartMatchItem(val yacineMatch: YacineTvHelper.YacineMatch, val channel: Channel?, val channelName: String?)
     class SmartMatchesAdapter(private val items:List<SmartMatchItem>,private val onClick:(SmartMatchItem)->Unit):RecyclerView.Adapter<SmartMatchesAdapter.VH>(){

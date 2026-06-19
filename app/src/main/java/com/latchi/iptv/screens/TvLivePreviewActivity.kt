@@ -34,7 +34,7 @@ import com.google.android.exoplayer2.ui.AspectRatioFrameLayout
 import com.google.android.exoplayer2.ui.PlayerView
 import com.latchi.iptv.R
 import com.latchi.iptv.model.Channel
-import com.latchi.iptv.utils.ChannelCache
+import com.latchi.iptv.utils.ChannelRefreshHelper
 import com.latchi.iptv.utils.DigitNormalizer
 import com.latchi.iptv.utils.FavoriteManager
 import com.latchi.iptv.utils.SourcePrefs
@@ -121,7 +121,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
             context.startActivity(Intent(context, TvLivePreviewActivity::class.java).apply {
                 if (live.isNotEmpty()) putExtra("channel", live.first())
                 // 🛑 لا نمرر كل القنوات عبر Intent (سبب كراش TransactionTooLargeException)
-                // TvLivePreviewActivity تجلب القنوات من الكاش داخلياً
+                // TvLivePreviewActivity تجلب القنوات بذكاء من الكاش أو من المصدر عند الحاجة
                 putExtra("category", "All")
                 putExtra("load_from_cache", true)
             })
@@ -150,28 +150,16 @@ class TvLivePreviewActivity : AppCompatActivity() {
             val customList = intent.getParcelableArrayListExtra<Channel>("extra_channels")
             
             if (customList != null && customList.isNotEmpty()) {
-                // القنوات مرسلة مع الـ Intent (beIN Sports - عدد قليل)
-                allLiveChannels = customList
-                selectedChannel = passedChannel ?: allLiveChannels.first()
+                // القنوات مرسلة مع الـ Intent (beIN Sports / Matches - عدد قليل)
+                allLiveChannels = customList.filter { it.contentType == "live" }.ifEmpty { customList }
+                selectedChannel = resolveInitialChannel(passedChannel, allLiveChannels)
                 initDashboard()
-            } else if (loadFromCache) {
-                // نجلب من الكاش في الخلفية (البث المباشر - قنوات كثيرة)
-                Toast.makeText(this, "⏳ جاري تحميل القنوات...", Toast.LENGTH_SHORT).show()
-                loadChannelsFromCache(passedChannel)
-                return
             } else {
-                // نجلب من الكاش مباشرة
-                val cachedList = ChannelCache.load(this, profileId)
-                var rawLive = cachedList.filter { it.contentType == "live" }
-                if (rawLive.isEmpty() && passedChannel != null) rawLive = listOf(passedChannel)
-                if (rawLive.isEmpty()) {
-                    Toast.makeText(this, "⏳ يرجى انتظار تحميل القنوات...", Toast.LENGTH_LONG).show()
-                    finish()
-                    return
+                if (loadFromCache) {
+                    Toast.makeText(this, "⏳ جاري تحميل القنوات...", Toast.LENGTH_SHORT).show()
                 }
-                allLiveChannels = rawLive
-                selectedChannel = passedChannel ?: allLiveChannels.first()
-                initDashboard()
+                loadLiveChannelsSmart(passedChannel)
+                return
             }
         } catch (e: Exception) {
             Log.e("TvLiveDashboard", "onCreate Crash: ${e.message}")
@@ -180,31 +168,54 @@ class TvLivePreviewActivity : AppCompatActivity() {
         }
     }
 
-    private fun loadChannelsFromCache(passedChannel: Channel?) {
-        Thread {
+    private fun loadLiveChannelsSmart(passedChannel: Channel?) {
+        val active = SourcePrefs.getActiveProfile(this)
+        if (active == null) {
+            finish()
+            return
+        }
+
+        ChannelRefreshHelper.ensureFreshChannels(this, active, onlyLive = true) { result ->
             try {
-                val ch = ChannelCache.load(this, profileId)
-                val live = ch.filter { it.contentType == "live" }
-                Handler(Looper.getMainLooper()).post {
-                    if (live.isEmpty() && passedChannel != null) {
-                        allLiveChannels = listOf(passedChannel)
-                    } else if (live.isNotEmpty()) {
-                        allLiveChannels = live
-                    } else {
-                        Toast.makeText(this, "⏳ لم يتم تحميل القنوات بعد", Toast.LENGTH_LONG).show()
-                        finish()
-                        return@post
+                val live = result.channels.filter { it.contentType == "live" }.ifEmpty {
+                    if (passedChannel != null) listOf(passedChannel) else emptyList()
+                }
+
+                if (live.isEmpty()) {
+                    val msg = when {
+                        result.message.isNotBlank() -> "تعذر تحميل القنوات: ${result.message}"
+                        else -> "⏳ لم يتم تحميل القنوات بعد"
                     }
-                    selectedChannel = passedChannel ?: allLiveChannels.first()
-                    initDashboard()
-                }
-            } catch (e: Exception) {
-                Handler(Looper.getMainLooper()).post {
-                    Toast.makeText(this, "خطأ في تحميل القنوات: ${e.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
                     finish()
+                    return@ensureFreshChannels
                 }
+
+                if (result.usedCacheFallback && result.message.isNotBlank()) {
+                    Toast.makeText(this, "⚠️ تعذر تحديث القنوات فورياً، تم فتح آخر كاش متاح", Toast.LENGTH_SHORT).show()
+                }
+
+                allLiveChannels = live
+                selectedChannel = resolveInitialChannel(passedChannel, allLiveChannels)
+                initDashboard()
+            } catch (e: Exception) {
+                Toast.makeText(this, "خطأ في تحميل القنوات: ${e.message}", Toast.LENGTH_LONG).show()
+                finish()
             }
-        }.start()
+        }
+    }
+
+    private fun resolveInitialChannel(passedChannel: Channel?, channels: List<Channel>): Channel? {
+        if (channels.isEmpty()) return passedChannel
+        if (passedChannel == null) return channels.first()
+
+        return channels.firstOrNull { it.streamUrl == passedChannel.streamUrl }
+            ?: channels.firstOrNull {
+                it.name.equals(passedChannel.name, true) &&
+                    it.category.equals(passedChannel.category, true)
+            }
+            ?: channels.firstOrNull { it.name.equals(passedChannel.name, true) }
+            ?: channels.first()
     }
 
     private fun initDashboard() {
