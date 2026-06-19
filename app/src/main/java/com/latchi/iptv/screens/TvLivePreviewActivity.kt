@@ -70,8 +70,8 @@ class TvLivePreviewActivity : AppCompatActivity() {
     private var activeChLetter: String? = null
     private var isFullscreenMode = false
     private var profileId: String = ""
-    private     private var loadFromCache: Boolean = false
-    var currentPlayingUrl: String? = null
+    private var loadFromCache: Boolean = false
+    private var currentPlayingUrl: String? = null
     private var hideCategories: Boolean = false
 
     // ExoPlayer
