@@ -1,7 +1,7 @@
 package com.latchi.iptv.utils
 
 object ActivationConfig {
-    const val ACTIVATION_API_URL = "https://script.google.com/macros/s/AKfycbzuPV0N6lmytlgWd5EO21Wpxj1cqkKFMZ1n_T4ANsofXuk5BTW499hLYRWiHAazyX-E/exec"
+    const val ACTIVATION_API_URL = "https://script.google.com/macros/s/AKfycbxThygspXN6eB8cDUfY7XavKmhXZfewEUfQqd3vARScZ5y7adterInsbXshNkgPgfiF/exec"
 
     // When Google validates a code successfully, use the locked provider endpoint below.
     // It is intentionally assembled at runtime so it is not shown in the UI or stored in plain settings before activation.
