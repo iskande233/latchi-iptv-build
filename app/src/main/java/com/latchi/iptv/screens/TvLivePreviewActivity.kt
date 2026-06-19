@@ -74,6 +74,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
     private var hideCategories: Boolean = false
     private var requestedCategoryName: String = "All"
     private var lastFocusedChannelUrl: String? = null
+    private var dashboardInitialized: Boolean = false
 
     // ExoPlayer
     private var player: ExoPlayer? = null
@@ -82,6 +83,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
 
     // Views
     private lateinit var panelCategories: LinearLayout
+    private lateinit var panelAlphabet: LinearLayout
     private lateinit var panelChannels: LinearLayout
     private lateinit var panelPlayer: LinearLayout
     private lateinit var recyclerCategories: RecyclerView
@@ -155,6 +157,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
                 selectedChannel = resolveInitialChannel(passedChannel, allLiveChannels)
                 initDashboard()
             } else {
+                initDashboard()
                 if (loadFromCache) {
                     Toast.makeText(this, "⏳ جاري تحميل القنوات...", Toast.LENGTH_SHORT).show()
                 }
@@ -177,19 +180,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
 
         ChannelRefreshHelper.ensureFreshChannels(this, active, onlyLive = true) { result ->
             try {
-                val live = result.channels.filter { it.contentType == "live" }.ifEmpty {
-                    if (passedChannel != null) listOf(passedChannel) else emptyList()
-                }
-
-                if (live.isEmpty()) {
-                    val msg = when {
-                        result.message.isNotBlank() -> "تعذر تحميل القنوات: ${result.message}"
-                        else -> "⏳ لم يتم تحميل القنوات بعد"
-                    }
-                    Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
-                    finish()
-                    return@ensureFreshChannels
-                }
+                val live = result.channels.filter { it.contentType == "live" }
 
                 if (result.usedCacheFallback && result.message.isNotBlank()) {
                     Toast.makeText(this, "⚠️ تعذر تحديث القنوات فورياً، تم فتح آخر كاش متاح", Toast.LENGTH_SHORT).show()
@@ -198,9 +189,10 @@ class TvLivePreviewActivity : AppCompatActivity() {
                 allLiveChannels = live
                 selectedChannel = resolveInitialChannel(passedChannel, allLiveChannels)
                 initDashboard()
-            } catch (e: Exception) {
-                Toast.makeText(this, "خطأ في تحميل القنوات: ${e.message}", Toast.LENGTH_LONG).show()
-                finish()
+            } catch (_: Exception) {
+                allLiveChannels = emptyList()
+                selectedChannel = null
+                initDashboard()
             }
         }
     }
@@ -219,19 +211,23 @@ class TvLivePreviewActivity : AppCompatActivity() {
     }
 
     private fun initDashboard() {
-        setFindViewById()
-        if (!hideCategories) buildUniversalAlphabetBar()
+        if (!dashboardInitialized) {
+            setFindViewById()
+            if (!hideCategories) buildUniversalAlphabetBar()
+            onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    if (isFullscreenMode) toggleFullscreen(false)
+                    else finish()
+                }
+            })
+            dashboardInitialized = true
+        }
         prepareSmartCategories()
-        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                if (isFullscreenMode) toggleFullscreen(false)
-                else finish()
-            }
-        })
     }
 
     private fun setFindViewById() {
         panelCategories = findViewById(R.id.panelCategories)
+        panelAlphabet = findViewById(R.id.panelAlphabet)
         panelChannels = findViewById(R.id.panelChannels)
         panelPlayer = findViewById(R.id.panelPlayer)
         recyclerCategories = findViewById(R.id.recyclerCategories)
@@ -268,21 +264,24 @@ class TvLivePreviewActivity : AppCompatActivity() {
         try {
             if (hideCategories) {
                 panelCategories.visibility = View.GONE
+                panelAlphabet.visibility = View.GONE
                 alphabetScroller.visibility = View.GONE
-                updatePanelWeight(panelChannels, 0.46f, marginStart = 0, marginEnd = dp(6))
-                updatePanelWeight(panelPlayer, 0.54f, marginStart = dp(6), marginEnd = 0)
+                updatePanelWeight(panelChannels, 0.44f, marginStart = 0, marginEnd = dp(6))
+                updatePanelWeight(panelPlayer, 0.56f, marginStart = dp(6), marginEnd = 0)
             } else {
                 panelCategories.visibility = View.VISIBLE
+                panelAlphabet.visibility = View.VISIBLE
                 alphabetScroller.visibility = View.VISIBLE
-                updatePanelWeight(panelCategories, 0.20f, marginStart = 0, marginEnd = dp(4))
-                updatePanelWeight(panelChannels, 0.38f, marginStart = dp(4), marginEnd = dp(4))
-                updatePanelWeight(panelPlayer, 0.28f, marginStart = dp(4), marginEnd = 0)
+                updatePanelWeight(panelCategories, 0.22f, marginStart = 0, marginEnd = dp(4))
+                updatePanelWeight(panelAlphabet, 0.08f, marginStart = 0, marginEnd = dp(4))
+                updatePanelWeight(panelChannels, 0.34f, marginStart = 0, marginEnd = dp(4))
+                updatePanelWeight(panelPlayer, 0.36f, marginStart = 0, marginEnd = 0)
             }
 
             txtFilterHint.textSize = 13f
-            txtChannelTitle.textSize = if (hideCategories) 18f else 17f
-            txtCategorySubtitle.textSize = 12f
-            txtEpgInfo.textSize = 11.5f
+            txtChannelTitle.textSize = if (hideCategories) 18f else 16f
+            txtCategorySubtitle.textSize = 11.5f
+            txtEpgInfo.textSize = 11f
             txtDetailsBottom.textSize = 10.5f
             applyCompactPlayerCardLayout()
         } catch (_: Exception) {}
@@ -302,12 +301,12 @@ class TvLivePreviewActivity : AppCompatActivity() {
     private fun applyCompactPlayerCardLayout() {
         frameVideo.layoutParams = LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,
-            dp(if (hideCategories) 250 else 208)
+            dp(if (hideCategories) 250 else 188)
         ).apply {
             topMargin = dp(4)
             bottomMargin = dp(8)
         }
-        viewPlayer.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+        viewPlayer.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
     }
 
     private fun requestChannelFocusByUrl(url: String?, fallbackToFirst: Boolean = false) {
@@ -356,10 +355,26 @@ class TvLivePreviewActivity : AppCompatActivity() {
                 .distinct()
                 .filter { it.isNotBlank() }
 
+            if (allLiveChannels.isEmpty() || rawCats.isEmpty()) {
+                currentCategories = emptyList()
+                selectedCategoryName = requestedCategoryName.ifBlank { "All" }
+                renderCategoriesList()
+                currentCategoryChannels = emptyList()
+                renderChannelsList()
+                activePanel = if (hideCategories) ActivePanel.CHANNELS else ActivePanel.CATEGORIES
+                releasePreviewPlayer()
+                txtChannelTitle.text = "لا توجد قناة"
+                txtCategorySubtitle.text = "جاري المزامنة أو القائمة فارغة حالياً"
+                txtEpgInfo.text = "افتح الواجهة بشكل عادي، وستظهر القنوات فور عودة السيرفر أو بعد أي تحديث جديد"
+                txtDetailsBottom.text = "⚠️ لا توجد قنوات حالياً"
+                txtFilterHint.text = if (hideCategories) "📭 لا توجد قنوات في هذه القائمة" else "📭 الفئات والقنوات فارغة حالياً"
+                return
+            }
+
             val beinCat = rawCats.firstOrNull { cat ->
                 val l = cat.lowercase()
                 l.contains("sport ar") || l.contains("bein") || l.contains("sports")
-            } ?: (if (rawCats.isNotEmpty()) rawCats.first() else requestedCategoryName)
+            } ?: rawCats.first()
 
             val requestedCat = rawCats.firstOrNull { it.equals(requestedCategoryName, true) }
             val preferredCat = requestedCat ?: beinCat
@@ -368,6 +383,8 @@ class TvLivePreviewActivity : AppCompatActivity() {
             if (hideCategories) {
                 selectedCategoryName = requestedCategoryName.ifBlank { preferredCat }
                 currentCategories = listOf(selectedCategoryName)
+                currentCategoryChannels = allLiveChannels
+                renderChannelsList()
                 activePanel = ActivePanel.CHANNELS
                 loadCategoryChannels(selectedCategoryName, null)
                 requestChannelFocusByUrl(selectedChannel?.streamUrl, fallbackToFirst = true)
@@ -384,22 +401,62 @@ class TvLivePreviewActivity : AppCompatActivity() {
             currentCategories = completeList.distinct()
             selectedCategoryName = preferredCat
 
-            categoriesAdapter = RoyalCategoriesAdapter(currentCategories, selectedCategoryName) { chosen ->
-                loadCategoryChannels(chosen, null)
-                lastFocusedChannelUrl = currentCategoryChannels.firstOrNull()?.streamUrl
-                recyclerChannels.postDelayed({
-                    requestChannelFocusByUrl(lastFocusedChannelUrl, fallbackToFirst = true)
-                    activePanel = ActivePanel.CHANNELS
-                    updateAlphabetHint()
-                }, 80)
-            }
-            recyclerCategories.adapter = categoriesAdapter
-
+            renderCategoriesList()
             loadCategoryChannels(preferredCat, null)
             requestCategoryFocus(preferredCat)
         } catch (e: Exception) {
             Log.e("TvLiveDashboard", "Prepare Cats Crash: ${e.message}")
         }
+    }
+
+    private fun renderCategoriesList() {
+        if (hideCategories) return
+        categoriesAdapter = RoyalCategoriesAdapter(currentCategories, selectedCategoryName) { chosen ->
+            loadCategoryChannels(chosen, null)
+            lastFocusedChannelUrl = currentCategoryChannels.firstOrNull()?.streamUrl
+            recyclerChannels.postDelayed({
+                requestChannelFocusByUrl(lastFocusedChannelUrl, fallbackToFirst = true)
+                activePanel = ActivePanel.CHANNELS
+                updateAlphabetHint()
+            }, 80)
+        }
+        recyclerCategories.adapter = categoriesAdapter
+    }
+
+    private fun renderChannelsList() {
+        if (channelsAdapter == null) {
+            channelsAdapter = RoyalChannelsAdapter(
+                currentCategoryChannels,
+                selectedChannel?.streamUrl,
+                onClick = { ch ->
+                    lastFocusedChannelUrl = ch.streamUrl
+                    if (selectedChannel?.streamUrl == ch.streamUrl && player?.isPlaying == true) {
+                        requestChannelFocusByUrl(ch.streamUrl, fallbackToFirst = false)
+                        toggleFullscreen(true)
+                    } else {
+                        playRoyalLiveChannel(ch)
+                        requestChannelFocusByUrl(ch.streamUrl, fallbackToFirst = false)
+                    }
+                },
+                onLongClick = { ch ->
+                    lastFocusedChannelUrl = ch.streamUrl
+                    performFavoriteChannelToggle(ch)
+                }
+            )
+            recyclerChannels.adapter = channelsAdapter
+        } else {
+            channelsAdapter?.update(currentCategoryChannels)
+        }
+    }
+
+    private fun releasePreviewPlayer() {
+        try {
+            player?.release()
+            player = null
+            viewPlayer.player = null
+            currentPlayingUrl = null
+            channelsAdapter?.setPlayingUrl("")
+        } catch (_: Exception) {}
     }
 
     private fun loadCategoryChannels(catLabel: String, filterLetter: String?) {
@@ -443,29 +500,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
                 rawList
             }
 
-            if (channelsAdapter == null) {
-                channelsAdapter = RoyalChannelsAdapter(
-                    currentCategoryChannels,
-                    selectedChannel?.streamUrl,
-                    onClick = { ch ->
-                        lastFocusedChannelUrl = ch.streamUrl
-                        if (selectedChannel?.streamUrl == ch.streamUrl && player?.isPlaying == true) {
-                            requestChannelFocusByUrl(ch.streamUrl, fallbackToFirst = false)
-                            toggleFullscreen(true)
-                        } else {
-                            playRoyalLiveChannel(ch)
-                            requestChannelFocusByUrl(ch.streamUrl, fallbackToFirst = false)
-                        }
-                    },
-                    onLongClick = { ch ->
-                        lastFocusedChannelUrl = ch.streamUrl
-                        performFavoriteChannelToggle(ch)
-                    }
-                )
-                recyclerChannels.adapter = channelsAdapter
-            } else {
-                channelsAdapter?.update(currentCategoryChannels)
-            }
+            renderChannelsList()
 
             categoriesAdapter?.setSelectedCat(catLabel)
 
@@ -476,11 +511,20 @@ class TvLivePreviewActivity : AppCompatActivity() {
                 "📺 القنوات: $catLabel$suffix"
             }
 
-            if (currentCategoryChannels.isNotEmpty() && player == null) {
-                playRoyalLiveChannel(currentCategoryChannels.first())
+            if (currentCategoryChannels.isEmpty()) {
+                releasePreviewPlayer()
+                txtChannelTitle.text = "لا توجد قناة"
+                txtCategorySubtitle.text = "الفئة '$realCatName' فارغة حالياً"
+                txtEpgInfo.text = "يمكنك تجربة حرف آخر أو الانتظار حتى تتوفر القنوات"
+                txtDetailsBottom.text = "📭 لا توجد قنوات في هذه الفئة"
+                return
             }
 
-            if ((hideCategories || activePanel == ActivePanel.CHANNELS) && currentCategoryChannels.isNotEmpty()) {
+            if (player == null) {
+                playRoyalLiveChannel(resolveInitialChannel(selectedChannel, currentCategoryChannels) ?: currentCategoryChannels.first())
+            }
+
+            if (hideCategories || activePanel == ActivePanel.CHANNELS) {
                 requestChannelFocusByUrl(keepFocusUrl, fallbackToFirst = true)
             }
         } catch (e: Exception) {
@@ -490,25 +534,31 @@ class TvLivePreviewActivity : AppCompatActivity() {
 
     private fun buildUniversalAlphabetBar() {
         try {
-            val letters = listOf("All", "A","B","C","D","E","F","G","H","I","J","K","L","M",
-                                 "N","O","P","Q","R","S","T","U","V","W","X","Y","Z")
+            containerAlphabet.removeAllViews()
+            val letters = listOf(
+                "All", "A","B","C","D","E","F","G","H","I","J","K","L","M",
+                "N","O","P","Q","R","S","T","U","V","W","X","Y","Z"
+            )
             val btns = mutableListOf<TextView>()
-            letters.forEach { letter ->
+            letters.forEachIndexed { index, letter ->
                 val btn = TextView(this).apply {
-                    text = letter
+                    text = if (letter == "All") "#" else letter
+                    tag = letter
                     setTextColor(Color.parseColor("#A5B4FC"))
-                    textSize = 10.5f
+                    textSize = 10f
                     setTypeface(null, Typeface.BOLD)
                     gravity = Gravity.CENTER
                     isClickable = true
                     isFocusable = true
-                    setPadding(dp(10), dp(4), dp(10), dp(4))
+                    setPadding(dp(4), dp(4), dp(4), dp(4))
                     background = GradientDrawable().apply {
                         setColor(Color.parseColor("#121228"))
-                        cornerRadius = dp(10).toFloat()
+                        cornerRadius = dp(8).toFloat()
                         setStroke(dp(1), Color.parseColor("#3d3d5c"))
                     }
-                    layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(32)).apply { marginEnd = dp(4) }
+                    layoutParams = LinearLayout.LayoutParams(dp(34), dp(28)).apply {
+                        bottomMargin = if (index == letters.lastIndex) 0 else dp(4)
+                    }
 
                     setOnClickListener {
                         val chosenLetter = if (letter == "All") null else letter
@@ -516,23 +566,28 @@ class TvLivePreviewActivity : AppCompatActivity() {
                             ActivePanel.CATEGORIES -> filterCategoriesByAlphabet(chosenLetter)
                             ActivePanel.CHANNELS -> loadCategoryChannels(selectedCategoryName, chosenLetter)
                         }
-                        btns.forEach { b ->
-                            (b.background as? GradientDrawable)?.setColor(Color.parseColor("#121228"))
-                            b.setTextColor(Color.parseColor("#A5B4FC"))
-                        }
-                        (background as? GradientDrawable)?.setColor(Color.parseColor("#FFD700"))
-                        setTextColor(Color.parseColor("#050A1A"))
+                        highlightAlphabetButton(this)
                     }
                     setOnFocusChangeListener { v, has ->
-                        v.animate().scaleX(if (has) 1.06f else 1f).scaleY(if (has) 1.06f else 1f).setDuration(80).start()
+                        v.animate().scaleX(if (has) 1.08f else 1f).scaleY(if (has) 1.08f else 1f).setDuration(80).start()
                     }
                 }
                 btns.add(btn)
                 containerAlphabet.addView(btn)
             }
             letterButtons = btns
+            btns.firstOrNull()?.let { highlightAlphabetButton(it) }
             updateAlphabetHint()
         } catch (_: Exception) {}
+    }
+
+    private fun highlightAlphabetButton(selectedButton: TextView) {
+        letterButtons.forEach { button ->
+            (button.background as? GradientDrawable)?.setColor(Color.parseColor("#121228"))
+            button.setTextColor(Color.parseColor("#A5B4FC"))
+        }
+        (selectedButton.background as? GradientDrawable)?.setColor(Color.parseColor("#FFD700"))
+        selectedButton.setTextColor(Color.parseColor("#050A1A"))
     }
 
     private fun filterCategoriesByAlphabet(letter: String?) {
@@ -627,6 +682,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
             isFullscreenMode = enable
             if (enable) {
                 panelCategories.visibility = View.GONE
+                panelAlphabet.visibility = View.GONE
                 panelChannels.visibility = View.GONE
                 txtChannelTitle.visibility = View.GONE
                 txtCategorySubtitle.visibility = View.GONE
