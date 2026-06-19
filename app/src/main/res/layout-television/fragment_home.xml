@@ -63,6 +63,63 @@
                 </LinearLayout>
             </LinearLayout>
 
+            <!-- 🕌 بطاقة الصلاة القادمة + الولاية تحت الوقت -->
+            <LinearLayout
+                android:id="@+id/prayerSummaryCard"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:layout_gravity="center_horizontal"
+                android:background="@drawable/bg_vip_clock_widget"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingHorizontal="22dp"
+                android:paddingVertical="10dp"
+                android:elevation="8dp">
+
+                <TextView
+                    android:id="@+id/prayerLocationText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="الجزائر"
+                    android:textColor="#7FE6FF"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/prayerNextNameText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="الصلاة القادمة: المغرب"
+                        android:textColor="#FFD700"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="18dp"
+                        android:layout_marginHorizontal="8dp"
+                        android:background="#66FFD700" />
+
+                    <TextView
+                        android:id="@+id/prayerNextTimeText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="monospace"
+                        android:text="17:35"
+                        android:textColor="#FFFFFF"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </LinearLayout>
+
             <!-- ===== Top Info Bars: Account Expiry & Name & Last Server Update ===== -->
             <LinearLayout
                 android:layout_width="match_parent"

@@ -35,6 +35,7 @@ import com.latchi.iptv.utils.ChannelCache
 import com.latchi.iptv.utils.ChannelRefreshHelper
 import com.latchi.iptv.utils.DateText
 import com.latchi.iptv.utils.GeminiVoiceController
+import com.latchi.iptv.utils.HomePrayerSummaryHelper
 import com.latchi.iptv.utils.LastWatchedPrefs
 import com.latchi.iptv.utils.SourcePrefs
 import com.latchi.iptv.utils.ServerSyncManager
@@ -63,6 +64,9 @@ class HomeFragment : Fragment() {
     private var liveCount: TextView? = null
     private var movieCount: TextView? = null
     private var seriesCount: TextView? = null
+    private var prayerLocationText: TextView? = null
+    private var prayerNextNameText: TextView? = null
+    private var prayerNextTimeText: TextView? = null
     private var updatedText: TextView? = null
     private var loggedInText: TextView? = null
     private var expiryText: TextView? = null
@@ -102,6 +106,9 @@ class HomeFragment : Fragment() {
             liveCount = view.findViewById(R.id.liveCount)
             movieCount = view.findViewById(R.id.movieCount)
             seriesCount = view.findViewById(R.id.seriesCount)
+            prayerLocationText = view.findViewById(R.id.prayerLocationText)
+            prayerNextNameText = view.findViewById(R.id.prayerNextNameText)
+            prayerNextTimeText = view.findViewById(R.id.prayerNextTimeText)
             updatedText = view.findViewById(R.id.updatedText)
             loggedInText = view.findViewById(R.id.loggedInText)
             expiryText = view.findViewById(R.id.expiryText)
@@ -127,6 +134,7 @@ class HomeFragment : Fragment() {
             // 🕌 تفعيل وبدء التسبيح والأذكار اليومي
             adhkarBannerText = view.findViewById(R.id.adhkarBannerText)
             startAdhkarRotator()
+            loadHomePrayerSummary()
 
             view
         } catch (e: Throwable) {
@@ -225,6 +233,7 @@ class HomeFragment : Fragment() {
                 }
             } catch (_: Exception) {}
 
+            loadHomePrayerSummary()
             val active = com.latchi.iptv.utils.SourcePrefs.getActiveProfile(requireContext())
             if (active != null && com.latchi.iptv.utils.SourcePrefs.isPendingServerRefresh(requireContext(), active.id)) {
                 // نترك pending=true إلى أن ينجح الجلب فعلياً داخل ChannelRefreshHelper
@@ -386,6 +395,20 @@ class HomeFragment : Fragment() {
         clockHandler?.removeCallbacksAndMessages(null)
         clockHandler = null
         clockRunnable = null
+    }
+
+    private fun loadHomePrayerSummary() {
+        if (prayerLocationText == null || prayerNextNameText == null || prayerNextTimeText == null) return
+        prayerLocationText?.text = "جاري تحديد الولاية..."
+        prayerNextNameText?.text = "الصلاة القادمة"
+        prayerNextTimeText?.text = "--:--"
+        HomePrayerSummaryHelper.load(requireContext()) { summary ->
+            try {
+                prayerLocationText?.text = summary.region
+                prayerNextNameText?.text = "الصلاة القادمة: ${summary.nextPrayerName}"
+                prayerNextTimeText?.text = summary.nextPrayerTime
+            } catch (_: Exception) {}
+        }
     }
 
     private fun setupVoiceHandler() {
