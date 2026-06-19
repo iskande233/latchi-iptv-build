@@ -37,6 +37,7 @@ import com.latchi.iptv.model.Channel
 import com.latchi.iptv.utils.ChannelRefreshHelper
 import com.latchi.iptv.utils.DigitNormalizer
 import com.latchi.iptv.utils.FavoriteManager
+import com.latchi.iptv.utils.RemoteViewConfigPrefs
 import com.latchi.iptv.utils.SourcePrefs
 import com.latchi.iptv.utils.ThemeManager
 import com.latchi.iptv.utils.TvFocusHelper
@@ -83,6 +84,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
     private lateinit var frameVideo: FrameLayout
 
     // Views
+    private lateinit var mainDashboardContainer: LinearLayout
     private lateinit var panelCategories: LinearLayout
     private lateinit var panelAlphabet: LinearLayout
     private lateinit var panelChannels: LinearLayout
@@ -229,12 +231,16 @@ class TvLivePreviewActivity : AppCompatActivity() {
     }
 
     private fun filterDirectBeinAndAlwanChannels(channels: List<Channel>): List<Channel> {
-        val beinTokens = listOf("bein", "be in", "beinsport", "bein sport", "bein sports", "بي ان", "بي إن")
-        val alwanTokens = listOf("alwan", "alwan sport", "alwan sports", "الوان")
+        val remoteConfig = RemoteViewConfigPrefs.getFilterConfig(this, profileId)
+        val beinTokens = remoteConfig.beinKeywords
+        val beinMaxTokens = remoteConfig.beinMaxKeywords
+        val alwanTokens = remoteConfig.alwanKeywords
 
         fun normalized(ch: Channel): String = DigitNormalizer.normalizeDigits("${ch.name} ${ch.category}").lowercase()
-        fun isBein(text: String): Boolean = beinTokens.any { text.contains(it) }
-        fun isAlwan(text: String): Boolean = alwanTokens.any { text.contains(it) }
+        fun hasAny(text: String, tokens: List<String>): Boolean = tokens.any { token -> text.contains(token.lowercase()) }
+        fun isBein(text: String): Boolean = hasAny(text, beinTokens)
+        fun isBeinMax(text: String): Boolean = hasAny(text, beinTokens) && hasAny(text, beinMaxTokens)
+        fun isAlwan(text: String): Boolean = hasAny(text, alwanTokens)
         fun firstNumber(text: String): Int = Regex("\\d+").find(text)?.value?.toIntOrNull() ?: 999
 
         return channels
@@ -247,7 +253,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
                 compareBy<Channel> { ch ->
                     val text = normalized(ch)
                     when {
-                        isBein(text) && text.contains("max") -> 0
+                        isBeinMax(text) -> 0
                         isBein(text) -> 1
                         isAlwan(text) -> 2
                         else -> 3
@@ -275,6 +281,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
     }
 
     private fun setFindViewById() {
+        mainDashboardContainer = findViewById(R.id.mainDashboardContainer)
         panelCategories = findViewById(R.id.panelCategories)
         panelAlphabet = findViewById(R.id.panelAlphabet)
         panelChannels = findViewById(R.id.panelChannels)
@@ -740,13 +747,28 @@ class TvLivePreviewActivity : AppCompatActivity() {
                 findViewById<View>(R.id.txtDetailsBottom)?.visibility = View.GONE
                 (frameVideo.parent as? ViewGroup)?.findViewById<View>(R.id.txtDetailsBottom)?.visibility = View.GONE
 
+                mainDashboardContainer.setPadding(0, 0, 0, 0)
+                panelPlayer.setPadding(0, 0, 0, 0)
+                panelPlayer.setBackgroundColor(Color.BLACK)
                 panelPlayer.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT)
-                frameVideo.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT)
+                frameVideo.layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.MATCH_PARENT
+                ).apply {
+                    marginStart = 0
+                    marginEnd = 0
+                    topMargin = 0
+                    bottomMargin = 0
+                }
                 viewPlayer.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-                
+
                 Toast.makeText(this, "وضع الشاشة الكامله • اضغط Back للعودة", Toast.LENGTH_SHORT).show()
             } else {
+                mainDashboardContainer.setPadding(dp(10), dp(10), dp(10), dp(10))
+                panelPlayer.setPadding(dp(10), dp(10), dp(10), dp(10))
+                panelPlayer.setBackgroundResource(R.drawable.bg_panel)
                 panelCategories.visibility = if (hideCategories) View.GONE else View.VISIBLE
+                panelAlphabet.visibility = if (hideCategories) View.GONE else View.VISIBLE
                 panelChannels.visibility = View.VISIBLE
                 txtChannelTitle.visibility = View.VISIBLE
                 txtCategorySubtitle.visibility = View.VISIBLE

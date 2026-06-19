@@ -16,7 +16,10 @@ data class ActivationValidationResult(
     val expiresAt: String = "",
     val maxDevices: Int = 1,
     val serverRevision: Long = 0L,
-    val hiddenCategories: String = ""
+    val hiddenCategories: String = "",
+    val beinKeywords: String = "",
+    val beinMaxKeywords: String = "",
+    val alwanKeywords: String = ""
 )
 
 object ActivationValidator {
@@ -80,7 +83,10 @@ object ActivationValidator {
             expiresAt = ActivationConfig.extractExpiry(json, existingProfile?.expiresAt ?: ""),
             maxDevices = ActivationConfig.extractMaxDevices(json, existingProfile?.maxDevices ?: 1),
             serverRevision = ActivationConfig.extractRevision(json, existingProfile?.serverRevision ?: 0L),
-            hiddenCategories = json.optString("hidden_categories", json.optString("hiddenCategories", ""))
+            hiddenCategories = json.optString("hidden_categories", json.optString("hiddenCategories", "")),
+            beinKeywords = json.optString("bein_keywords", json.optString("beinKeywords", "")),
+            beinMaxKeywords = json.optString("bein_max_keywords", json.optString("beinMaxKeywords", "")),
+            alwanKeywords = json.optString("alwan_keywords", json.optString("alwanKeywords", ""))
         )
     }
 }

@@ -27,6 +27,7 @@ import com.latchi.iptv.utils.ActivationConfig
 import com.latchi.iptv.utils.ActivationValidator
 import com.latchi.iptv.utils.FloatingBackHelper
 import com.latchi.iptv.utils.IptvProfile
+import com.latchi.iptv.utils.RemoteViewConfigPrefs
 import com.latchi.iptv.utils.SourcePrefs
 import com.latchi.iptv.utils.ThemeManager
 import com.latchi.iptv.utils.TvUtils
@@ -264,8 +265,10 @@ class UserListActivity : AppCompatActivity() {
                             name = result.name.ifBlank { "User $code" },
                             playlistUrl = result.playlistUrl,
                             expiresAt = result.expiresAt,
-                            maxDevices = result.maxDevices
+                            maxDevices = result.maxDevices,
+                            serverRevision = result.serverRevision
                         )
+                        RemoteViewConfigPrefs.saveFromValidationResult(this, code, result)
                         refreshScreen()
                         Toast.makeText(this, "تمت إضافة الحساب بنجاح ✓", Toast.LENGTH_SHORT).show()
                     } else {

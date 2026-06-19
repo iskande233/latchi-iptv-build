@@ -20,6 +20,7 @@ import com.latchi.iptv.R
 import com.latchi.iptv.utils.ActivationValidator
 import com.latchi.iptv.utils.ChannelCache
 import com.latchi.iptv.utils.LocaleHelper
+import com.latchi.iptv.utils.RemoteViewConfigPrefs
 import com.latchi.iptv.utils.SourcePrefs
 import com.latchi.iptv.utils.TvUtils
 import kotlin.concurrent.thread
@@ -74,8 +75,10 @@ class VerificationActivity : AppCompatActivity() {
                             name = result.name,
                             playlistUrl = newUrl,
                             expiresAt = result.expiresAt,
-                            maxDevices = result.maxDevices
+                            maxDevices = result.maxDevices,
+                            serverRevision = result.serverRevision
                         )
+                        RemoteViewConfigPrefs.saveFromValidationResult(this, profile.id, result)
                         statusText?.text = getString(R.string.subscription_verified)
                         finishProgressThen {
                             if (silentVerify) goToMain() else showVerificationSummaryDialog(profile, result)

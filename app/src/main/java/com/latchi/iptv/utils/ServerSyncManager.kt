@@ -110,9 +110,9 @@ object ServerSyncManager {
                     prefs.edit()
                         .putString("last_applied_url_${active.id}", urlToSave)
                         .putLong("last_applied_revision_${active.id}", newRevision)
-                        .putString("hidden_categories_${active.id}", result.hiddenCategories)
                         .putLong("last_changed_at_${active.id}", System.currentTimeMillis())
                         .apply()
+                    RemoteViewConfigPrefs.saveFromValidationResult(appContext, active.id, result)
 
                     onMain {
                         onResult(
@@ -140,6 +140,7 @@ object ServerSyncManager {
                             serverRevision = newRevision
                         )
                     }
+                    RemoteViewConfigPrefs.saveFromValidationResult(appContext, active.id, result)
                     onMain { onResult(ServerSyncResult(false, "no_change", profileId = active.id)) }
                 }
 
