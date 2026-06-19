@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026-06-19 Consolidated TV Phase] - 2026-06-19  
+### Added  
+- TV home **prayer summary widget** showing region, next prayer name, and next prayer time.  
+- Support for **prepared catalogs** via remote config: `prepared_live_url`, `prepared_bein_url`, `prepared_movies_url`, `prepared_series_url`.  
+- `PreparedCatalogHelper` to read lightweight JSON catalogs instead of relying only on raw sources.  
+- Remote filter config storage for `hidden_categories`, `bein_keywords`, `bein_max_keywords`, and `alwan_keywords`.  
+
+### Fixed  
+- Fixed TV **fullscreen focus frame** so the yellow focus border no longer remains visible in full-screen playback.  
+- Improved TV live refresh flow and unified profile refresh behavior after server sync.  
+- Updated app endpoints to the latest **Google Script deployment**.  
+
+### Changed  
+- beIN TV flow now opens directly into a filtered TV preview layout.  
+- TV Live and TV VOD/Series paths are now prepared to consume **fast prepared data** when available.  
+- TV home top information area was compacted to better preserve visible icon space.  
+
 ## [1.0.8] - 2025-01-09  
 ### Added  
 - Updated **UI design** for a modern and user-friendly experience.  
