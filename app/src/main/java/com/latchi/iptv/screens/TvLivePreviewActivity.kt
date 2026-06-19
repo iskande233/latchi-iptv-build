@@ -37,7 +37,6 @@ import com.latchi.iptv.model.Channel
 import com.latchi.iptv.utils.ChannelCache
 import com.latchi.iptv.utils.DigitNormalizer
 import com.latchi.iptv.utils.FavoriteManager
-import com.latchi.iptv.utils.PlayerServerSyncHelper
 import com.latchi.iptv.utils.SourcePrefs
 import com.latchi.iptv.utils.ThemeManager
 import com.latchi.iptv.utils.TvFocusHelper
@@ -73,6 +72,8 @@ class TvLivePreviewActivity : AppCompatActivity() {
     private var loadFromCache: Boolean = false
     private var currentPlayingUrl: String? = null
     private var hideCategories: Boolean = false
+    private var requestedCategoryName: String = "All"
+    private var lastFocusedChannelUrl: String? = null
 
     // ExoPlayer
     private var player: ExoPlayer? = null
@@ -86,6 +87,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
     private lateinit var recyclerCategories: RecyclerView
     private lateinit var recyclerChannels: RecyclerView
     private lateinit var txtFilterHint: TextView
+    private lateinit var alphabetScroller: View
     private lateinit var containerAlphabet: LinearLayout
     private lateinit var txtChannelTitle: TextView
     private lateinit var txtCategorySubtitle: TextView
@@ -141,6 +143,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
             profileId = active.id
             hideCategories = intent.getBooleanExtra("hide_categories", false)
             loadFromCache = intent.getBooleanExtra("load_from_cache", false)
+            requestedCategoryName = intent.getStringExtra("category")?.takeIf { it.isNotBlank() } ?: "All"
 
             // جلب القنوات
             val passedChannel = intent.getParcelableExtra<Channel>("channel")
@@ -206,7 +209,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
 
     private fun initDashboard() {
         setFindViewById()
-        buildUniversalAlphabetBar()
+        if (!hideCategories) buildUniversalAlphabetBar()
         prepareSmartCategories()
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -223,6 +226,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
         recyclerCategories = findViewById(R.id.recyclerCategories)
         recyclerChannels = findViewById(R.id.recyclerChannels)
         txtFilterHint = findViewById(R.id.txtFilterHint)
+        alphabetScroller = findViewById(R.id.alphabetScroller)
         containerAlphabet = findViewById(R.id.containerAlphabet)
         txtChannelTitle = findViewById(R.id.txtChannelTitle)
         txtCategorySubtitle = findViewById(R.id.txtCategorySubtitle)
@@ -233,15 +237,93 @@ class TvLivePreviewActivity : AppCompatActivity() {
 
         recyclerCategories.layoutManager = LinearLayoutManager(this)
         recyclerChannels.layoutManager = LinearLayoutManager(this)
+        recyclerCategories.itemAnimator = null
+        recyclerChannels.itemAnimator = null
 
         TvFocusHelper.setupRecycler(recyclerCategories)
         TvFocusHelper.setupRecycler(recyclerChannels)
+
+        applyDashboardModeLayout()
 
         frameVideo.setOnClickListener { toggleFullscreen(true) }
         frameVideo.setOnKeyListener { _, keyCode, event ->
             if (event.action == KeyEvent.ACTION_DOWN && (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER)) {
                 toggleFullscreen(true); true
             } else false
+        }
+    }
+
+    private fun applyDashboardModeLayout() {
+        try {
+            if (hideCategories) {
+                panelCategories.visibility = View.GONE
+                alphabetScroller.visibility = View.GONE
+                updatePanelWeight(panelChannels, 0.46f, marginStart = 0, marginEnd = dp(6))
+                updatePanelWeight(panelPlayer, 0.54f, marginStart = dp(6), marginEnd = 0)
+            } else {
+                panelCategories.visibility = View.VISIBLE
+                alphabetScroller.visibility = View.VISIBLE
+                updatePanelWeight(panelCategories, 0.20f, marginStart = 0, marginEnd = dp(4))
+                updatePanelWeight(panelChannels, 0.38f, marginStart = dp(4), marginEnd = dp(4))
+                updatePanelWeight(panelPlayer, 0.28f, marginStart = dp(4), marginEnd = 0)
+            }
+
+            txtFilterHint.textSize = 13f
+            txtChannelTitle.textSize = if (hideCategories) 18f else 17f
+            txtCategorySubtitle.textSize = 12f
+            txtEpgInfo.textSize = 11.5f
+            txtDetailsBottom.textSize = 10.5f
+            applyCompactPlayerCardLayout()
+        } catch (_: Exception) {}
+    }
+
+    private fun updatePanelWeight(view: View, weight: Float, marginStart: Int, marginEnd: Int) {
+        (view.layoutParams as? LinearLayout.LayoutParams)?.let { params ->
+            params.width = 0
+            params.height = LinearLayout.LayoutParams.MATCH_PARENT
+            params.weight = weight
+            params.marginStart = marginStart
+            params.marginEnd = marginEnd
+            view.layoutParams = params
+        }
+    }
+
+    private fun applyCompactPlayerCardLayout() {
+        frameVideo.layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            dp(if (hideCategories) 250 else 208)
+        ).apply {
+            topMargin = dp(4)
+            bottomMargin = dp(8)
+        }
+        viewPlayer.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+    }
+
+    private fun requestChannelFocusByUrl(url: String?, fallbackToFirst: Boolean = false) {
+        val targetIndex = when {
+            !url.isNullOrBlank() -> currentCategoryChannels.indexOfFirst { it.streamUrl == url }
+            fallbackToFirst && currentCategoryChannels.isNotEmpty() -> 0
+            else -> -1
+        }.let { if (it >= 0) it else if (fallbackToFirst && currentCategoryChannels.isNotEmpty()) 0 else -1 }
+
+        if (targetIndex < 0) return
+        lastFocusedChannelUrl = currentCategoryChannels.getOrNull(targetIndex)?.streamUrl
+        recyclerChannels.post {
+            recyclerChannels.scrollToPosition(targetIndex)
+            recyclerChannels.postDelayed({
+                recyclerChannels.findViewHolderForAdapterPosition(targetIndex)?.itemView?.requestFocus()
+            }, 70)
+        }
+    }
+
+    private fun requestCategoryFocus(categoryName: String) {
+        val index = currentCategories.indexOfFirst { it.equals(categoryName, true) }
+        if (index < 0) return
+        recyclerCategories.post {
+            recyclerCategories.scrollToPosition(index)
+            recyclerCategories.postDelayed({
+                recyclerCategories.findViewHolderForAdapterPosition(index)?.itemView?.requestFocus()
+            }, 70)
         }
     }
 
@@ -257,18 +339,31 @@ class TvLivePreviewActivity : AppCompatActivity() {
         try {
             val hiddenSet = getHiddenSet()
             val favCats = FavoriteManager.getFavoriteCategories(this, profileId)
-            
-            val rawCats = allLiveChannels.filter { !hiddenSet.contains(it.category.trim().lowercase()) }
-                .map { it.category }.distinct().filter { it.isNotBlank() }
 
-            // 👑 الذكاء الاصطناعي: إبراز beIN Sports كفئة أولى
+            val rawCats = allLiveChannels.filter { !hiddenSet.contains(it.category.trim().lowercase()) }
+                .map { it.category }
+                .distinct()
+                .filter { it.isNotBlank() }
+
             val beinCat = rawCats.firstOrNull { cat ->
                 val l = cat.lowercase()
                 l.contains("sport ar") || l.contains("bein") || l.contains("sports")
-            } ?: (if (rawCats.isNotEmpty()) rawCats.first() else "All")
+            } ?: (if (rawCats.isNotEmpty()) rawCats.first() else requestedCategoryName)
 
+            val requestedCat = rawCats.firstOrNull { it.equals(requestedCategoryName, true) }
+            val preferredCat = requestedCat ?: beinCat
             val others = rawCats.filter { !it.equals(beinCat, true) }.sorted()
-            
+
+            if (hideCategories) {
+                selectedCategoryName = requestedCategoryName.ifBlank { preferredCat }
+                currentCategories = listOf(selectedCategoryName)
+                activePanel = ActivePanel.CHANNELS
+                loadCategoryChannels(selectedCategoryName, null)
+                requestChannelFocusByUrl(selectedChannel?.streamUrl, fallbackToFirst = true)
+                updateAlphabetHint()
+                return
+            }
+
             val completeList = mutableListOf<String>()
             completeList.add("⭐ المفضلة")
             completeList.addAll(favCats.map { "📁 $it" })
@@ -276,27 +371,24 @@ class TvLivePreviewActivity : AppCompatActivity() {
             completeList.addAll(others)
 
             currentCategories = completeList.distinct()
-            selectedCategoryName = beinCat
+            selectedCategoryName = preferredCat
 
             categoriesAdapter = RoyalCategoriesAdapter(currentCategories, selectedCategoryName) { chosen ->
                 loadCategoryChannels(chosen, null)
+                lastFocusedChannelUrl = currentCategoryChannels.firstOrNull()?.streamUrl
                 recyclerChannels.postDelayed({
-                    recyclerChannels.findViewHolderForAdapterPosition(0)?.itemView?.requestFocus()
+                    requestChannelFocusByUrl(lastFocusedChannelUrl, fallbackToFirst = true)
                     activePanel = ActivePanel.CHANNELS
                     updateAlphabetHint()
                 }, 80)
             }
             recyclerCategories.adapter = categoriesAdapter
 
-            loadCategoryChannels(beinCat, null)
-
-            // فوكس على أول فئة ذكية
-            val beinIdx = currentCategories.indexOf(beinCat).coerceAtLeast(0)
-            recyclerCategories.post {
-                recyclerCategories.scrollToPosition(beinIdx)
-                recyclerCategories.findViewHolderForAdapterPosition(beinIdx)?.itemView?.requestFocus()
-            }
-        } catch (e: Exception) { Log.e("TvLiveDashboard", "Prepare Cats Crash: ${e.message}") }
+            loadCategoryChannels(preferredCat, null)
+            requestCategoryFocus(preferredCat)
+        } catch (e: Exception) {
+            Log.e("TvLiveDashboard", "Prepare Cats Crash: ${e.message}")
+        }
     }
 
     private fun loadCategoryChannels(catLabel: String, filterLetter: String?) {
@@ -307,10 +399,11 @@ class TvLivePreviewActivity : AppCompatActivity() {
             val isFavSection = catLabel == "⭐ المفضلة"
             val isFavCatSection = catLabel.startsWith("📁 ")
             val realCatName = if (isFavCatSection) catLabel.removePrefix("📁 ") else catLabel
-
+            val keepFocusUrl = lastFocusedChannelUrl ?: selectedChannel?.streamUrl
             val hiddenSet = getHiddenSet()
 
             var rawList = when {
+                hideCategories -> allLiveChannels
                 isFavSection -> FavoriteManager.getFavoriteChannels(this, profileId)
                 isFavCatSection -> allLiveChannels.filter { it.category.equals(realCatName, true) }
                 realCatName == "All" -> allLiveChannels.filter { !hiddenSet.contains(it.category.trim().lowercase()) }
@@ -321,7 +414,6 @@ class TvLivePreviewActivity : AppCompatActivity() {
                 rawList = allLiveChannels.filter { !hiddenSet.contains(it.category.trim().lowercase()) }
             }
 
-            // تنظيف beIN وتصدر MAX
             val isBein = realCatName.lowercase().let { it.contains("sport ar") || it.contains("bein") || it.contains("sports") }
             if (isBein && !isFavSection) {
                 val pureBein = rawList.filter { it.name.lowercase().contains("bein") }
@@ -334,40 +426,55 @@ class TvLivePreviewActivity : AppCompatActivity() {
                 )
             }
 
-            // تطبيق فلتر الحرف إن وجد
-            currentCategoryChannels = if (filterLetter != null && filterLetter != "All") {
+            currentCategoryChannels = if (!hideCategories && filterLetter != null && filterLetter != "All") {
                 rawList.filter { it.name.trim().startsWith(filterLetter, true) }
             } else {
                 rawList
             }
 
-            // تحديث الواجهة
             if (channelsAdapter == null) {
-                channelsAdapter = RoyalChannelsAdapter(currentCategoryChannels, selectedChannel?.streamUrl, onClick = { ch ->
-                    if (selectedChannel?.streamUrl == ch.streamUrl && player?.isPlaying == true) {
-                        toggleFullscreen(true)
-                    } else {
-                        playRoyalLiveChannel(ch)
+                channelsAdapter = RoyalChannelsAdapter(
+                    currentCategoryChannels,
+                    selectedChannel?.streamUrl,
+                    onClick = { ch ->
+                        lastFocusedChannelUrl = ch.streamUrl
+                        if (selectedChannel?.streamUrl == ch.streamUrl && player?.isPlaying == true) {
+                            requestChannelFocusByUrl(ch.streamUrl, fallbackToFirst = false)
+                            toggleFullscreen(true)
+                        } else {
+                            playRoyalLiveChannel(ch)
+                            requestChannelFocusByUrl(ch.streamUrl, fallbackToFirst = false)
+                        }
+                    },
+                    onLongClick = { ch ->
+                        lastFocusedChannelUrl = ch.streamUrl
+                        performFavoriteChannelToggle(ch)
                     }
-                }, onLongClick = { ch ->
-                    performFavoriteChannelToggle(ch)
-                })
+                )
                 recyclerChannels.adapter = channelsAdapter
             } else {
                 channelsAdapter?.update(currentCategoryChannels)
-                recyclerChannels.scrollToPosition(0)
             }
 
             categoriesAdapter?.setSelectedCat(catLabel)
-            
-            val suffix = if (filterLetter != null) " (حرف $filterLetter)" else ""
-            txtFilterHint.text = "📺 القنوات: $catLabel$suffix"
 
-            // تشغيل أول قناة تلقائياً إذا لم يكن المشغل شغالاً
+            val suffix = if (!hideCategories && filterLetter != null) " (حرف $filterLetter)" else ""
+            txtFilterHint.text = if (hideCategories) {
+                "📺 قنوات ${realCatName.ifBlank { requestedCategoryName }}"
+            } else {
+                "📺 القنوات: $catLabel$suffix"
+            }
+
             if (currentCategoryChannels.isNotEmpty() && player == null) {
                 playRoyalLiveChannel(currentCategoryChannels.first())
             }
-        } catch (e: Exception) { Log.e("TvLiveDashboard", "Load Channels Crash: ${e.message}") }
+
+            if ((hideCategories || activePanel == ActivePanel.CHANNELS) && currentCategoryChannels.isNotEmpty()) {
+                requestChannelFocusByUrl(keepFocusUrl, fallbackToFirst = true)
+            }
+        } catch (e: Exception) {
+            Log.e("TvLiveDashboard", "Load Channels Crash: ${e.message}")
+        }
     }
 
     private fun buildUniversalAlphabetBar() {
@@ -379,18 +486,18 @@ class TvLivePreviewActivity : AppCompatActivity() {
                 val btn = TextView(this).apply {
                     text = letter
                     setTextColor(Color.parseColor("#A5B4FC"))
-                    textSize = 12f
+                    textSize = 10.5f
                     setTypeface(null, Typeface.BOLD)
                     gravity = Gravity.CENTER
                     isClickable = true
                     isFocusable = true
-                    setPadding(dp(12), dp(6), dp(12), dp(6))
+                    setPadding(dp(10), dp(4), dp(10), dp(4))
                     background = GradientDrawable().apply {
                         setColor(Color.parseColor("#121228"))
-                        cornerRadius = dp(12).toFloat()
+                        cornerRadius = dp(10).toFloat()
                         setStroke(dp(1), Color.parseColor("#3d3d5c"))
                     }
-                    layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(36)).apply { marginEnd = dp(6) }
+                    layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(32)).apply { marginEnd = dp(4) }
 
                     setOnClickListener {
                         val chosenLetter = if (letter == "All") null else letter
@@ -406,7 +513,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
                         setTextColor(Color.parseColor("#050A1A"))
                     }
                     setOnFocusChangeListener { v, has ->
-                        v.animate().scaleX(if (has) 1.1f else 1f).scaleY(if (has) 1.1f else 1f).setDuration(80).start()
+                        v.animate().scaleX(if (has) 1.06f else 1f).scaleY(if (has) 1.06f else 1f).setDuration(80).start()
                     }
                 }
                 btns.add(btn)
@@ -430,9 +537,13 @@ class TvLivePreviewActivity : AppCompatActivity() {
 
     private fun updateAlphabetHint() {
         try {
+            if (hideCategories) {
+                txtFilterHint.text = "📺 قنوات ${selectedCategoryName.ifBlank { requestedCategoryName }}"
+                return
+            }
             val hint = when (activePanel) {
-                ActivePanel.CATEGORIES -> "🔤 الحروف تفلتر الفئات (ركز على عمود الفئات)"
-                ActivePanel.CHANNELS -> "🔤 الحروف تفلتر القنوات (ركز على عمود القنوات)"
+                ActivePanel.CATEGORIES -> "📁 ${selectedCategoryName.ifBlank { "الفئات" }} • الحروف تفلتر الفئات"
+                ActivePanel.CHANNELS -> "📺 ${selectedCategoryName.ifBlank { "القنوات" }} • الحروف تفلتر القنوات"
             }
             txtFilterHint.text = hint
         } catch (_: Exception) {}
@@ -450,6 +561,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
             txtEpgInfo.text = "⏳ جاري جلب البرنامج..."
             txtDetailsBottom.text = "▶ البث المباشر: ${ch.name}"
 
+            lastFocusedChannelUrl = ch.streamUrl
             channelsAdapter?.setPlayingUrl(ch.streamUrl)
             FavoriteManager.addRecentChannel(this, profileId, ch)
             loadRoyalEpg(ch)
@@ -518,15 +630,13 @@ class TvLivePreviewActivity : AppCompatActivity() {
                 
                 Toast.makeText(this, "وضع الشاشة الكامله • اضغط Back للعودة", Toast.LENGTH_SHORT).show()
             } else {
-                panelCategories.visibility = View.VISIBLE
+                panelCategories.visibility = if (hideCategories) View.GONE else View.VISIBLE
                 panelChannels.visibility = View.VISIBLE
                 txtChannelTitle.visibility = View.VISIBLE
                 txtCategorySubtitle.visibility = View.VISIBLE
                 txtEpgInfo.visibility = View.VISIBLE
                 txtDetailsBottom.visibility = View.VISIBLE
-
-                panelPlayer.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 0.40f)
-                frameVideo.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
+                applyDashboardModeLayout()
             }
         } catch (_: Exception) {}
     }
@@ -536,7 +646,8 @@ class TvLivePreviewActivity : AppCompatActivity() {
             val isAdded = FavoriteManager.toggleFavoriteChannel(this, profileId, ch)
             val msg = if (isAdded) "⭐ تم حفظ القناة '${ch.name}' في المفضلة ✓" else "إلغاء حفظ القناة '${ch.name}' من المفضلة"
             Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
-            channelsAdapter?.notifyDataSetChanged()
+            channelsAdapter?.notifyFavoriteChanged(ch.streamUrl)
+            requestChannelFocusByUrl(ch.streamUrl, fallbackToFirst = false)
         } catch (_: Exception) {}
     }
 
@@ -575,8 +686,20 @@ class TvLivePreviewActivity : AppCompatActivity() {
         private val onClick: (String) -> Unit
     ) : RecyclerView.Adapter<RoyalCategoriesAdapter.VH>() {
 
-        fun setSelectedCat(cat: String) { this.selectedCat = cat; notifyDataSetChanged() }
-        fun update(newList: List<String>) { this.items = newList; notifyDataSetChanged() }
+        init { setHasStableIds(true) }
+
+        fun setSelectedCat(cat: String) {
+            val oldIndex = items.indexOfFirst { it.equals(selectedCat, true) }
+            selectedCat = cat
+            val newIndex = items.indexOfFirst { it.equals(selectedCat, true) }
+            if (oldIndex >= 0) notifyItemChanged(oldIndex) else notifyDataSetChanged()
+            if (newIndex >= 0 && newIndex != oldIndex) notifyItemChanged(newIndex)
+        }
+
+        fun update(newList: List<String>) {
+            items = newList
+            notifyDataSetChanged()
+        }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
             val view = LayoutInflater.from(parent.context).inflate(R.layout.item_tv_category_card, parent, false)
@@ -584,6 +707,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
         }
 
         override fun onBindViewHolder(holder: VH, position: Int) = holder.bind(items[position])
+        override fun getItemId(position: Int): Long = items[position].hashCode().toLong()
         override fun getItemCount() = items.size
 
         inner class VH(private val view: View) : RecyclerView.ViewHolder(view) {
@@ -597,14 +721,16 @@ class TvLivePreviewActivity : AppCompatActivity() {
                     val label = if (cat.lowercase().let { it.contains("sport ar") || it.contains("bein") }) "👑 beIN Sports" else cat
 
                     iconText.text = if (isFav) "⭐" else "📁"
+                    iconText.textSize = 17f
                     nameText.text = if (isSel) "● $label" else label
+                    nameText.textSize = 13f
                     nameText.setTextColor(if (isSel) Color.parseColor("#FFD700") else Color.WHITE)
 
                     view.setOnClickListener { onClick(cat) }
                     view.setOnLongClickListener { performFavoriteCategoryToggle(cat.removePrefix("📁 ")); true }
                     view.setOnFocusChangeListener { v, has ->
                         try {
-                            v.animate().scaleX(if (has) 1.05f else 1f).scaleY(if (has) 1.05f else 1f).setDuration(100).start()
+                            v.animate().scaleX(if (has) 1.03f else 1f).scaleY(if (has) 1.03f else 1f).setDuration(90).start()
                             if (has) {
                                 activePanel = ActivePanel.CATEGORIES
                                 updateAlphabetHint()
@@ -623,8 +749,26 @@ class TvLivePreviewActivity : AppCompatActivity() {
         private val onLongClick: (Channel) -> Unit
     ) : RecyclerView.Adapter<RoyalChannelsAdapter.VH>() {
 
-        fun update(newList: List<Channel>) { this.items = newList; notifyDataSetChanged() }
-        fun setPlayingUrl(url: String) { this.playingUrl = url; notifyDataSetChanged() }
+        init { setHasStableIds(true) }
+
+        fun update(newList: List<Channel>) {
+            items = newList
+            notifyDataSetChanged()
+        }
+
+        fun setPlayingUrl(url: String) {
+            val oldUrl = playingUrl
+            playingUrl = url
+            val oldIndex = items.indexOfFirst { it.streamUrl == oldUrl }
+            val newIndex = items.indexOfFirst { it.streamUrl == url }
+            if (oldIndex >= 0) notifyItemChanged(oldIndex) else notifyDataSetChanged()
+            if (newIndex >= 0 && newIndex != oldIndex) notifyItemChanged(newIndex)
+        }
+
+        fun notifyFavoriteChanged(url: String) {
+            val index = items.indexOfFirst { it.streamUrl == url }
+            if (index >= 0) notifyItemChanged(index) else notifyDataSetChanged()
+        }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
             val view = LayoutInflater.from(parent.context).inflate(R.layout.item_tv_channel_card, parent, false)
@@ -632,6 +776,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
         }
 
         override fun onBindViewHolder(holder: VH, position: Int) = holder.bind(items[position])
+        override fun getItemId(position: Int): Long = (items[position].streamUrl.ifBlank { items[position].name }).hashCode().toLong()
         override fun getItemCount() = items.size
 
         inner class VH(private val view: View) : RecyclerView.ViewHolder(view) {
@@ -645,6 +790,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
                     val isFav = FavoriteManager.isFavoriteChannel(view.context, profileId, ch.streamUrl)
 
                     nameText.text = if (isPlaying) "▶ ${ch.name}" else ch.name
+                    nameText.textSize = 13f
                     nameText.setTextColor(if (isPlaying) Color.parseColor("#39FF8B") else Color.WHITE)
                     favImg.visibility = if (isFav) View.VISIBLE else View.GONE
 
@@ -654,8 +800,9 @@ class TvLivePreviewActivity : AppCompatActivity() {
                     view.setOnLongClickListener { onLongClick(ch); true }
                     view.setOnFocusChangeListener { v, has ->
                         try {
-                            v.animate().scaleX(if (has) 1.04f else 1f).scaleY(if (has) 1.04f else 1f).setDuration(100).start()
+                            v.animate().scaleX(if (has) 1.03f else 1f).scaleY(if (has) 1.03f else 1f).setDuration(90).start()
                             if (has) {
+                                lastFocusedChannelUrl = ch.streamUrl
                                 activePanel = ActivePanel.CHANNELS
                                 updateAlphabetHint()
                             }
