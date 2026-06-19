@@ -73,6 +73,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
     private var currentPlayingUrl: String? = null
     private var hideCategories: Boolean = false
     private var requestedCategoryName: String = "All"
+    private var directFilterMode: String? = null
     private var lastFocusedChannelUrl: String? = null
     private var dashboardInitialized: Boolean = false
 
@@ -128,6 +129,15 @@ class TvLivePreviewActivity : AppCompatActivity() {
                 putExtra("load_from_cache", true)
             })
         }
+
+        fun startDirectBeinSports(context: Context) {
+            context.startActivity(Intent(context, TvLivePreviewActivity::class.java).apply {
+                putExtra("category", "beIN SPORTS")
+                putExtra("hide_categories", true)
+                putExtra("load_from_cache", true)
+                putExtra("direct_filter_mode", "bein_alwan")
+            })
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -146,6 +156,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
             hideCategories = intent.getBooleanExtra("hide_categories", false)
             loadFromCache = intent.getBooleanExtra("load_from_cache", false)
             requestedCategoryName = intent.getStringExtra("category")?.takeIf { it.isNotBlank() } ?: "All"
+            directFilterMode = intent.getStringExtra("direct_filter_mode")?.takeIf { it.isNotBlank() }
 
             // جلب القنوات
             val passedChannel = intent.getParcelableExtra<Channel>("channel")
@@ -186,7 +197,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
                     Toast.makeText(this, "⚠️ تعذر تحديث القنوات فورياً، تم فتح آخر كاش متاح", Toast.LENGTH_SHORT).show()
                 }
 
-                allLiveChannels = live
+                allLiveChannels = applyDirectFilterIfNeeded(live)
                 selectedChannel = resolveInitialChannel(passedChannel, allLiveChannels)
                 initDashboard()
             } catch (_: Exception) {
@@ -208,6 +219,44 @@ class TvLivePreviewActivity : AppCompatActivity() {
             }
             ?: channels.firstOrNull { it.name.equals(passedChannel.name, true) }
             ?: channels.first()
+    }
+
+    private fun applyDirectFilterIfNeeded(channels: List<Channel>): List<Channel> {
+        return when (directFilterMode) {
+            "bein_alwan" -> filterDirectBeinAndAlwanChannels(channels)
+            else -> channels
+        }
+    }
+
+    private fun filterDirectBeinAndAlwanChannels(channels: List<Channel>): List<Channel> {
+        val beinTokens = listOf("bein", "be in", "beinsport", "bein sport", "bein sports", "بي ان", "بي إن")
+        val alwanTokens = listOf("alwan", "alwan sport", "alwan sports", "الوان")
+
+        fun normalized(ch: Channel): String = DigitNormalizer.normalizeDigits("${ch.name} ${ch.category}").lowercase()
+        fun isBein(text: String): Boolean = beinTokens.any { text.contains(it) }
+        fun isAlwan(text: String): Boolean = alwanTokens.any { text.contains(it) }
+        fun firstNumber(text: String): Int = Regex("\\d+").find(text)?.value?.toIntOrNull() ?: 999
+
+        return channels
+            .filter { ch ->
+                val text = normalized(ch)
+                isBein(text) || isAlwan(text)
+            }
+            .distinctBy { it.streamUrl.ifBlank { it.name } }
+            .sortedWith(
+                compareBy<Channel> { ch ->
+                    val text = normalized(ch)
+                    when {
+                        isBein(text) && text.contains("max") -> 0
+                        isBein(text) -> 1
+                        isAlwan(text) -> 2
+                        else -> 3
+                    }
+                }.thenBy { ch ->
+                    val text = normalized(ch)
+                    firstNumber(text)
+                }.thenBy { ch -> normalized(ch) }
+            )
     }
 
     private fun initDashboard() {

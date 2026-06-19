@@ -329,8 +329,8 @@ class HomeFragment : Fragment() {
         cardMatches?.setOnClickListener { startActivity(Intent(requireContext(), MatchesActivity::class.java)) }
 
         // ⚙️ الصف الثاني
-        // 🏆 beIN Sports - فتح شاشة الفئات المفلترة
-        cardBeInSports?.setOnClickListener { startActivity(Intent(requireContext(), BeInSportsCategoriesActivity::class.java)) }
+        // 🏆 beIN Sports - فتح الواجهة المباشرة (قنوات + مشغل فقط)
+        cardBeInSports?.setOnClickListener { TvLivePreviewActivity.startDirectBeinSports(requireContext()) }
         // ⚙️ الإعدادات
         cardSettings?.setOnClickListener { startActivity(Intent(requireContext(), SettingsActivity::class.java)) }
         // 🔑 الحسابات - شاشة VIP النظيفة الجديدة
