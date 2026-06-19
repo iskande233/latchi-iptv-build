@@ -56,7 +56,8 @@ object PreparedCatalogHelper {
         val out = mutableListOf<Channel>()
         for (i in 0 until arr.length()) {
             val o = arr.optJSONObject(i) ?: continue
-            val name = o.optString("name").ifBlank { continue }
+            val name = o.optString("name")
+            if (name.isBlank()) continue
             val logo = o.optString("logoUrl", o.optString("logo", o.optString("stream_icon", "")))
             val stream = o.optString("streamUrl", o.optString("url", o.optString("stream_url", "")))
             if (stream.isBlank()) continue
