@@ -31,36 +31,24 @@ object ChannelCache {
             val vodFile = getVodDiskFile(context, profileId)
             val seriesFile = getSeriesDiskFile(context, profileId)
 
-            liveFile.bufferedWriter(Charsets.UTF_8).use { w ->
-                channels.filter { it.contentType == "live" }.forEach { c ->
-                    w.write("${c.name.replace("\t", " ")}\t${c.logoUrl.replace("\t", " ")}\t${c.streamUrl.replace("\t", " ")}\t${c.category.replace("\t", " ")}\tlive\n")
-                }
-            }
+            writeChannelsToFile(liveFile, channels.filter { it.contentType == "live" }, "live")
+            writeChannelsToFile(vodFile, channels.filter { it.contentType == "movie" }, "movie")
+            writeChannelsToFile(seriesFile, channels.filter { it.contentType == "series" }, "series")
 
-            vodFile.bufferedWriter(Charsets.UTF_8).use { w ->
-                channels.filter { it.contentType == "movie" }.forEach { c ->
-                    w.write("${c.name.replace("\t", " ")}\t${c.logoUrl.replace("\t", " ")}\t${c.streamUrl.replace("\t", " ")}\t${c.category.replace("\t", " ")}\tmovie\n")
-                }
-            }
-
-            seriesFile.bufferedWriter(Charsets.UTF_8).use { w ->
-                channels.filter { it.contentType == "series" }.forEach { c ->
-                    w.write("${c.name.replace("\t", " ")}\t${c.logoUrl.replace("\t", " ")}\t${c.streamUrl.replace("\t", " ")}\t${c.category.replace("\t", " ")}\tseries\n")
-                }
-            }
-
-            val latestRevision = try {
-                SourcePrefs.getActiveProfile(context)?.takeIf { it.id == profileId }?.serverRevision ?: 0L
-            } catch (_: Exception) {
-                0L
-            }
-
-            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
-                .putLong("updated_$profileId", System.currentTimeMillis())
-                .putLong("revision_$profileId", latestRevision)
-                .apply()
+            updateMeta(context, profileId)
         } catch (e: Exception) {
             android.util.Log.e("ChannelCache", "Master DB Save Crash: ${e.message}")
+        }
+    }
+
+    @Synchronized
+    fun saveLiveOnly(context: Context, profileId: String, liveChannels: List<Channel>) {
+        try {
+            val liveFile = getLiveDiskFile(context, profileId)
+            writeChannelsToFile(liveFile, liveChannels.filter { it.contentType == "live" }, "live")
+            updateMeta(context, profileId)
+        } catch (e: Exception) {
+            android.util.Log.e("ChannelCache", "Live Save Crash: ${e.message}")
         }
     }
 
@@ -107,6 +95,29 @@ object ChannelCache {
             android.util.Log.e("ChannelCache", "Master DB Load Crash: ${e.message}")
             emptyList()
         }
+    }
+
+    private fun writeChannelsToFile(file: File, channels: List<Channel>, contentType: String) {
+        file.bufferedWriter(Charsets.UTF_8).use { writer ->
+            channels.forEach { channel ->
+                writer.write(
+                    "${channel.name.replace("\t", " ")}\t${channel.logoUrl.replace("\t", " ")}\t${channel.streamUrl.replace("\t", " ")}\t${channel.category.replace("\t", " ")}\t$contentType\n"
+                )
+            }
+        }
+    }
+
+    private fun updateMeta(context: Context, profileId: String) {
+        val latestRevision = try {
+            SourcePrefs.getActiveProfile(context)?.takeIf { it.id == profileId }?.serverRevision ?: 0L
+        } catch (_: Exception) {
+            0L
+        }
+
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
+            .putLong("updated_$profileId", System.currentTimeMillis())
+            .putLong("revision_$profileId", latestRevision)
+            .apply()
     }
 
     fun updatedAt(context: Context, profileId: String): Long {
