@@ -9,7 +9,11 @@ object RemoteViewConfigPrefs {
         val hiddenCategories: String,
         val beinKeywords: List<String>,
         val beinMaxKeywords: List<String>,
-        val alwanKeywords: List<String>
+        val alwanKeywords: List<String>,
+        val preparedLiveUrl: String,
+        val preparedBeinUrl: String,
+        val preparedMoviesUrl: String,
+        val preparedSeriesUrl: String
     )
 
     fun saveFromValidationResult(context: Context, profileId: String, result: ActivationValidationResult) {
@@ -19,6 +23,10 @@ object RemoteViewConfigPrefs {
             .putString("bein_keywords_$profileId", normalizeCsv(result.beinKeywords))
             .putString("bein_max_keywords_$profileId", normalizeCsv(result.beinMaxKeywords))
             .putString("alwan_keywords_$profileId", normalizeCsv(result.alwanKeywords))
+            .putString("prepared_live_url_$profileId", result.preparedLiveUrl.trim())
+            .putString("prepared_bein_url_$profileId", result.preparedBeinUrl.trim())
+            .putString("prepared_movies_url_$profileId", result.preparedMoviesUrl.trim())
+            .putString("prepared_series_url_$profileId", result.preparedSeriesUrl.trim())
             .apply()
     }
 
@@ -37,7 +45,11 @@ object RemoteViewConfigPrefs {
             alwanKeywords = parseCsv(
                 prefs.getString("alwan_keywords_$profileId", "") ?: "",
                 listOf("alwan", "alwan sport", "alwan sports", "الوان")
-            )
+            ),
+            preparedLiveUrl = prefs.getString("prepared_live_url_$profileId", "") ?: "",
+            preparedBeinUrl = prefs.getString("prepared_bein_url_$profileId", "") ?: "",
+            preparedMoviesUrl = prefs.getString("prepared_movies_url_$profileId", "") ?: "",
+            preparedSeriesUrl = prefs.getString("prepared_series_url_$profileId", "") ?: ""
         )
     }
 

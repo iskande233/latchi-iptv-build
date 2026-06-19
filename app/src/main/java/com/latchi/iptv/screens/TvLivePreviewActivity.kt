@@ -37,6 +37,7 @@ import com.latchi.iptv.model.Channel
 import com.latchi.iptv.utils.ChannelRefreshHelper
 import com.latchi.iptv.utils.DigitNormalizer
 import com.latchi.iptv.utils.FavoriteManager
+import com.latchi.iptv.utils.PreparedCatalogHelper
 import com.latchi.iptv.utils.RemoteViewConfigPrefs
 import com.latchi.iptv.utils.SourcePrefs
 import com.latchi.iptv.utils.ThemeManager
@@ -188,6 +189,23 @@ class TvLivePreviewActivity : AppCompatActivity() {
         val active = SourcePrefs.getActiveProfile(this)
         if (active == null) {
             finish()
+            return
+        }
+
+        val remoteConfig = RemoteViewConfigPrefs.getFilterConfig(this, active.id)
+        val preparedUrl = when (directFilterMode) {
+            "bein_alwan" -> remoteConfig.preparedBeinUrl
+            else -> remoteConfig.preparedLiveUrl
+        }
+        if (preparedUrl.isNotBlank()) {
+            Thread {
+                val prepared = PreparedCatalogHelper.fetch(preparedUrl, "live")
+                runOnUiThread {
+                    allLiveChannels = applyDirectFilterIfNeeded(prepared.filter { it.contentType == "live" }.ifEmpty { prepared })
+                    selectedChannel = resolveInitialChannel(passedChannel, allLiveChannels)
+                    initDashboard()
+                }
+            }.start()
             return
         }
 

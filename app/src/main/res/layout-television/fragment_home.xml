@@ -15,7 +15,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"
-            android:padding="28dp">
+            android:padding="18dp">
 
             <!-- ===== Center Clock Widget with Active Seconds (في الوسط بالثواني) ===== -->
             <LinearLayout
@@ -30,8 +30,8 @@
                     android:background="@drawable/bg_vip_clock_widget"
                     android:gravity="center"
                     android:orientation="horizontal"
-                    android:paddingHorizontal="26dp"
-                    android:paddingVertical="10dp"
+                    android:paddingHorizontal="20dp"
+                    android:paddingVertical="8dp"
                     android:elevation="12dp">
 
                     <TextView
@@ -42,7 +42,7 @@
                         android:paddingEnd="12dp"
                         android:text="00:00:00"
                         android:textColor="#FFD700"
-                        android:textSize="22sp"
+                        android:textSize="18sp"
                         android:textStyle="bold" />
 
                     <View
@@ -58,7 +58,7 @@
                         android:paddingStart="4dp"
                         android:text="— —"
                         android:textColor="#F2F4FF"
-                        android:textSize="14sp"
+                        android:textSize="11sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
@@ -68,13 +68,13 @@
                 android:id="@+id/prayerSummaryCard"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="8dp"
                 android:layout_gravity="center_horizontal"
                 android:background="@drawable/bg_vip_clock_widget"
                 android:gravity="center"
                 android:orientation="vertical"
-                android:paddingHorizontal="22dp"
-                android:paddingVertical="10dp"
+                android:paddingHorizontal="18dp"
+                android:paddingVertical="8dp"
                 android:elevation="8dp">
 
                 <TextView
@@ -83,7 +83,7 @@
                     android:layout_height="wrap_content"
                     android:text="الجزائر"
                     android:textColor="#7FE6FF"
-                    android:textSize="13sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
 
                 <LinearLayout
@@ -99,7 +99,7 @@
                         android:layout_height="wrap_content"
                         android:text="الصلاة القادمة: المغرب"
                         android:textColor="#FFD700"
-                        android:textSize="14sp"
+                        android:textSize="12sp"
                         android:textStyle="bold" />
 
                     <View
@@ -115,7 +115,7 @@
                         android:fontFamily="monospace"
                         android:text="17:35"
                         android:textColor="#FFFFFF"
-                        android:textSize="16sp"
+                        android:textSize="14sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
@@ -124,14 +124,14 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="10dp"
                 android:gravity="center_horizontal"
                 android:orientation="vertical">
 
                 <!-- Row 1: Logged In (User Name) & Expiry Date -->
                 <LinearLayout
                     android:layout_width="wrap_content"
-                    android:layout_height="38dp"
+                    android:layout_height="34dp"
                     android:background="@drawable/bg_vip_grid_card"
                     android:gravity="center"
                     android:orientation="horizontal"
@@ -144,7 +144,7 @@
                         android:layout_height="wrap_content"
                         android:text="User Name"
                         android:textColor="#FFFFFF"
-                        android:textSize="13sp"
+                        android:textSize="12sp"
                         android:textStyle="bold" />
 
                     <View
@@ -159,19 +159,19 @@
                         android:layout_height="wrap_content"
                         android:text="2027-12-30"
                         android:textColor="#39FF8B"
-                        android:textSize="13sp"
+                        android:textSize="12sp"
                         android:textStyle="bold" />
                 </LinearLayout>
 
                 <!-- Row 2: Last Server Update Option -->
                 <LinearLayout
                     android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:layout_marginTop="6dp"
+                    android:layout_height="32dp"
+                    android:layout_marginTop="4dp"
                     android:background="@drawable/bg_vip_grid_card"
                     android:gravity="center"
                     android:orientation="horizontal"
-                    android:paddingHorizontal="16dp"
+                    android:paddingHorizontal="12dp"
                     android:elevation="6dp">
 
                     <TextView
@@ -179,7 +179,7 @@
                         android:layout_height="wrap_content"
                         android:text="Last Server Update: "
                         android:textColor="#A5B4FC"
-                        android:textSize="11sp"
+                        android:textSize="10sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -197,7 +197,7 @@
                         android:layout_height="wrap_content"
                         android:text=" :آخر تحديث للسيرفر"
                         android:textColor="#A5B4FC"
-                        android:textSize="11sp"
+                        android:textSize="10sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
@@ -206,11 +206,11 @@
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
+                android:layout_marginTop="8dp"
                 android:layout_gravity="center_horizontal"
                 android:background="@drawable/bg_vip_clock_widget"
-                android:paddingHorizontal="24dp"
-                android:paddingVertical="10dp"
+                android:paddingHorizontal="18dp"
+                android:paddingVertical="8dp"
                 android:gravity="center"
                 android:elevation="6dp">
 
@@ -220,7 +220,7 @@
                     android:layout_height="wrap_content"
                     android:text="سبحان الله وبحمده، سبحان الله العظيم"
                     android:textColor="#FFD700"
-                    android:textSize="15sp"
+                    android:textSize="12sp"
                     android:textStyle="bold"
                     android:gravity="center" />
             </LinearLayout>

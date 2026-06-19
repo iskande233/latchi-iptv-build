@@ -178,7 +178,8 @@
                             android:textColor="#FFFFFF"
                             android:textSize="16sp"
                             android:textStyle="bold"
-                            android:layout_marginBottom="14dp" />
+                            android:layout_marginBottom="14dp"
+                            android:visibility="gone" />
 
                         <!-- Button 3: M3U Link Addition -->
                         <TextView
@@ -192,7 +193,8 @@
                             android:text="➕ إضافة رابط M3U"
                             android:textColor="#FFFFFF"
                             android:textSize="16sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                            android:visibility="gone" />
                     </LinearLayout>
 
                     <!-- WhatsApp Support pinned at bottom -->

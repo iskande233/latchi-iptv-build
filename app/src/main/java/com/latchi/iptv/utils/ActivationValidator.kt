@@ -19,7 +19,11 @@ data class ActivationValidationResult(
     val hiddenCategories: String = "",
     val beinKeywords: String = "",
     val beinMaxKeywords: String = "",
-    val alwanKeywords: String = ""
+    val alwanKeywords: String = "",
+    val preparedLiveUrl: String = "",
+    val preparedBeinUrl: String = "",
+    val preparedMoviesUrl: String = "",
+    val preparedSeriesUrl: String = ""
 )
 
 object ActivationValidator {
@@ -86,7 +90,11 @@ object ActivationValidator {
             hiddenCategories = json.optString("hidden_categories", json.optString("hiddenCategories", "")),
             beinKeywords = json.optString("bein_keywords", json.optString("beinKeywords", "")),
             beinMaxKeywords = json.optString("bein_max_keywords", json.optString("beinMaxKeywords", "")),
-            alwanKeywords = json.optString("alwan_keywords", json.optString("alwanKeywords", ""))
+            alwanKeywords = json.optString("alwan_keywords", json.optString("alwanKeywords", "")),
+            preparedLiveUrl = json.optString("prepared_live_url", json.optString("preparedLiveUrl", "")),
+            preparedBeinUrl = json.optString("prepared_bein_url", json.optString("preparedBeinUrl", "")),
+            preparedMoviesUrl = json.optString("prepared_movies_url", json.optString("preparedMoviesUrl", "")),
+            preparedSeriesUrl = json.optString("prepared_series_url", json.optString("preparedSeriesUrl", ""))
         )
     }
 }

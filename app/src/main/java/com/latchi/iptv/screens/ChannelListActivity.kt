@@ -33,6 +33,8 @@ import com.latchi.iptv.provider.ChannelsProvider
 import com.latchi.iptv.utils.ChannelCache
 import com.latchi.iptv.utils.FavoritesPrefs
 import com.latchi.iptv.utils.FloatingBackHelper
+import com.latchi.iptv.utils.PreparedCatalogHelper
+import com.latchi.iptv.utils.RemoteViewConfigPrefs
 import com.latchi.iptv.utils.SourcePrefs
 import com.latchi.iptv.utils.ServerSyncManager
 import com.latchi.iptv.utils.ServerUpdateOverlayHelper
@@ -402,6 +404,29 @@ class ChannelListActivity : AppCompatActivity() {
                 finish()
                 return
             }
+
+            val remoteConfig = RemoteViewConfigPrefs.getFilterConfig(this, active.id)
+            val preparedUrl = when (contentType) {
+                "movie" -> remoteConfig.preparedMoviesUrl
+                "series" -> remoteConfig.preparedSeriesUrl
+                else -> ""
+            }
+            if (TvUtils.isTv(this) && preparedUrl.isNotBlank()) {
+                progressBar.visibility = View.VISIBLE
+                Thread {
+                    val prepared = PreparedCatalogHelper.fetch(preparedUrl, contentType)
+                    Handler(Looper.getMainLooper()).post {
+                        progressBar.visibility = View.GONE
+                        if (prepared.isNotEmpty()) {
+                            channelsProvider.setLocalChannels(prepared)
+                        } else {
+                            channelsProvider.setLocalChannels(emptyList())
+                        }
+                    }
+                }.start()
+                return
+            }
+
             activeSourceUrl = active.m3uUrl
             lazyXtreamMode = channelsProvider.isXtreamSource(activeSourceUrl)
             if (lazyXtreamMode) {
