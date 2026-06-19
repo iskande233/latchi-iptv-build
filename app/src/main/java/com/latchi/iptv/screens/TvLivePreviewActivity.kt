@@ -13,6 +13,7 @@ import android.os.Looper
 import android.util.Log
 import android.view.Gravity
 import android.view.KeyEvent
+import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
@@ -69,6 +70,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
     private var activeChLetter: String? = null
     private var isFullscreenMode = false
     private var profileId: String = ""
+    private var currentPlayingUrl: String? = null
 
     // ExoPlayer
     private var player: ExoPlayer? = null
