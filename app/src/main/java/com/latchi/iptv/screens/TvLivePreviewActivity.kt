@@ -34,6 +34,7 @@ import com.google.android.exoplayer2.ui.AspectRatioFrameLayout
 import com.google.android.exoplayer2.ui.PlayerView
 import com.latchi.iptv.R
 import com.latchi.iptv.model.Channel
+import com.latchi.iptv.utils.CatalogRepository
 import com.latchi.iptv.utils.ChannelRefreshHelper
 import com.latchi.iptv.utils.DigitNormalizer
 import com.latchi.iptv.utils.FavoriteManager
@@ -192,6 +193,17 @@ class TvLivePreviewActivity : AppCompatActivity() {
             return
         }
 
+        Thread {
+            val roomCached = runCatching { CatalogRepository.getChannelsByTypeBlocking(this, active.id, "live") }.getOrDefault(emptyList())
+            if (roomCached.isNotEmpty()) {
+                runOnUiThread {
+                    allLiveChannels = applyDirectFilterIfNeeded(roomCached)
+                    selectedChannel = resolveInitialChannel(passedChannel, allLiveChannels)
+                    initDashboard()
+                }
+            }
+        }.start()
+
         val remoteConfig = RemoteViewConfigPrefs.getFilterConfig(this, active.id)
         val preparedUrl = when (directFilterMode) {
             "bein_alwan" -> remoteConfig.preparedBeinUrl
@@ -200,6 +212,9 @@ class TvLivePreviewActivity : AppCompatActivity() {
         if (preparedUrl.isNotBlank()) {
             Thread {
                 val prepared = PreparedCatalogHelper.fetch(preparedUrl, "live")
+                if (prepared.isNotEmpty()) {
+                    runCatching { CatalogRepository.saveChannelsBlocking(applicationContext, active.id, prepared, active.serverRevision, replaceAll = false) }
+                }
                 runOnUiThread {
                     allLiveChannels = applyDirectFilterIfNeeded(prepared.filter { it.contentType == "live" }.ifEmpty { prepared })
                     selectedChannel = resolveInitialChannel(passedChannel, allLiveChannels)
@@ -218,6 +233,9 @@ class TvLivePreviewActivity : AppCompatActivity() {
                 }
 
                 allLiveChannels = applyDirectFilterIfNeeded(live)
+                if (live.isNotEmpty()) {
+                    Thread { runCatching { CatalogRepository.saveChannelsBlocking(applicationContext, active.id, live, active.serverRevision, replaceAll = false) } }.start()
+                }
                 selectedChannel = resolveInitialChannel(passedChannel, allLiveChannels)
                 initDashboard()
             } catch (_: Exception) {

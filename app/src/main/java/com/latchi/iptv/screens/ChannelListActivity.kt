@@ -30,6 +30,7 @@ import com.latchi.iptv.adapter.ChannelsAdapter
 import com.latchi.iptv.model.Channel
 import com.latchi.iptv.provider.ChannelCategory
 import com.latchi.iptv.provider.ChannelsProvider
+import com.latchi.iptv.utils.CatalogRepository
 import com.latchi.iptv.utils.ChannelCache
 import com.latchi.iptv.utils.FavoritesPrefs
 import com.latchi.iptv.utils.FloatingBackHelper
@@ -374,7 +375,10 @@ class ChannelListActivity : AppCompatActivity() {
                         val appContext = applicationContext
                         val snapshot = data.toList()
                         saveAfterFetch = false
-                        Thread { ChannelCache.save(appContext, profileId, snapshot) }.start()
+                        Thread {
+                            ChannelCache.save(appContext, profileId, snapshot)
+                            runCatching { CatalogRepository.saveChannelsBlocking(appContext, profileId, snapshot, SourcePrefs.getActiveProfile(appContext)?.serverRevision ?: 0L, replaceAll = true) }
+                        }.start()
                     }
                 }
             } catch (e: Exception) { Log.e("ChannelList", "Observer Error: ${e.message}") }
@@ -415,6 +419,9 @@ class ChannelListActivity : AppCompatActivity() {
                 progressBar.visibility = View.VISIBLE
                 Thread {
                     val prepared = PreparedCatalogHelper.fetch(preparedUrl, contentType)
+                    if (prepared.isNotEmpty()) {
+                        runCatching { CatalogRepository.saveChannelsBlocking(applicationContext, active.id, prepared, active.serverRevision, replaceAll = false) }
+                    }
                     Handler(Looper.getMainLooper()).post {
                         progressBar.visibility = View.GONE
                         if (prepared.isNotEmpty()) {
@@ -437,7 +444,8 @@ class ChannelListActivity : AppCompatActivity() {
             }
 
             Thread {
-                val cached = ChannelCache.load(applicationContext, active.id)
+                val roomCached = runCatching { CatalogRepository.getChannelsByTypeBlocking(applicationContext, active.id, contentType) }.getOrDefault(emptyList())
+                val cached = if (roomCached.isNotEmpty()) roomCached else ChannelCache.load(applicationContext, active.id)
                 val embedded = if (cached.isEmpty() && active.m3uUrl.isBlank()) {
                     com.latchi.iptv.utils.EmbeddedChannelsLoader.load(applicationContext)
                 } else emptyList()

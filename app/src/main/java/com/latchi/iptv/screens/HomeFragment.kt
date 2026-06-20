@@ -31,6 +31,8 @@ import com.latchi.iptv.R
 import com.latchi.iptv.adapter.UserProfilesAdapter
 import com.latchi.iptv.model.Channel
 import com.latchi.iptv.provider.ChannelsProvider
+import com.latchi.iptv.utils.CatalogRepository
+import com.latchi.iptv.utils.CatalogSyncScheduler
 import com.latchi.iptv.utils.ChannelCache
 import com.latchi.iptv.utils.ChannelRefreshHelper
 import com.latchi.iptv.utils.DateText
@@ -161,6 +163,7 @@ class HomeFragment : Fragment() {
             loadCachedOrFetch()
             animateUi(view)
             com.latchi.iptv.utils.TvFocusHelper.setupTree(view)
+            CatalogSyncScheduler.enqueueImmediate(requireContext())
             startSilentServerSync()
             if (arguments?.getBoolean(MainActivity.EXTRA_OPEN_AI_VOICE, false) == true) {
                 view.postDelayed({ onAIVoiceClicked() }, 650L)
@@ -212,6 +215,13 @@ class HomeFragment : Fragment() {
             ChannelRefreshHelper.ensureFreshChannels(requireContext(), active, onlyLive = false) { result ->
                 try {
                     channelsProvider.setLocalChannels(result.channels)
+                    if (result.channels.isNotEmpty()) {
+                        Thread {
+                            runCatching {
+                                CatalogRepository.saveChannelsBlocking(requireContext().applicationContext, active.id, result.channels, active.serverRevision)
+                            }
+                        }.start()
+                    }
                     updateCacheTime(active.id)
                     if (result.refreshedFromServer) {
                         com.latchi.iptv.utils.CustomOverlayHelper.show(requireActivity(), "تحديث", getString(R.string.playlist_updated), true)
@@ -599,9 +609,12 @@ class HomeFragment : Fragment() {
 
             val appContext = requireContext().applicationContext
             Thread {
-                val cached = ChannelCache.load(appContext, active.id)
-                // القنوات المدمجة داخل assets تستعمل فقط كـ fallback إذا لم يكن للحساب رابط أصلاً.
-                // سابقاً كانت assets تتغلب دائماً على حساب المستخدم، وهذا يسبب قوائم/تصنيفات خاطئة.
+                val roomCached = runCatching {
+                    CatalogRepository.getChannelsByTypeBlocking(appContext, active.id, "live") +
+                        CatalogRepository.getChannelsByTypeBlocking(appContext, active.id, "movie") +
+                        CatalogRepository.getChannelsByTypeBlocking(appContext, active.id, "series")
+                }.getOrDefault(emptyList())
+                val cached = if (roomCached.isNotEmpty()) roomCached else ChannelCache.load(appContext, active.id)
                 val embedded = if (cached.isEmpty() && active.m3uUrl.isBlank()) {
                     com.latchi.iptv.utils.EmbeddedChannelsLoader.load(appContext)
                 } else emptyList()
@@ -622,7 +635,6 @@ class HomeFragment : Fragment() {
                                 loadingOverlay?.visibility = View.GONE
                             }
                             else -> {
-                                // Flawless user requirement: Absolute fast lazy mode for everything! No forced full loading at startup.
                                 channelsProvider.setLocalChannels(emptyList())
                                 progressBar?.visibility = View.GONE
                             }
