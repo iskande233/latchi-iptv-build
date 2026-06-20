@@ -311,22 +311,36 @@ class TvLivePreviewActivity : AppCompatActivity() {
         fun isBein(text: String): Boolean = hasAny(text, beinTokens)
         fun isBeinMax(text: String): Boolean = hasAny(text, beinTokens) && hasAny(text, beinMaxTokens)
         fun isAlwan(text: String): Boolean = hasAny(text, alwanTokens)
+        fun isWorldCup(text: String): Boolean =
+            text.contains("world cup") ||
+            text.contains("كاس العالم") ||
+            text.contains("كأس العالم") ||
+            text.contains("كاس العالم") ||
+            text.contains("fifa") ||
+            text.contains("wc ")
         fun firstNumber(text: String): Int = Regex("\\d+").find(text)?.value?.toIntOrNull() ?: 999
 
+        // 🛡️ فلترة: beIN + ALWAN فقط (إزالة القنوات العامة مثل "sport" بدون bein)
+        // + World Cup دائماً يمر (لاحظته مهم)
         return channels
             .filter { ch ->
                 val text = normalized(ch)
-                isBein(text) || isAlwan(text)
+                isBein(text) || isAlwan(text) || isWorldCup(text)
             }
             .distinctBy { it.streamUrl.ifBlank { it.name } }
             .sortedWith(
                 compareBy<Channel> { ch ->
                     val text = normalized(ch)
                     when {
-                        isBeinMax(text) -> 0
-                        isBein(text) -> 1
-                        isAlwan(text) -> 2
-                        else -> 3
+                        // 🏆 كأس العالم في المرتبة 0 (يظهر أولاً)
+                        isWorldCup(text) -> 0
+                        // 👑 beIN MAX في المرتبة 1 (بعد كأس العالم مباشرة)
+                        isBeinMax(text) -> 1
+                        // 📺 beIN العادي في المرتبة 2
+                        isBein(text) -> 2
+                        // 🎨 ALWAN في المرتبة 3
+                        isAlwan(text) -> 3
+                        else -> 4
                     }
                 }.thenBy { ch ->
                     val text = normalized(ch)

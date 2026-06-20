@@ -1,0 +1,1668 @@
+/**
+ * 🚀 Latchi IPTV - Ultimate Google Sheet API v5.2 (Master Link Fix + Inspector + Category Organizer) 🚀
+ *
+ * ✅ الإصلاحات الجذرية:
+ * - v5: رابط السيرفر الموحد محفوظ في Config فقط
+ * - v5.1: إضافة adminInspectSource_ لفحص المصدر قبل التعميم
+ *       + per-type revision/hash/url validation في get_catalog_meta
+ *       + رفع revision بشكل صحيح عند أي تغيير في catalog
+ *       + رسائل أوضح عند فشل التحقق
+ * - v5.2: Category Organizer
+ *       + adminSaveCategoryOverrides_ لحفظ إعادة تسمية + ترتيب الفئات لكل سيرفر
+ *       + قراءة هذه الإعدادات في get_view_config
+ *       + تطبيق overrides على الفئات عند get_categories و get_items_by_category
+ */
+
+const SPREADSHEET_ID = ''; // اتركه فارغ إذا السكريبت مربوط بنفس Google Sheet
+const ADMIN_SECRET = 'LatchiAdmin2026';
+const CODES_SHEET_NAMES = ['codes', 'Codes', 'CODES'];
+const CONFIG_SHEET_NAMES = ['Config', 'config', 'CONFIG'];
+
+const DEFAULT_HEADERS = [
+  'code', 'status', 'max_devices', 'devices', 'expires_at', 'name',
+  'source_type', 'portal_url', 'mac_address', 'server', 'username', 'password',
+  'custom_playlist_url'
+];
+
+// ─────────────────────────────────────────────
+// ENTRY POINT
+// ─────────────────────────────────────────────
+
+function doGet(e) {
+  try {
+    const p = (e && e.parameter) ? e.parameter : {};
+    const action = String(p.action || '').trim();
+
+    if (action === 'get_app_update' || action === 'check_app_update') return handleGetAppUpdate_(p);
+    if (action === 'get_live_master_state') return handleGetLiveMasterState_(p);
+    if (action === 'get_view_config') return handleGetViewConfig_(p);
+    if (action === 'get_catalog_meta') return handleGetCatalogMeta_(p);
+    if (action === 'get_categories') return handleGetCategories_(p);
+    if (action === 'get_items' || action === 'get_items_page' || action === 'get_items_by_category') return handleGetCatalogItems_(p);
+    if (action === 'inspect_source') return handleInspectSource_(p);
+    if (action) return handleAdminAction_(action, p);
+    return handleValidateCode_(p);
+  } catch (err) {
+    return jsonOut({ success: false, message: String(err && err.message ? err.message : err) });
+  }
+}
+
+
+function doPost(e) {
+  try {
+    const p = (e && e.parameter) ? e.parameter : {};
+    const action = String(p.action || '').trim();
+    if (action === 'get_app_update' || action === 'check_app_update') return handleGetAppUpdate_(p);
+    if (action === 'get_live_master_state') return handleGetLiveMasterState_(p);
+    if (action === 'get_view_config') return handleGetViewConfig_(p);
+    if (action === 'get_catalog_meta') return handleGetCatalogMeta_(p);
+    if (action === 'get_categories') return handleGetCategories_(p);
+    if (action === 'get_items' || action === 'get_items_page' || action === 'get_items_by_category') return handleGetCatalogItems_(p);
+    if (action === 'inspect_source') return handleInspectSource_(p);
+    if (action) return handleAdminAction_(action, p, e);
+    return jsonOut({ success: false, message: 'POST requires action' });
+  } catch (err) {
+    return jsonOut({ success: false, message: String(err && err.message ? err.message : err) });
+  }
+}
+
+// ─────────────────────────────────────────────
+// 🛡️ Inspect Source — فحص المصدر قبل التعميم
+// ─────────────────────────────────────────────
+// يُستدعى من لوحة التحكم قبل الحفظ للتأكد من صلاحية الرابط
+function handleInspectSource_(p) {
+  const secret = String(p.secret || '').trim();
+  if (secret !== ADMIN_SECRET) {
+    return jsonOut({ success: false, message: 'Unauthorized' });
+  }
+
+  const sourceUrl = cleanUrl_(p.url || p.master_url || '');
+  if (!sourceUrl) {
+    return jsonOut({
+      success: false,
+      message: 'URL required',
+      online: false,
+      valid: false
+    });
+  }
+
+  const startTime = Date.now();
+  let result = {
+    success: true,
+    online: false,
+    valid: false,
+    type: 'unknown',
+    url: sourceUrl,
+    responseMs: 0,
+    message: '',
+    hasLive: false,
+    hasMovies: false,
+    hasSeries: false,
+    channelCount: 0,
+    serverInfo: null
+  };
+
+  try {
+    // محاولة Xtream أولاً إذا كان الرابط يحتوي على username/password
+    const isXtream = sourceUrl.includes('get.php') || (sourceUrl.includes('username=') && sourceUrl.includes('password='));
+    if (isXtream) {
+      const xtreamInfo = inspectXtreamSource_(sourceUrl);
+      result.type = 'xtream';
+      result.online = xtreamInfo.online;
+      result.valid = xtreamInfo.valid;
+      result.serverInfo = xtreamInfo.info;
+      result.responseMs = Date.now() - startTime;
+      result.message = xtreamInfo.message;
+      if (xtreamInfo.valid) {
+        result.hasLive = (xtreamInfo.info && xtreamInfo.info.liveCount > 0);
+        result.hasMovies = (xtreamInfo.info && xtreamInfo.info.movieCount > 0);
+        result.hasSeries = (xtreamInfo.info && xtreamInfo.info.seriesCount > 0);
+        result.channelCount = (xtreamInfo.info ? (xtreamInfo.info.liveCount + xtreamInfo.info.movieCount + xtreamInfo.info.seriesCount) : 0);
+      }
+      return jsonOut(result);
+    }
+
+    // محاولة M3U
+    const m3uInfo = inspectM3uSource_(sourceUrl);
+    result.type = 'm3u';
+    result.online = m3uInfo.online;
+    result.valid = m3uInfo.valid;
+    result.responseMs = Date.now() - startTime;
+    result.message = m3uInfo.message;
+    result.hasLive = m3uInfo.hasLive;
+    result.hasMovies = m3uInfo.hasMovies;
+    result.hasSeries = m3uInfo.hasSeries;
+    result.channelCount = m3uInfo.channelCount;
+
+    return jsonOut(result);
+  } catch (err) {
+    result.responseMs = Date.now() - startTime;
+    result.message = String(err && err.message ? err.message : err);
+    return jsonOut(result);
+  }
+}
+
+function inspectXtreamSource_(url) {
+  try {
+    // استخراج credentials
+    const usernameMatch = url.match(/username=([^&]+)/);
+    const passwordMatch = url.match(/password=([^&]+)/);
+    if (!usernameMatch || !passwordMatch) {
+      return { valid: false, online: false, info: null, message: 'Missing username/password' };
+    }
+    const username = decodeURIComponent(usernameMatch[1]);
+    const password = decodeURIComponent(passwordMatch[1]);
+
+    // استخراج server URL
+    const serverMatch = url.match(/^(https?:\/\/[^\/]+)/);
+    if (!serverMatch) {
+      return { valid: false, online: false, info: null, message: 'Invalid server URL' };
+    }
+    const server = serverMatch[1];
+
+    // اختبار player_api.php للحصول على معلومات الحساب
+    const apiUrl = `${server}/player_api.php?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
+    const response = UrlFetchApp.fetch(apiUrl, { muteHttpExceptions: true, followRedirects: true });
+    const code = response.getResponseCode();
+    const body = response.getContentText();
+
+    if (code < 200 || code > 299) {
+      return { valid: false, online: false, info: null, message: `HTTP ${code}` };
+    }
+
+    let info = null;
+    try {
+      const json = JSON.parse(body);
+      if (json && json.user_info && json.user_info.auth === 1) {
+        info = {
+          username: username,
+          status: json.user_info.status || 'Active',
+          expiry: json.user_info.exp_date || '',
+          liveCount: 0, movieCount: 0, seriesCount: 0
+        };
+        // حساب عدد القنوات (تقريبي)
+        if (Array.isArray(json.category_ids)) {
+          json.category_ids.forEach(cat => {
+            if (cat.category_id) {
+              // تقدير بسيط - لا نعمل fetching لكل category
+            }
+          });
+        }
+        return { valid: true, online: true, info: info, message: 'Xtream OK' };
+      } else {
+        return { valid: false, online: true, info: null, message: 'Auth failed (auth=0)' };
+      }
+    } catch (e) {
+      return { valid: false, online: true, info: null, message: 'Invalid JSON: ' + e.message };
+    }
+  } catch (err) {
+    return { valid: false, online: false, info: null, message: String(err.message || err) };
+  }
+}
+
+function inspectM3uSource_(url) {
+  try {
+    const response = UrlFetchApp.fetch(url, { muteHttpExceptions: true, followRedirects: true });
+    const code = response.getResponseCode();
+    const body = response.getContentText();
+
+    if (code < 200 || code > 299) {
+      return {
+        online: false,
+        valid: false,
+        message: `HTTP ${code}`,
+        hasLive: false, hasMovies: false, hasSeries: false, channelCount: 0
+      };
+    }
+    if (!body || body.length < 10) {
+      return {
+        online: true,
+        valid: false,
+        message: 'Empty response',
+        hasLive: false, hasMovies: false, hasSeries: false, channelCount: 0
+      };
+    }
+    if (!body.toUpperCase().includes('#EXTINF')) {
+      return {
+        online: true,
+        valid: false,
+        message: 'Not a valid M3U playlist (no #EXTINF)',
+        hasLive: false, hasMovies: false, hasSeries: false, channelCount: 0
+      };
+    }
+
+    let hasLive = false, hasMovies = false, hasSeries = false;
+    let count = 0;
+    let movieKeywords = /(movie|film|أفلام|افلام|vod|cinema)/i;
+    let seriesKeywords = /(series|مسلسل|مسلسلات|tv show)/i;
+
+    body.split('\n').forEach(line => {
+      if (line.trim().toUpperCase().startsWith('#EXTINF')) {
+        count++;
+        const lower = line.toLowerCase();
+        if (movieKeywords.test(lower)) hasMovies = true;
+        else if (seriesKeywords.test(lower)) hasSeries = true;
+        else hasLive = true;
+      }
+    });
+
+    return {
+      online: true,
+      valid: true,
+      message: `M3U OK • ${count} entries`,
+      hasLive: hasLive,
+      hasMovies: hasMovies,
+      hasSeries: hasSeries,
+      channelCount: count
+    };
+  } catch (err) {
+    return {
+      online: false,
+      valid: false,
+      message: String(err.message || err),
+      hasLive: false, hasMovies: false, hasSeries: false, channelCount: 0
+    };
+  }
+}
+
+// ─────────────────────────────────────────────
+// 📱 التحقق من كود المستخدم
+// ─────────────────────────────────────────────
+
+function handleValidateCode_(p) {
+  const code     = String(p.code      || '').trim();
+  const deviceId = String(p.device_id || p.device || '').trim();
+
+  if (!code || !deviceId) {
+    return jsonOut({ success: false, message: 'Missing code or device' });
+  }
+
+  const ctx   = getCodesContext_();
+  const found = findRowByCode_(ctx.values, ctx.col, code);
+
+  if (found < 0) return jsonOut({ success: false, message: 'Invalid code' });
+
+  const row    = ctx.values[found];
+  const status = getCell_(row, ctx.col, 'status', 'active');
+
+  if (!isActive_(status)) {
+    return jsonOut({ success: false, message: 'Code disabled or inactive', status: String(status) });
+  }
+
+  const expiresAt = normalizeDate_(getCell_(row, ctx.col, 'expires_at', ''));
+  if (expiresAt && isExpired_(expiresAt)) {
+    return jsonOut({ success: false, message: 'Subscription expired', expires_at: expiresAt });
+  }
+
+  // تسجيل الجهاز
+  const maxDevices = positiveInt_(getCell_(row, ctx.col, 'max_devices', '1'), 1);
+  let devices = splitDevices_(getCell_(row, ctx.col, 'devices', ''));
+  if (devices.indexOf(deviceId) < 0) {
+    if (devices.length >= maxDevices) {
+      return jsonOut({
+        success: false,
+        message: 'Device limit reached',
+        max_devices: maxDevices,
+        devices_count: devices.length
+      });
+    }
+    devices.push(deviceId);
+    setCellByKey_(ctx.sh, found, ctx.col, 'devices', devices.join(','));
+  }
+
+  // ✅ الإصلاح الجذري: جلب المصدر الصحيح
+  const source = resolveSource_(row, ctx.col);
+
+  if (!source.playlist_url && source.source_type !== 'mac') {
+    return jsonOut({ success: false, message: 'Source not configured. Contact admin.' });
+  }
+  if (source.source_type === 'mac' && (!source.portal_url || !source.mac_address)) {
+    return jsonOut({ success: false, message: 'MAC source requires portal_url and mac_address' });
+  }
+
+  const serverRevision = positiveInt_(getConfigValue_('server_revision'), 1);
+  const viewConfig = getViewConfigPayload_();
+  const masterUrl = cleanUrl_(getConfigValue_('default_playlist_url'));
+  const categoryOverrides = getCategoryOverridesForUrl_(masterUrl);
+
+  return jsonOut({
+    success:       true,
+    message:       'OK',
+    code:          code,
+    status:        'active',
+    name:          getCell_(row, ctx.col, 'name', 'User ' + code),
+    expires_at:    expiresAt,
+    max_devices:   maxDevices,
+    devices_count: devices.length,
+
+    server_revision: serverRevision,
+    serverRevision:  serverRevision,
+    revision:        serverRevision,
+
+    hidden_categories: viewConfig.hidden_categories,
+    hiddenCategories:  viewConfig.hidden_categories,
+    bein_keywords:     viewConfig.bein_keywords,
+    beinKeywords:      viewConfig.bein_keywords,
+    bein_max_keywords: viewConfig.bein_max_keywords,
+    beinMaxKeywords:   viewConfig.bein_max_keywords,
+    alwan_keywords:    viewConfig.alwan_keywords,
+    alwanKeywords:     viewConfig.alwan_keywords,
+    prepared_live_url:   viewConfig.prepared_live_url,
+    preparedLiveUrl:     viewConfig.prepared_live_url,
+    prepared_bein_url:   viewConfig.prepared_bein_url,
+    preparedBeinUrl:     viewConfig.prepared_bein_url,
+    prepared_movies_url: viewConfig.prepared_movies_url,
+    preparedMoviesUrl:   viewConfig.prepared_movies_url,
+    prepared_series_url: viewConfig.prepared_series_url,
+    preparedSeriesUrl:   viewConfig.prepared_series_url,
+    // 🛡️ v5.2: Category Organizer overrides
+    custom_names:   categoryOverrides.customNames,
+    customNames:    categoryOverrides.customNames,
+    custom_order:   categoryOverrides.customOrder,
+    customOrder:    categoryOverrides.customOrder,
+
+    playlist_url: source.playlist_url,
+    source_type:  source.source_type,
+    sourceType:   source.source_type,
+    portal_url:   source.portal_url,
+    portalUrl:    source.portal_url,
+    mac_address:  source.mac_address,
+    macAddress:   source.mac_address,
+    server:       source.server,
+    username:     source.username,
+    password:     source.password
+  });
+}
+
+/**
+ * ✅ resolveSource_ — المنطق الجديد الصحيح
+ */
+function resolveSource_(row, col) {
+  const userSourceType    = normalizeSourceType_(getCell_(row, col, 'source_type', ''));
+  const userPortal        = cleanPortalUrl_(getCell_(row, col, 'portal_url', ''));
+  const userMac           = normalizeMac_(getCell_(row, col, 'mac_address', ''));
+  const userServer        = cleanPortalUrl_(getCell_(row, col, 'server', ''));
+  const userUsername      = getCell_(row, col, 'username', '');
+  const userPassword      = getCell_(row, col, 'password', '');
+  const userCustomUrl     = cleanUrl_(getCell_(row, col, 'custom_playlist_url', ''));
+
+  if ((userSourceType === 'mac' || (userPortal && userMac)) && userPortal && userMac) {
+    return { source_type: 'mac', playlist_url: '', portal_url: userPortal, mac_address: userMac, server: '', username: '', password: '' };
+  }
+
+  if ((userSourceType === 'xtream' || (userServer && userUsername && userPassword)) && userServer && userUsername && userPassword) {
+    return { source_type: 'xtream', playlist_url: buildM3uUrl_(userServer, userUsername, userPassword), portal_url: '', mac_address: '', server: userServer, username: userUsername, password: userPassword };
+  }
+
+  if (userCustomUrl) {
+    return { source_type: 'm3u', playlist_url: userCustomUrl, portal_url: '', mac_address: '', server: '', username: '', password: '' };
+  }
+
+  const defaultType   = normalizeSourceType_(getConfigValue_('default_source_type')) || 'm3u';
+  const defaultUrl    = cleanUrl_(getConfigValue_('default_playlist_url'));
+  const defaultPortal = cleanPortalUrl_(getConfigValue_('default_portal_url'));
+  const defaultMac    = normalizeMac_(getConfigValue_('default_mac_address'));
+
+  if (defaultType === 'mac' && defaultPortal && defaultMac) {
+    return { source_type: 'mac', playlist_url: '', portal_url: defaultPortal, mac_address: defaultMac, server: '', username: '', password: '' };
+  }
+
+  return { source_type: defaultType || 'm3u', playlist_url: defaultUrl, portal_url: '', mac_address: '', server: '', username: '', password: '' };
+}
+
+// ─────────────────────────────────────────────
+// 🌐 App Update
+// ─────────────────────────────────────────────
+
+function handleGetAppUpdate_(p) {
+  const latestCode  = positiveInt_(getConfigValue_('app_update_version_code'), 0);
+  const currentCode = positiveInt_(p.version_code || p.current_version_code || '0', 0);
+  const latestName  = getConfigValue_('app_update_version_name') || '';
+  const apkUrl      = cleanUrl_(getConfigValue_('app_update_apk_url'));
+  const forceUpdate = isTruthy_(getConfigValue_('app_update_force'));
+  const notes = {
+    ar: getConfigValue_('app_update_notes_ar') || 'تحديث جديد متوفر لتطبيق LATCHI IPTV.',
+    fr: getConfigValue_('app_update_notes_fr') || 'Nouvelle mise à jour disponible pour LATCHI IPTV.',
+    en: getConfigValue_('app_update_notes_en') || 'A new update is available for LATCHI IPTV.'
+  };
+  return jsonOut({
+    success:          true,
+    update_available: latestCode > currentCode && !!apkUrl,
+    versionCode:      latestCode,
+    versionName:      latestName,
+    apkUrl:           apkUrl,
+    url:              apkUrl,
+    forceUpdate:      forceUpdate,
+    notes:            notes,
+    releaseNotes:     notes
+  });
+}
+
+function handleGetLiveMasterState_(p) {
+  const serverRev    = positiveInt_(getConfigValue_('server_revision'), 1);
+  const latestCode   = positiveInt_(getConfigValue_('app_update_version_code'), 0);
+  const appForce     = isTruthy_(getConfigValue_('app_update_force'));
+  const appApk       = cleanUrl_(getConfigValue_('app_update_apk_url'));
+  const appName      = getConfigValue_('app_update_version_name') || '';
+  const appNotes     = getConfigValue_('app_update_notes_ar') || 'تحديث جديد متوفر لتطبيق LATCHI IPTV.';
+  const viewConfig   = getViewConfigPayload_();
+  const masterUrl    = cleanUrl_(getConfigValue_('default_playlist_url'));
+  return jsonOut({
+    success:                 true,
+    server_revision:         serverRev,
+    master_url:              masterUrl,
+    masterUrl:               masterUrl,
+    default_playlist_url:    masterUrl,
+    defaultPlaylistUrl:      masterUrl,
+    hidden_categories:       viewConfig.hidden_categories,
+    hiddenCategories:        viewConfig.hidden_categories,
+    bein_keywords:           viewConfig.bein_keywords,
+    beinKeywords:            viewConfig.bein_keywords,
+    bein_max_keywords:       viewConfig.bein_max_keywords,
+    beinMaxKeywords:         viewConfig.bein_max_keywords,
+    alwan_keywords:          viewConfig.alwan_keywords,
+    alwanKeywords:           viewConfig.alwan_keywords,
+    prepared_live_url:       viewConfig.prepared_live_url,
+    preparedLiveUrl:         viewConfig.prepared_live_url,
+    prepared_bein_url:       viewConfig.prepared_bein_url,
+    preparedBeinUrl:         viewConfig.prepared_bein_url,
+    prepared_movies_url:     viewConfig.prepared_movies_url,
+    preparedMoviesUrl:       viewConfig.prepared_movies_url,
+    prepared_series_url:     viewConfig.prepared_series_url,
+    preparedSeriesUrl:       viewConfig.prepared_series_url,
+    // 🛡️ Per-type revisions (v5.1)
+    catalog_revision_live:   positiveInt_(getConfigValue_(catalogRevisionKey_('live')), 0),
+    catalog_revision_bein:   positiveInt_(getConfigValue_(catalogRevisionKey_('bein')), 0),
+    catalog_revision_movies: positiveInt_(getConfigValue_(catalogRevisionKey_('movies')), 0),
+    catalog_revision_series: positiveInt_(getConfigValue_(catalogRevisionKey_('series')), 0),
+    app_update_version_code: latestCode,
+    app_update_version_name: appName,
+    app_update_apk_url:      appApk,
+    app_update_force:        appForce,
+    app_update_notes_ar:     appNotes
+  });
+}
+
+function handleGetViewConfig_(p) {
+  const serverRev = positiveInt_(getConfigValue_('server_revision'), 1);
+  const viewConfig = getViewConfigPayload_();
+  const masterUrl = cleanUrl_(getConfigValue_('default_playlist_url'));
+  const categoryOverrides = getCategoryOverridesForUrl_(masterUrl);
+  return jsonOut(Object.assign({
+    success: true,
+    server_revision: serverRev,
+    serverRevision: serverRev,
+    master_url: masterUrl,
+    masterUrl: masterUrl,
+    default_playlist_url: masterUrl,
+    defaultPlaylistUrl: masterUrl,
+    // 🛡️ v5.2: Category Organizer overrides
+    custom_names: categoryOverrides.customNames,
+    customNames: categoryOverrides.customNames,
+    custom_order: categoryOverrides.customOrder,
+    customOrder: categoryOverrides.customOrder,
+    has_category_overrides: Object.keys(categoryOverrides.customNames).length > 0 || categoryOverrides.customOrder.length > 0
+  }, viewConfig, {
+    hiddenCategories: viewConfig.hidden_categories,
+    beinKeywords: viewConfig.bein_keywords,
+    beinMaxKeywords: viewConfig.bein_max_keywords,
+    alwanKeywords: viewConfig.alwan_keywords,
+    preparedLiveUrl: viewConfig.prepared_live_url,
+    preparedBeinUrl: viewConfig.prepared_bein_url,
+    preparedMoviesUrl: viewConfig.prepared_movies_url,
+    preparedSeriesUrl: viewConfig.prepared_series_url
+  }));
+}
+
+function getViewConfigPayload_() {
+  return {
+    hidden_categories: String(getConfigValue_('hidden_categories') || '').trim(),
+    bein_keywords: String(getConfigValue_('bein_keywords') || 'bein,be in,beinsport,bein sport,bein sports,بي ان,بي إن').trim(),
+    bein_max_keywords: String(getConfigValue_('bein_max_keywords') || 'max,bein max,max 1,max1,max 2,max2').trim(),
+    alwan_keywords: String(getConfigValue_('alwan_keywords') || 'alwan,alwan sport,alwan sports,الوان').trim(),
+    prepared_live_url: String(getConfigValue_('prepared_live_url') || '').trim(),
+    prepared_bein_url: String(getConfigValue_('prepared_bein_url') || '').trim(),
+    prepared_movies_url: String(getConfigValue_('prepared_movies_url') || '').trim(),
+    prepared_series_url: String(getConfigValue_('prepared_series_url') || '').trim()
+  };
+}
+
+
+function handleGetCatalogMeta_(p) {
+  const type = String(p.type || '').trim().toLowerCase();
+  const clientRevision = positiveInt_(p.revision || '0', 0);
+  const clientHash = String(p.hash || '').trim();
+
+  if (type) {
+    const meta = getCatalogMetaForType_(type);
+    if (!meta.success) return jsonOut(meta);
+    const notModified = (clientRevision > 0 && clientRevision === meta.revision) || (clientHash && clientHash === meta.hash);
+    return jsonOut(Object.assign({ success: true, not_modified: notModified }, meta));
+  }
+
+  return jsonOut({
+    success: true,
+    server_revision: positiveInt_(getConfigValue_('server_revision'), 1),
+    catalogs: [getCatalogMetaForType_('live'), getCatalogMetaForType_('bein'), getCatalogMetaForType_('movies'), getCatalogMetaForType_('series')]
+  });
+}
+
+function handleGetCategories_(p) {
+  const type = String(p.type || '').trim().toLowerCase();
+  if (!type) return jsonOut({ success: false, message: 'type required' });
+  const items = loadPreparedCatalogItems_(type);
+  const counts = {};
+  items.forEach(it => {
+    const cat = String(it.category || 'Other').trim() || 'Other';
+    counts[cat] = (counts[cat] || 0) + 1;
+  });
+  const originalNames = Object.keys(counts).sort((a,b) => a.localeCompare(b));
+  // 🛡️ v5.2: تطبيق Category Organizer overrides
+  const masterUrl = cleanUrl_(getConfigValue_('default_playlist_url'));
+  const overrides = getCategoryOverridesForUrl_(masterUrl);
+  const applied = applyCategoryOverrides_(originalNames, overrides.customNames, overrides.customOrder);
+
+  const categories = applied.order.map((name, index) => {
+    // البحث عن الاسم الأصلي للـ id (للـ lazy loading)
+    const originalName = Object.entries(overrides.customNames || {}).find(([k, v]) => v === name)?.[0] || name;
+    return {
+      id: originalName,  // الاسم الأصلي للمطابقة الداخلية
+      name: name,         // الاسم المخصص/الأصلي للعرض
+      original_name: originalName,
+      count: counts[originalName] || counts[name] || 0,
+      sort_order: index + 1
+    };
+  });
+  return jsonOut({
+    success: true,
+    type: type,
+    revision: positiveInt_(getConfigValue_(catalogRevisionKey_(type)), 0),
+    categories: categories,
+    has_overrides: Object.keys(overrides.customNames || {}).length > 0
+  });
+}
+
+function handleGetCatalogItems_(p) {
+  const type = String(p.type || '').trim().toLowerCase();
+  if (!type) return jsonOut({ success: false, message: 'type required' });
+  let category = String(p.category || p.category_id || '').trim();
+  const query = String(p.query || p.search || '').trim().toLowerCase();
+  const page = Math.max(1, positiveInt_(p.page || '1', 1));
+  const pageSize = Math.min(500, Math.max(1, positiveInt_(p.page_size || p.limit || '200', 200)));
+
+  // 🛡️ v5.2: إذا الفئة المُرسلة هي اسم مخصص، حوّلها للاسم الأصلي
+  if (category) {
+    const masterUrl = cleanUrl_(getConfigValue_('default_playlist_url'));
+    const overrides = getCategoryOverridesForUrl_(masterUrl);
+    const inverted = Object.entries(overrides.customNames || {});
+    const originalName = inverted.find(([k, v]) => v === category || k === category)?.[0];
+    if (originalName) category = originalName;
+  }
+
+  let items = loadPreparedCatalogItems_(type);
+  if (category) {
+    items = items.filter(it => String(it.category || '').trim().toLowerCase() === category.toLowerCase());
+  }
+  if (query) {
+    items = items.filter(it => {
+      const hay = (String(it.name || '') + ' ' + String(it.category || '')).toLowerCase();
+      return hay.indexOf(query) !== -1;
+    });
+  }
+
+  const total = items.length;
+  const start = (page - 1) * pageSize;
+  const end = start + pageSize;
+  const slice = items.slice(start, end);
+
+  return jsonOut({
+    success: true,
+    type: type,
+    category: category,
+    page: page,
+    page_size: pageSize,
+    total: total,
+    has_more: end < total,
+    revision: positiveInt_(getConfigValue_(catalogRevisionKey_(type)), 0),
+    items: slice
+  });
+}
+
+function getCatalogMetaForType_(type) {
+  const url = cleanUrl_(getConfigValue_(catalogUrlKey_(type)));
+  if (!url) return { success: false, type: type, message: 'catalog_url_missing' };
+  return {
+    success: true,
+    type: type,
+    url: url,
+    revision: positiveInt_(getConfigValue_(catalogRevisionKey_(type)), 0),
+    hash: String(getConfigValue_(catalogHashKey_(type)) || '').trim(),
+    count: positiveInt_(getConfigValue_(catalogCountKey_(type)), 0),
+    updated_at: String(getConfigValue_(catalogUpdatedAtKey_(type)) || '').trim()
+  };
+}
+
+function loadPreparedCatalogItems_(type) {
+  const url = cleanUrl_(getConfigValue_(catalogUrlKey_(type)));
+  if (!url) return [];
+  const cache = CacheService.getScriptCache();
+  const revision = String(getConfigValue_(catalogRevisionKey_(type)) || '0');
+  const cacheKey = 'catalog_' + type + '_' + revision;
+  const cached = cache.get(cacheKey);
+  if (cached) {
+    try { return JSON.parse(cached); } catch (_) {}
+  }
+
+  const response = UrlFetchApp.fetch(url, { muteHttpExceptions: true, followRedirects: true });
+  const code = response.getResponseCode();
+  if (code < 200 || code > 299) return [];
+  const body = response.getContentText();
+  let parsed = [];
+  try {
+    const root = JSON.parse(body);
+    let arr = [];
+    if (Array.isArray(root)) arr = root;
+    else if (root && Array.isArray(root.channels)) arr = root.channels;
+    else if (root && Array.isArray(root.items)) arr = root.items;
+    else if (root && Array.isArray(root.data)) arr = root.data;
+    parsed = arr.map(normalizeCatalogItem_).filter(Boolean);
+  } catch (_) {
+    parsed = [];
+  }
+  try { cache.put(cacheKey, JSON.stringify(parsed), 300); } catch (_) {}
+  return parsed;
+}
+
+function normalizeCatalogItem_(o) {
+  if (!o) return null;
+  const name = String(o.name || '').trim();
+  const streamUrl = String(o.streamUrl || o.url || o.stream_url || '').trim();
+  if (!name || !streamUrl) return null;
+  return {
+    name: name,
+    logoUrl: String(o.logoUrl || o.logo || o.stream_icon || '').trim(),
+    streamUrl: streamUrl,
+    category: String(o.category || o.group || 'Other').trim() || 'Other',
+    contentType: String(o.contentType || o.type || 'live').trim() || 'live'
+  };
+}
+
+function catalogUrlKey_(type) {
+  const map = { live: 'prepared_live_url', bein: 'prepared_bein_url', movies: 'prepared_movies_url', series: 'prepared_series_url' };
+  return map[type] || '';
+}
+function catalogRevisionKey_(type) { return 'catalog_revision_' + type; }
+function catalogHashKey_(type) { return 'catalog_hash_' + type; }
+function catalogCountKey_(type) { return 'catalog_count_' + type; }
+function catalogUpdatedAtKey_(type) { return 'catalog_updated_at_' + type; }
+
+// ─────────────────────────────────────────────
+// 🎛️ Admin Actions
+// ─────────────────────────────────────────────
+
+function handleAdminAction_(action, p, e) {
+  const secret = String(p.secret || '').trim();
+  if (secret !== ADMIN_SECRET) {
+    return jsonOut({ success: false, message: 'Unauthorized admin secret' });
+  }
+
+  const ctx = getCodesContext_();
+
+  switch (action) {
+    case 'add_code':                  return adminAddCode_(ctx, p);
+    case 'update_master_url':
+    case 'set_default_playlist':      return adminUpdateMasterUrl_(ctx, p);
+    case 'update_master_mac':
+    case 'set_default_mac':           return adminUpdateMasterMac_(ctx, p);
+    case 'get_all_users':             return adminGetAllUsers_(ctx);
+    case 'update_status':             return adminUpdateStatus_(ctx, p);
+    case 'edit_user':                 return adminEditUser_(ctx, p);
+    case 'renew_user':                return adminRenewUser_(ctx, p);
+    case 'delete_user':               return adminDeleteUser_(ctx, p);
+    case 'reset_devices':             return adminResetDevices_(ctx, p);
+    case 'increment_server_revision':
+    case 'force_server_update':       return adminIncrementRevision_();
+    case 'save_hidden_categories':
+    case 'save_view_config':          return adminSaveViewConfig_(p);
+    case 'delete_all_users':          return adminDeleteAllUsers_(ctx);
+    case 'upload_prepared_catalog':   return adminUploadPreparedCatalog_(p, e);
+    case 'upload_master_m3u':
+    case 'upload_master_playlist':    return adminUploadMasterM3u_(ctx, p);
+    case 'set_app_update':
+    case 'update_app_update':         return adminSetAppUpdate_(p);
+    case 'save_category_overrides':
+    case 'save_category_organizer':   return adminSaveCategoryOverrides_(p);
+    case 'get_category_overrides':
+    case 'load_category_organizer':   return adminGetCategoryOverrides_(p);
+    default:
+      return jsonOut({ success: false, message: 'Unknown action: ' + action });
+  }
+}
+
+// ─────────────────────────────────────────────
+// ✅ adminUpdateMasterUrl_
+// ─────────────────────────────────────────────
+
+function adminUpdateMasterUrl_(ctx, p) {
+  const masterUrl = cleanUrl_(p.master_url || p.playlist_url || p.url || '');
+  if (!masterUrl) return jsonOut({ success: false, message: 'master_url required' });
+
+  // 🛡️ v5.1: التحقق من الرابط قبل الحفظ
+  const inspection = inspectM3uSource_(masterUrl);
+  if (!inspection.valid && inspection.message.indexOf('Empty') < 0 && inspection.message.indexOf('Not a valid') < 0) {
+    // فقط نحذر ولا نمنع — قد يكون admin يعرف ما يفعل
+  }
+
+  setConfigValue_('default_playlist_url', masterUrl);
+  setConfigValue_('default_source_type', 'm3u');
+
+  // 🛡️ v5.2: تحديث active category overrides إذا كان السيرفر الجديد له overrides محفوظة
+  const urlHash = simpleHash_(masterUrl).toString().replace('-', 'n');
+  const hasOverrides = !!(getConfigValue_('custom_names_' + urlHash) || getConfigValue_('custom_order_' + urlHash));
+  if (hasOverrides) {
+    setConfigValue_('active_source_hash', urlHash);
+    setConfigValue_('active_category_names', getConfigValue_('custom_names_' + urlHash) || '{}');
+    setConfigValue_('active_category_order', getConfigValue_('custom_order_' + urlHash) || '[]');
+  } else {
+    // مسح overrides النشطة إذا السيرفر الجديد لا يملك overrides
+    setConfigValue_('active_source_hash', '');
+    setConfigValue_('active_category_names', '{}');
+    setConfigValue_('active_category_order', '[]');
+  }
+
+  let cleared = 0;
+  if (ctx.col['custom_playlist_url'] != null) {
+    for (let i = 1; i < ctx.values.length; i++) {
+      const row        = ctx.values[i];
+      const code       = getCell_(row, ctx.col, 'code', '');
+      if (!code) continue;
+
+      const userPortal = cleanPortalUrl_(getCell_(row, ctx.col, 'portal_url', ''));
+      const userMac    = normalizeMac_(getCell_(row, ctx.col, 'mac_address', ''));
+      const userServer = cleanPortalUrl_(getCell_(row, ctx.col, 'server', ''));
+      const userUser   = getCell_(row, ctx.col, 'username', '');
+      const userPass   = getCell_(row, ctx.col, 'password', '');
+
+      const hasSpecial = (userPortal && userMac) || (userServer && userUser && userPass);
+      if (hasSpecial) continue;
+
+      setCellByKey_(ctx.sh, i, ctx.col, 'custom_playlist_url', '');
+      cleared++;
+    }
+  }
+
+  const newRev = incrementServerRevision_();
+  return jsonOut({
+    success:       true,
+    message:       `✅ تم تحديث الرابط الموحد في Config — ${cleared} مستخدم سيأخذه تلقائياً` +
+                  (inspection.valid ? ` (السيرفر صالح • ${inspection.channelCount} قناة)` :
+                   inspection.online ? ` (⚠️ الرابط يستجيب لكن قد يكون غير صالح: ${inspection.message})` :
+                   ` (⚠️ تحذير: تعذر فحص الرابط)`) +
+                  (hasOverrides ? ` • تم تطبيق overrides الفئات تلقائياً` : ''),
+    playlist_url:  masterUrl,
+    cleared_users: cleared,
+    has_category_overrides: hasOverrides,
+    server_revision: newRev,
+    newRevision:   newRev,
+    inspection: {
+      valid: inspection.valid,
+      online: inspection.online,
+      message: inspection.message,
+      channelCount: inspection.channelCount,
+      hasLive: inspection.hasLive,
+      hasMovies: inspection.hasMovies,
+      hasSeries: inspection.hasSeries
+    }
+  });
+}
+
+function adminUpdateMasterMac_(ctx, p) {
+  const portalUrl  = cleanPortalUrl_(p.portal_url || p.portal || p.stalker_portal || p.url || '');
+  const macAddress = normalizeMac_(p.mac_address || p.mac || p.mac_code || '');
+
+  if (!portalUrl)  return jsonOut({ success: false, message: 'portal_url required' });
+  if (!macAddress) return jsonOut({ success: false, message: 'mac_address required' });
+
+  setConfigValue_('default_source_type',  'mac');
+  setConfigValue_('default_portal_url',   portalUrl);
+  setConfigValue_('default_mac_address',  macAddress);
+  setConfigValue_('default_playlist_url', '');
+
+  const newRev = incrementServerRevision_();
+  return jsonOut({
+    success:        true,
+    message:        '✅ تم تحديث MAC الموحد في Config — كل المستخدمين سيأخذونه تلقائياً',
+    portal_url:     portalUrl,
+    mac_address:    macAddress,
+    server_revision: newRev
+  });
+}
+
+// ─────────────────────────────────────────────
+// ➕ adminAddCode_
+// ─────────────────────────────────────────────
+
+function adminAddCode_(ctx, p) {
+  const code       = String(p.code || '').trim();
+  const name       = String(p.name || ('User ' + code)).trim();
+  const expiresAt  = normalizeDate_(p.expires_at || '');
+  const maxDevices = positiveInt_(p.max_devices || '1', 1);
+
+  const sourceType    = normalizeSourceType_(p.source_type || p.sourceType || '');
+  const portalUrl     = cleanPortalUrl_(p.portal_url || p.portal || p.stalker_portal || '');
+  const macAddress    = normalizeMac_(p.mac_address || p.mac || p.mac_code || '');
+  const server        = cleanPortalUrl_(p.server || p.server_url || '');
+  const username      = String(p.username || p.user || '').trim();
+  const password      = String(p.password || p.pass || '').trim();
+
+  let customUrl = cleanUrl_(p.playlist_url || p.m3u_url || p.url || '');
+  let finalPortal = portalUrl;
+  let finalMac    = macAddress;
+
+  if (customUrl.startsWith('mac://')) {
+    try {
+      const params = parseMacScheme_(customUrl);
+      finalPortal  = params.portal || '';
+      finalMac     = params.mac    || '';
+      customUrl    = '';
+    } catch(_) {}
+  }
+
+  if (!code) return jsonOut({ success: false, message: 'code required' });
+  if (findRowByCode_(ctx.values, ctx.col, code) >= 0) {
+    return jsonOut({ success: false, message: 'Code already exists' });
+  }
+
+  const finalSourceType = decideSourceType_(sourceType, customUrl, finalPortal, finalMac, server, username, password);
+
+  if (finalSourceType === 'mac' && (!finalPortal || !finalMac)) {
+    return jsonOut({ success: false, message: 'MAC requires portal_url and mac_address' });
+  }
+
+  const hasSpecialSource = (finalPortal && finalMac) || (server && username && password) || (customUrl && finalSourceType !== 'm3u');
+  const storedCustomUrl  = hasSpecialSource ? '' : (customUrl || '');
+
+  const lastCol = ctx.sh.getLastColumn();
+  const row = new Array(Math.max(lastCol, DEFAULT_HEADERS.length)).fill('');
+
+  const setField = (key, val) => {
+    if (ctx.col[key] != null) row[ctx.col[key]] = val;
+  };
+
+  setField('code',               code);
+  setField('status',             'active');
+  setField('max_devices',        maxDevices);
+  setField('devices',            '');
+  setField('expires_at',         expiresAt);
+  setField('name',               name);
+  setField('source_type',        finalPortal && finalMac ? 'mac' : (server && username && password ? 'xtream' : ''));
+  setField('portal_url',         finalPortal);
+  setField('mac_address',        finalMac);
+  setField('server',             server);
+  setField('username',           username);
+  setField('password',           password);
+  setField('custom_playlist_url', storedCustomUrl);
+
+  ctx.sh.appendRow(row);
+
+  const newRev = incrementServerRevision_();
+  return jsonOut({
+    success:         true,
+    message:         'Code added',
+    code:            code,
+    name:            name,
+    source_type:     finalSourceType,
+    expires_at:      expiresAt,
+    server_revision: newRev
+  });
+}
+
+// ─────────────────────────────────────────────
+// باقي Admin Actions
+// ─────────────────────────────────────────────
+
+function adminGetAllUsers_(ctx) {
+  const users = [];
+  for (let i = 1; i < ctx.values.length; i++) {
+    const row  = ctx.values[i];
+    const code = getCell_(row, ctx.col, 'code', '');
+    if (!code) continue;
+
+    const source    = resolveSource_(row, ctx.col);
+    const rawStatus = getCell_(row, ctx.col, 'status', 'active');
+
+    users.push({
+      rowIdx:            i + 1,
+      code:              code,
+      name:              getCell_(row, ctx.col, 'name', 'User ' + code),
+      sourceType:        source.source_type,
+      source_type:       source.source_type,
+      playlistUrl:       source.playlist_url,
+      playlist_url:      source.playlist_url,
+      portalUrl:         source.portal_url,
+      portal_url:        source.portal_url,
+      macAddress:        source.mac_address,
+      mac_address:       source.mac_address,
+      server:            source.server,
+      username:          source.username,
+      expiresAt:         normalizeDate_(getCell_(row, ctx.col, 'expires_at', '')),
+      maxDevices:        positiveInt_(getCell_(row, ctx.col, 'max_devices', '1'), 1),
+      status:            isActive_(rawStatus) ? 'Active' : 'Inactive',
+      registeredDevices: getCell_(row, ctx.col, 'devices', 'None') || 'None'
+    });
+  }
+  return jsonOut({ success: true, users: users, count: users.length });
+}
+
+function adminUpdateStatus_(ctx, p) {
+  const code = String(p.code || '').trim();
+  if (!code) return jsonOut({ success: false, message: 'code required' });
+
+  const rowIdx = findRowByCode_(ctx.values, ctx.col, code);
+  if (rowIdx < 0) return jsonOut({ success: false, message: 'Code not found' });
+
+  const newStatus = isActive_(p.new_status || p.status || '') ? 'active' : 'inactive';
+  setCellByKey_(ctx.sh, rowIdx, ctx.col, 'status', newStatus);
+
+  const newRev = incrementServerRevision_();
+  return jsonOut({ success: true, message: 'Status updated', code, status: newStatus, server_revision: newRev });
+}
+
+function adminEditUser_(ctx, p) {
+  const code = String(p.code || '').trim();
+  if (!code) return jsonOut({ success: false, message: 'code required' });
+
+  const rowIdx = findRowByCode_(ctx.values, ctx.col, code);
+  if (rowIdx < 0) return jsonOut({ success: false, message: 'Code not found' });
+
+  if (p.name        != null) setCellByKey_(ctx.sh, rowIdx, ctx.col, 'name',        String(p.name).trim());
+  if (p.max_devices != null) setCellByKey_(ctx.sh, rowIdx, ctx.col, 'max_devices', positiveInt_(p.max_devices, 1));
+  if (p.expires_at  != null) setCellByKey_(ctx.sh, rowIdx, ctx.col, 'expires_at',  normalizeDate_(p.expires_at));
+  if (p.portal_url  != null || p.portal != null) setCellByKey_(ctx.sh, rowIdx, ctx.col, 'portal_url',  cleanPortalUrl_(p.portal_url || p.portal || ''));
+  if (p.mac_address != null || p.mac    != null) setCellByKey_(ctx.sh, rowIdx, ctx.col, 'mac_address', normalizeMac_(p.mac_address || p.mac || ''));
+  if (p.server      != null) setCellByKey_(ctx.sh, rowIdx, ctx.col, 'server',      cleanPortalUrl_(p.server || ''));
+  if (p.username    != null) setCellByKey_(ctx.sh, rowIdx, ctx.col, 'username',    String(p.username || '').trim());
+  if (p.password    != null) setCellByKey_(ctx.sh, rowIdx, ctx.col, 'password',    String(p.password || '').trim());
+
+  const rawUrl = p.playlist_url || p.m3u_url || p.url;
+  if (rawUrl != null && ctx.col['custom_playlist_url'] != null) {
+    setCellByKey_(ctx.sh, rowIdx, ctx.col, 'custom_playlist_url', cleanUrl_(rawUrl));
+  }
+
+  if (p.source_type != null || p.sourceType != null) {
+    setCellByKey_(ctx.sh, rowIdx, ctx.col, 'source_type', normalizeSourceType_(p.source_type || p.sourceType));
+  }
+
+  const newRev = incrementServerRevision_();
+  return jsonOut({ success: true, message: 'User updated', code, server_revision: newRev });
+}
+
+function adminRenewUser_(ctx, p) {
+  const code = String(p.code || '').trim();
+  const days = positiveInt_(p.duration_days || '30', 30);
+  if (!code) return jsonOut({ success: false, message: 'code required' });
+
+  const rowIdx = findRowByCode_(ctx.values, ctx.col, code);
+  if (rowIdx < 0) return jsonOut({ success: false, message: 'Code not found' });
+
+  const currentExpiry = normalizeDate_(getCell_(ctx.values[rowIdx], ctx.col, 'expires_at', ''));
+  const base = futureBaseDate_(currentExpiry);
+  base.setDate(base.getDate() + days);
+  const newExpiry = formatDate_(base);
+
+  setCellByKey_(ctx.sh, rowIdx, ctx.col, 'expires_at', newExpiry);
+  setCellByKey_(ctx.sh, rowIdx, ctx.col, 'status', 'active');
+
+  const newRev = incrementServerRevision_();
+  return jsonOut({ success: true, message: 'User renewed', code, newExpiry, expires_at: newExpiry, server_revision: newRev });
+}
+
+function adminDeleteUser_(ctx, p) {
+  const code = String(p.code || '').trim();
+  if (!code) return jsonOut({ success: false, message: 'code required' });
+
+  const rowIdx = findRowByCode_(ctx.values, ctx.col, code);
+  if (rowIdx < 0) return jsonOut({ success: false, message: 'Code not found' });
+
+  ctx.sh.deleteRow(rowIdx + 1);
+
+  const newRev = incrementServerRevision_();
+  return jsonOut({ success: true, message: 'User deleted', code, server_revision: newRev });
+}
+
+function adminResetDevices_(ctx, p) {
+  const code = String(p.code || '').trim();
+  if (!code) return jsonOut({ success: false, message: 'code required' });
+
+  const rowIdx = findRowByCode_(ctx.values, ctx.col, code);
+  if (rowIdx < 0) return jsonOut({ success: false, message: 'Code not found' });
+
+  setCellByKey_(ctx.sh, rowIdx, ctx.col, 'devices', '');
+  return jsonOut({ success: true, message: 'Devices reset', code });
+}
+
+function incrementServerRevision_() {
+  let current = positiveInt_(getConfigValue_('server_revision'), 0);
+  if (current < 1) current = 1;
+  const next = current + 1;
+  setConfigValue_('server_revision', String(next));
+  return next;
+}
+
+function adminIncrementRevision_() {
+  const newRev = incrementServerRevision_();
+  return jsonOut({ success: true, message: 'Server revision incremented', newRevision: newRev, server_revision: newRev });
+}
+
+function adminUploadMasterM3u_(ctx, p) {
+  const content    = p.m3u_content || p.content || '';
+  if (!content) return jsonOut({ success: false, message: 'm3u_content required' });
+
+  let downloadUrl = '';
+  try {
+    const fileName = 'Latchi_Sanitized_Master_Playlist.m3u';
+    const files    = DriveApp.getFilesByName(fileName);
+    let file;
+    if (files.hasNext()) {
+      file = files.next();
+      file.setContent(content);
+    } else {
+      file = DriveApp.createFile(fileName, content, 'audio/x-mpegurl');
+    }
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    downloadUrl = 'https://drive.google.com/uc?export=download&id=' + file.getId();
+  } catch (_) {
+    setConfigValue_('raw_sanitized_master_m3u', content.substring(0, 45000));
+    downloadUrl = '';
+  }
+
+  if (downloadUrl) {
+    setConfigValue_('default_playlist_url', downloadUrl);
+    setConfigValue_('default_source_type',  'm3u');
+  }
+
+  const newRev = incrementServerRevision_();
+  return jsonOut({
+    success:         true,
+    message:         '✅ Master playlist uploaded — كل المستخدمين سيأخذونه تلقائياً من Config',
+    playlist_url:    downloadUrl,
+    server_revision: newRev,
+    newRevision:     newRev
+  });
+}
+
+function adminSetAppUpdate_(p) {
+  const versionCode = positiveInt_(p.version_code || p.versionCode || '0', 0);
+  const versionName = String(p.version_name || p.versionName || '').trim();
+  const apkUrl      = cleanUrl_(p.apk_url || p.apkUrl || p.url || '');
+  const forceUpdate = isTruthy_(p.force_update || p.forceUpdate || 'false');
+
+  if (versionCode <= 0) return jsonOut({ success: false, message: 'version_code required' });
+  if (!apkUrl)          return jsonOut({ success: false, message: 'apk_url required' });
+
+  setConfigValue_('app_update_version_code', String(versionCode));
+  setConfigValue_('app_update_version_name', versionName);
+  setConfigValue_('app_update_apk_url',      apkUrl);
+  setConfigValue_('app_update_force',        forceUpdate ? 'true' : 'false');
+  if (p.notes_ar != null) setConfigValue_('app_update_notes_ar', String(p.notes_ar));
+  if (p.notes_fr != null) setConfigValue_('app_update_notes_fr', String(p.notes_fr));
+  if (p.notes_en != null) setConfigValue_('app_update_notes_en', String(p.notes_en));
+
+  return jsonOut({ success: true, message: 'App update saved', versionCode, versionName, apkUrl, forceUpdate });
+}
+
+
+function adminSaveViewConfig_(p) {
+  const hiddenCategories = String(p.hidden_categories || p.hiddenCategories || '').trim();
+  const beinKeywords = String(p.bein_keywords || p.beinKeywords || '').trim();
+  const beinMaxKeywords = String(p.bein_max_keywords || p.beinMaxKeywords || '').trim();
+  const alwanKeywords = String(p.alwan_keywords || p.alwanKeywords || '').trim();
+  const preparedLiveUrl = cleanUrl_(p.prepared_live_url || p.preparedLiveUrl || '');
+  const preparedBeinUrl = cleanUrl_(p.prepared_bein_url || p.preparedBeinUrl || '');
+  const preparedMoviesUrl = cleanUrl_(p.prepared_movies_url || p.preparedMoviesUrl || '');
+  const preparedSeriesUrl = cleanUrl_(p.prepared_series_url || p.preparedSeriesUrl || '');
+
+  setConfigValue_('hidden_categories', hiddenCategories);
+  if (beinKeywords) setConfigValue_('bein_keywords', beinKeywords);
+  if (beinMaxKeywords) setConfigValue_('bein_max_keywords', beinMaxKeywords);
+  if (alwanKeywords) setConfigValue_('alwan_keywords', alwanKeywords);
+  setConfigValue_('prepared_live_url', preparedLiveUrl);
+  setConfigValue_('prepared_bein_url', preparedBeinUrl);
+  setConfigValue_('prepared_movies_url', preparedMoviesUrl);
+  setConfigValue_('prepared_series_url', preparedSeriesUrl);
+
+  const newRev = incrementServerRevision_();
+  return jsonOut({
+    success: true,
+    message: 'View config saved successfully',
+    hidden_categories: hiddenCategories,
+    bein_keywords: getConfigValue_('bein_keywords'),
+    bein_max_keywords: getConfigValue_('bein_max_keywords'),
+    alwan_keywords: getConfigValue_('alwan_keywords'),
+    prepared_live_url: getConfigValue_('prepared_live_url'),
+    prepared_bein_url: getConfigValue_('prepared_bein_url'),
+    prepared_movies_url: getConfigValue_('prepared_movies_url'),
+    prepared_series_url: getConfigValue_('prepared_series_url'),
+    server_revision: newRev,
+    newRevision: newRev
+  });
+}
+
+function adminUploadPreparedCatalog_(p, e) {
+  const type = String(p.catalog_type || p.type || '').trim().toLowerCase();
+  const content = String(p.json_content || p.jsonContent || '').trim();
+  if (!type) return jsonOut({ success: false, message: 'catalog_type required' });
+  if (!content) return jsonOut({ success: false, message: 'json_content required' });
+
+  // 🛡️ v5.1: Validate content size
+  if (content.length > 5 * 1024 * 1024) {
+    return jsonOut({ success: false, message: 'Catalog too large (max 5MB)' });
+  }
+
+  // 🛡️ v5.1: Validate JSON before uploading
+  let parsedContent = null;
+  try {
+    parsedContent = JSON.parse(content);
+  } catch (err) {
+    return jsonOut({ success: false, message: 'Invalid JSON: ' + err.message });
+  }
+
+  let arr = [];
+  if (Array.isArray(parsedContent)) arr = parsedContent;
+  else if (parsedContent && Array.isArray(parsedContent.channels)) arr = parsedContent.channels;
+  else if (parsedContent && Array.isArray(parsedContent.items)) arr = parsedContent.items;
+  else if (parsedContent && Array.isArray(parsedContent.data)) arr = parsedContent.data;
+  else {
+    return jsonOut({ success: false, message: 'JSON must be array, or have channels/items/data field' });
+  }
+
+  const fileName = 'latchi_prepared_' + type + '.json';
+  let publicUrl = '';
+  try {
+    const files = DriveApp.getFilesByName(fileName);
+    let file;
+    if (files.hasNext()) {
+      file = files.next();
+      file.setContent(content);
+    } else {
+      file = DriveApp.createFile(fileName, content, 'application/json');
+    }
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    publicUrl = 'https://drive.google.com/uc?export=download&id=' + file.getId();
+  } catch (err) {
+    return jsonOut({ success: false, message: 'Drive upload failed: ' + err.message });
+  }
+
+  const keyMap = {
+    live: 'prepared_live_url',
+    bein: 'prepared_bein_url',
+    movies: 'prepared_movies_url',
+    series: 'prepared_series_url'
+  };
+  const key = keyMap[type];
+  if (!key) return jsonOut({ success: false, message: 'Unsupported catalog_type: ' + type });
+  setConfigValue_(key, publicUrl);
+  let revision = positiveInt_(getConfigValue_(catalogRevisionKey_(type)), 0) + 1;
+  setConfigValue_(catalogRevisionKey_(type), String(revision));
+  const hash = Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, content)).replace(/=+$/,'');
+  setConfigValue_(catalogHashKey_(type), hash);
+  let count = arr.length;
+  setConfigValue_(catalogCountKey_(type), String(count));
+  setConfigValue_(catalogUpdatedAtKey_(type), new Date().toISOString());
+
+  // 🛡️ v5.1: أيضاً ارفع server_revision الشامل (لإجبار فحص fresh في كل الواجهات)
+  const newGlobalRev = incrementServerRevision_();
+
+  return jsonOut({
+    success: true,
+    message: `✅ Prepared catalog uploaded (${type}) — ${count} entries — revision ${revision}`,
+    catalog_type: type,
+    url: publicUrl,
+    config_key: key,
+    revision: revision,
+    server_revision: newGlobalRev,
+    hash: hash,
+    count: count
+  });
+}
+
+function adminDeleteAllUsers_(ctx) {
+  const lastRow = ctx.sh.getLastRow();
+  if (lastRow <= 1) {
+    return jsonOut({ success: true, message: 'No users to delete', deleted_count: 0 });
+  }
+  const deletedCount = lastRow - 1;
+  ctx.sh.deleteRows(2, deletedCount);
+  const newRev = incrementServerRevision_();
+  return jsonOut({
+    success: true,
+    message: 'All users deleted',
+    deleted_count: deletedCount,
+    server_revision: newRev,
+    newRevision: newRev
+  });
+}
+
+// ─────────────────────────────────────────────
+// 🛡️ v5.2: Category Organizer - حفظ إعدادات الفئات لكل سيرفر
+// ─────────────────────────────────────────────
+
+/**
+ * adminSaveCategoryOverrides_
+ * يحفظ:
+ *   - custom_names_<urlhash>: JSON object { "Original Name": "Custom Name" }
+ *   - custom_order_<urlhash>: JSON array [ترتيب الفئات بالأسماء المخصصة]
+ *   - current_source_name_<urlhash>: اسم السيرفر
+ *
+ * عند تبديل master_url، الفئة الصحيحة تُسترجع تلقائياً عبر get_view_config
+ */
+function adminSaveCategoryOverrides_(p) {
+  const sourceUrl = cleanUrl_(p.source_url || p.url || '');
+  if (!sourceUrl) return jsonOut({ success: false, message: 'source_url required' });
+
+  const sourceName = String(p.source_name || p.name || 'Unknown Source').trim();
+  const urlHash = String(p.url_hash || simpleHash_(sourceUrl));
+
+  let customNames = {};
+  let customOrder = [];
+
+  try {
+    const namesRaw = String(p.custom_names || '{}').trim();
+    if (namesRaw) customNames = JSON.parse(namesRaw);
+  } catch (e) {
+    return jsonOut({ success: false, message: 'Invalid custom_names JSON: ' + e.message });
+  }
+
+  try {
+    const orderRaw = String(p.custom_order || '[]').trim();
+    if (orderRaw) customOrder = JSON.parse(orderRaw);
+  } catch (e) {
+    return jsonOut({ success: false, message: 'Invalid custom_order JSON: ' + e.message });
+  }
+
+  // حفظ في Config (مرتبط بـ url_hash)
+  setConfigValue_('custom_names_' + urlHash, JSON.stringify(customNames));
+  setConfigValue_('custom_order_' + urlHash, JSON.stringify(customOrder));
+  setConfigValue_('source_name_' + urlHash, sourceName);
+
+  // أيضاً حفظ في Master overrides (يُطبَّق على السيرفر الحالي)
+  const currentMasterUrl = cleanUrl_(getConfigValue_('default_playlist_url'));
+  if (currentMasterUrl === sourceUrl) {
+    // السيرفر الحالي يطابق المحفوظ → فعّل overrides فوراً
+    setConfigValue_('active_category_names', JSON.stringify(customNames));
+    setConfigValue_('active_category_order', JSON.stringify(customOrder));
+    setConfigValue_('active_source_hash', urlHash);
+  }
+
+  const newRev = incrementServerRevision_();
+  return jsonOut({
+    success: true,
+    message: `✅ تم حفظ ${Object.keys(customNames).length} اسم مخصص + ترتيب ${customOrder.length} فئة للسيرفر '${sourceName}'`,
+    source_url: sourceUrl,
+    source_name: sourceName,
+    url_hash: urlHash,
+    custom_names_count: Object.keys(customNames).length,
+    custom_order_count: customOrder.length,
+    is_current_source: currentMasterUrl === sourceUrl,
+    server_revision: newRev,
+    newRevision: newRev
+  });
+}
+
+/**
+ * adminGetCategoryOverrides_
+ * يسترجع الإعدادات لسيرفر معيّن
+ */
+function adminGetCategoryOverrides_(p) {
+  const sourceUrl = cleanUrl_(p.source_url || p.url || '');
+  if (!sourceUrl) return jsonOut({ success: false, message: 'source_url required' });
+
+  const urlHash = String(p.url_hash || (simpleHash_(sourceUrl).toString().replace('-', 'n')));
+
+  const namesRaw = getConfigValue_('custom_names_' + urlHash) || '{}';
+  const orderRaw = getConfigValue_('custom_order_' + urlHash) || '[]';
+  const sourceName = getConfigValue_('source_name_' + urlHash) || '';
+
+  let customNames = {};
+  let customOrder = [];
+  try { customNames = JSON.parse(namesRaw); } catch (e) {}
+  try { customOrder = JSON.parse(orderRaw); } catch (e) {}
+
+  return jsonOut({
+    success: true,
+    source_url: sourceUrl,
+    source_name: sourceName,
+    url_hash: urlHash,
+    custom_names: customNames,
+    custom_order: customOrder,
+    has_overrides: Object.keys(customNames).length > 0 || customOrder.length > 0
+  });
+}
+
+/**
+ * getCategoryOverridesForUrl_ (helper)
+ * يُستدعى من get_view_config + get_categories
+ *   - إذا الـ master_url يطابق URL محفوظ overrides له → يرجع الـ overrides
+ *   - وإلا → يرجع فارغ (يستخدم الترتيب الافتراضي)
+ */
+function getCategoryOverridesForUrl_(sourceUrl) {
+  if (!sourceUrl) return { customNames: {}, customOrder: [] };
+  const urlHash = simpleHash_(sourceUrl).toString().replace('-', 'n');
+  const namesRaw = getConfigValue_('custom_names_' + urlHash) || '{}';
+  const orderRaw = getConfigValue_('custom_order_' + urlHash) || '[]';
+  let customNames = {};
+  let customOrder = [];
+  try { customNames = JSON.parse(namesRaw); } catch (e) {}
+  try { customOrder = JSON.parse(orderRaw); } catch (e) {}
+  return { customNames, customOrder };
+}
+
+/**
+ * applyCategoryOverrides_ (helper)
+ * يطبق overrides على قائمة الفئات
+ *   - يعيد تسمية كل فئة بـ customNames[original]
+ *   - يرتب حسب customOrder
+ *   - الفئات الجديدة تُضاف في النهاية
+ */
+function applyCategoryOverrides_(originalCategories, customNames, customOrder) {
+  if (!customNames || !customOrder) {
+    return { renamed: originalCategories.slice(), order: originalCategories.slice() };
+  }
+
+  // إعادة التسمية
+  const renamed = originalCategories.map(name => customNames[name] || name);
+
+  // الترتيب: ابدأ بـ customOrder، أضف الفئات الجديدة في النهاية
+  const renamedSet = new Set(renamed);
+  const finalOrder = [];
+
+  // 1. أضف الفئات المرتبة من customOrder (إذا كانت موجودة في renamedSet)
+  for (const name of customOrder) {
+    if (renamedSet.has(name)) {
+      finalOrder.push(name);
+      renamedSet.delete(name);
+    }
+  }
+
+  // 2. أضف الفئات المتبقية (التي لم تكن في customOrder)
+  for (const name of renamed) {
+    if (renamedSet.has(name)) {
+      finalOrder.push(name);
+    }
+  }
+
+  return { renamed, order: finalOrder };
+}
+
+// ─────────────────────────────────────────────
+// ⚙️ Helpers
+// ─────────────────────────────────────────────
+
+/**
+ * simpleHash_ — دالة hash بسيطة متوافقة مع Apps Script
+ * Apps Script لا يدعم String.prototype.hashCode() (موجود فقط في Java)
+ * نستخدم djb2 algorithm كبديل
+ */
+function simpleHash_(str) {
+  let hash = 5381;
+  const s = String(str || '');
+  for (let i = 0; i < s.length; i++) {
+    hash = ((hash << 5) + hash) + s.charCodeAt(i);
+    hash = hash & 0x7FFFFFFF; // ضمان إيجابية
+  }
+  return hash.toString();
+}
+
+function parseMacScheme_(url) {
+  const q = url.replace(/^mac:\/\/[^?]*\?/, '');
+  const params = {};
+  q.split('&').forEach(part => {
+    const kv = part.split('=');
+    if (kv.length === 2) params[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1]);
+  });
+  return params;
+}
+
+function decideSourceType_(explicitType, playlistUrl, portalUrl, macAddress, server, username, password) {
+  if (explicitType) return explicitType;
+  if (portalUrl && macAddress) return 'mac';
+  if (server && username && password) return 'xtream';
+  if (playlistUrl) return 'm3u';
+  return 'm3u';
+}
+
+function normalizeSourceType_(value) {
+  const s = String(value || '').trim().toLowerCase();
+  if (['mac', 'stalker', 'portal', 'mag'].indexOf(s) >= 0) return 'mac';
+  if (['xtream', 'xc', 'xstream'].indexOf(s) >= 0) return 'xtream';
+  if (['m3u', 'playlist', 'url'].indexOf(s) >= 0) return 'm3u';
+  return '';
+}
+
+function normalizeMac_(value) {
+  let s = String(value || '').trim().toUpperCase();
+  if (!s) return '';
+  s = s.replace(/-/g, ':').replace(/\s+/g, '');
+  const compact = s.replace(/:/g, '');
+  if (/^[0-9A-F]{12}$/.test(compact)) return compact.match(/.{1,2}/g).join(':');
+  if (/^([0-9A-F]{2}:){5}[0-9A-F]{2}$/.test(s)) return s;
+  return s;
+}
+
+function cleanPortalUrl_(value) {
+  const s = cleanUrl_(value);
+  return s ? s.replace(/\/+$/, '') : '';
+}
+
+function cleanUrl_(value) {
+  if (!value) return '';
+  const lines = String(value)
+    .replace(/&amp;/g, '&')
+    .split(/\r?\n/)
+    .map(s => s.trim())
+    .filter(Boolean);
+  for (const line of lines) {
+    if (/^https?:\/\//i.test(line)) return line;
+    if (/^mac:\/\//i.test(line))    return line;
+  }
+  return lines[0] || '';
+}
+
+function buildM3uUrl_(server, username, password) {
+  let s = String(server || '').trim();
+  if (!/^https?:\/\//i.test(s)) s = 'http://' + s;
+  s = s.replace(/\/+$/, '');
+  return `${s}/get.php?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&type=m3u_plus&output=ts`;
+}
+
+// ─────────────────────────────────────────────
+// 📊 Sheet Helpers
+// ─────────────────────────────────────────────
+
+function getSpreadsheet_() {
+  if (SPREADSHEET_ID && SPREADSHEET_ID.trim()) return SpreadsheetApp.openById(SPREADSHEET_ID.trim());
+  return SpreadsheetApp.getActiveSpreadsheet();
+}
+
+function getSheetByNames_(ss, names) {
+  for (const n of names) { const sh = ss.getSheetByName(n); if (sh) return sh; }
+  return null;
+}
+
+function getCodesContext_() {
+  const ss = getSpreadsheet_();
+  let sh = getSheetByNames_(ss, CODES_SHEET_NAMES);
+  if (!sh) sh = ss.insertSheet('codes');
+
+  if (sh.getLastRow() === 0 || sh.getLastColumn() === 0) {
+    sh.getRange(1, 1, 1, DEFAULT_HEADERS.length).setValues([DEFAULT_HEADERS]);
+  }
+
+  let values  = sh.getDataRange().getValues();
+  let headers = values[0].map(normalizeHeader_);
+  let col     = indexMap_(headers);
+
+  const required = {
+    code: 'code', status: 'status', max_devices: 'max_devices', devices: 'devices',
+    expires_at: 'expires_at', name: 'name', source_type: 'source_type',
+    portal_url: 'portal_url', mac_address: 'mac_address', server: 'server',
+    username: 'username', password: 'password', custom_playlist_url: 'custom_playlist_url'
+  };
+
+  Object.keys(required).forEach(key => {
+    if (col[key] == null) {
+      const newCol = sh.getLastColumn() + 1;
+      sh.getRange(1, newCol).setValue(required[key]);
+      col[key] = newCol - 1;
+    }
+  });
+
+  values  = sh.getDataRange().getValues();
+  headers = values[0].map(normalizeHeader_);
+  col     = indexMap_(headers);
+
+  return { ss, sh, values, headers, col };
+}
+
+function normalizeHeader_(h) {
+  return String(h || '').trim().toLowerCase().replace(/\s+/g, '_');
+}
+
+function indexMap_(headers) {
+  const aliases = {
+    code:                ['code', 'activation_code', 'pin'],
+    status:              ['status', 'active', 'enabled', 'valid'],
+    max_devices:         ['max_devices', 'maxdevices', 'devices_limit', 'limit'],
+    devices:             ['devices', 'device_ids', 'device_id'],
+    expires_at:          ['expires_at', 'expiry', 'expire', 'end_date', 'valid_until'],
+    name:                ['name', 'user_name', 'client', 'customer', 'title'],
+    source_type:         ['source_type', 'type', 'source', 'account_type'],
+    portal_url:          ['portal_url', 'portal', 'stalker_portal', 'mag_portal'],
+    mac_address:         ['mac_address', 'mac', 'mac_code', 'device_mac'],
+    server:              ['server', 'server_url', 'host', 'portal_host'],
+    username:            ['username', 'user', 'login'],
+    password:            ['password', 'pass'],
+    custom_playlist_url: ['custom_playlist_url', 'playlist_url', 'm3u_url', 'url', 'playlist', 'link']
+  };
+
+  const out = {};
+  Object.keys(aliases).forEach(key => {
+    for (const a of aliases[key]) {
+      const idx = headers.indexOf(a);
+      if (idx >= 0) { out[key] = idx; break; }
+    }
+  });
+  return out;
+}
+
+function findRowByCode_(values, col, code) {
+  if (col.code == null) return -1;
+  const target = String(code || '').trim().toLowerCase();
+  for (let i = 1; i < values.length; i++) {
+    const rowCode = String(values[i][col.code] || '').trim().toLowerCase();
+    if (rowCode && rowCode === target) return i;
+  }
+  return -1;
+}
+
+function getCell_(row, col, key, fallback) {
+  if (col[key] == null) return fallback;
+  const v = row[col[key]];
+  if (v == null) return fallback;
+  const s = String(v).trim();
+  return s || fallback;
+}
+
+function setCellByKey_(sh, rowIndex0, col, key, value) {
+  if (col[key] == null) return;
+  sh.getRange(rowIndex0 + 1, col[key] + 1).setValue(value);
+}
+
+function splitDevices_(value) {
+  return String(value || '').split(',').map(s => s.trim()).filter(Boolean);
+}
+
+function isActive_(value) {
+  const s = String(value || '').trim().toLowerCase();
+  return s === '' || s === 'active' || s === 'true' || s === '1' || s === 'yes' || s === 'ok' || s === 'success';
+}
+
+function isTruthy_(value) {
+  const s = String(value || '').trim().toLowerCase();
+  return s === 'true' || s === '1' || s === 'yes' || s === 'on' || s === 'force';
+}
+
+function positiveInt_(value, fallback) {
+  const n = parseInt(String(value || '').trim(), 10);
+  return (isNaN(n) || n < 0) ? fallback : n;
+}
+
+function normalizeDate_(value) {
+  if (!value) return '';
+  if (Object.prototype.toString.call(value) === '[object Date]' && !isNaN(value)) {
+    return Utilities.formatDate(value, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  }
+  const s = String(value).trim();
+  let m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+  if (m) return `${m[3]}-${pad2_(m[2])}-${pad2_(m[1])}`;
+  m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+  if (m) return `${m[1]}-${pad2_(m[2])}-${pad2_(m[3])}`;
+  return s;
+}
+
+function pad2_(x) { return String(x).padStart(2, '0'); }
+
+function isExpired_(yyyyMmDd) {
+  const d = new Date(yyyyMmDd + 'T23:59:59');
+  if (isNaN(d.getTime())) return false;
+  return Date.now() > d.getTime();
+}
+
+function futureBaseDate_(yyyyMmDd) {
+  const now     = new Date();
+  const current = new Date(yyyyMmDd + 'T12:00:00');
+  if (!isNaN(current.getTime()) && current.getTime() > now.getTime()) return current;
+  return now;
+}
+
+function formatDate_(date) {
+  return Utilities.formatDate(date, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+}
+
+function getConfigSheet_() {
+  const ss = getSpreadsheet_();
+  let sh = getSheetByNames_(ss, CONFIG_SHEET_NAMES);
+  if (!sh) {
+    sh = ss.insertSheet('Config');
+    sh.getRange(1, 1, 1, 2).setValues([['key', 'value']]);
+  }
+  return sh;
+}
+
+function getConfigValue_(key) {
+  const sh     = getConfigSheet_();
+  const values = sh.getDataRange().getValues();
+  for (let i = 0; i < values.length; i++) {
+    if (String(values[i][0] || '').trim().toLowerCase() === key.toLowerCase()) {
+      return String(values[i][1] || '').trim();
+    }
+  }
+  return '';
+}
+
+function setConfigValue_(key, value) {
+  const sh     = getConfigSheet_();
+  const values = sh.getDataRange().getValues();
+  for (let i = 0; i < values.length; i++) {
+    if (String(values[i][0] || '').trim().toLowerCase() === key.toLowerCase()) {
+      sh.getRange(i + 1, 2).setValue(value);
+      return;
+    }
+  }
+  sh.appendRow([key, value]);
+}
+
+function jsonOut(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
