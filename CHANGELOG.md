@@ -2,6 +2,46 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026-06-20 Per-Type Room Freshness] - 2026-06-20
+### Added
+- **Per-type freshness tracking** in `CatalogSyncStateEntity`:
+  - `liveRevision`/`liveHash`/`liveUrl`/`liveLastSyncAt`
+  - `beinRevision`/`beinHash`/`beinUrl`/`beinLastSyncAt`
+  - `moviesRevision`/`moviesHash`/`moviesUrl`/`moviesLastSyncAt`
+  - `seriesRevision`/`seriesHash`/`seriesUrl`/`seriesLastSyncAt`
+- `CatalogType` enum unifying script ↔ internal type mapping (live, bein, movies, series).
+- `isCatalogFresh()` API — checks per-type revision/hash against the server's `get_catalog_meta`.
+- `getChannelsByTypeSmart()` API — Offline-First getter that returns Room data immediately
+  then triggers a silent freshness check + re-sync if needed.
+- `invalidateAllCatalogs()` / `invalidateCatalog()` — Room invalidation hooks.
+- `FreshnessResult` diagnostic data class with reason, local/server revision/hash, network reachability.
+
+### Fixed
+- **Channels show quickly but don't play after server broadcast**.
+  Root cause: `CatalogSyncStateEntity` only stored the global `serverRevision`.
+  When admin uploaded a new prepared catalog, the app couldn't detect that
+  a specific type (e.g. live) had changed because it was comparing the wrong
+  field against `get_catalog_meta`.
+- **"Server doesn't change" symptom**: when admin broadcasted, the old Room
+  data persisted and was served without re-validation.
+- Now each catalog type is checked independently with its own `revision` and
+  `hash`, so updating live does not falsely invalidate movies and vice versa.
+- `ServerSyncManager` now calls `CatalogRepository.invalidateAllCatalogs()`
+  when the server revision changes — guaranteeing a clean re-sync.
+
+### Changed
+- `syncTypeFromApi()` uses the per-type local revision/hash instead of the
+  global `serverRevision` for the `get_catalog_meta` `not_modified` check.
+- `saveChannels()` now stores per-type `revision`/`hash`/`url` and `lastSyncAt`
+  in addition to the global `serverRevision`.
+- `HomeFragment`, `TvLivePreviewActivity`, and `ChannelListActivity` now use
+  the smart getter so freshness is verified before showing Room data.
+
+### Migration
+- `CatalogDatabase` bumped to **version 2**.
+- Uses `fallbackToDestructiveMigration()` (already enabled) — the cache will
+  be rebuilt on first launch after upgrade. Data is recoverable via re-sync.
+
 ## [2026-06-19 Consolidated TV Phase] - 2026-06-19  
 ### Added  
 - TV home **prayer summary widget** showing region, next prayer name, and next prayer time.  
