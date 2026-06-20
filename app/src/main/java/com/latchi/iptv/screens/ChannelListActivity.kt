@@ -461,7 +461,29 @@ class ChannelListActivity : AppCompatActivity() {
             }
 
             Thread {
-                val roomCached = runCatching { CatalogRepository.getChannelsByTypeBlocking(applicationContext, active.id, contentType) }.getOrDefault(emptyList())
+                // 🛡️ Freshness-aware load:
+                // 1. نقرأ Room فوراً (Offline-First سريع) عبر smart getter
+                // 2. smart getter يفحص freshness في الخلفية ويعمل re-sync إذا لزم
+                // 3. عند وصول بيانات جديدة → نحدّث channelsProvider
+                val catalogType = when (contentType) {
+                    "movie" -> CatalogRepository.CatalogType.MOVIES
+                    "series" -> CatalogRepository.CatalogType.SERIES
+                    else -> CatalogRepository.CatalogType.LIVE
+                }
+                val roomCached = runCatching {
+                    CatalogRepository.getChannelsByTypeSmart(
+                        context = applicationContext,
+                        profileId = active.id,
+                        catalogType = catalogType,
+                        onUpdated = { refreshed ->
+                            Handler(Looper.getMainLooper()).post {
+                                try {
+                                    if (refreshed.isNotEmpty()) channelsProvider.setLocalChannels(refreshed)
+                                } catch (_: Exception) {}
+                            }
+                        }
+                    )
+                }.getOrDefault(emptyList())
                 val cached = if (roomCached.isNotEmpty()) roomCached else ChannelCache.load(applicationContext, active.id)
                 val embedded = if (cached.isEmpty() && active.m3uUrl.isBlank()) {
                     com.latchi.iptv.utils.EmbeddedChannelsLoader.load(applicationContext)

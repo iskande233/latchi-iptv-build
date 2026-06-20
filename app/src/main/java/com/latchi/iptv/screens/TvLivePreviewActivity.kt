@@ -193,11 +193,33 @@ class TvLivePreviewActivity : AppCompatActivity() {
             return
         }
 
+        // 🛡️ Freshness-aware path:
+        // 1. نقرأ Room فوراً (Offline-First سريع) عبر smart getter
+        // 2. Smart getter يفحص freshness في الخلفية ويقوم بـ re-sync إذا لزم
+        // 3. عند وصول بيانات جديدة → نستدعي onUpdate لتحديث الواجهة
         Thread {
-            val roomCached = runCatching { CatalogRepository.getChannelsByTypeBlocking(this, active.id, "live") }.getOrDefault(emptyList())
-            if (roomCached.isNotEmpty()) {
-                runOnUiThread {
-                    allLiveChannels = applyDirectFilterIfNeeded(roomCached)
+            val cachedLive = runCatching {
+                CatalogRepository.getChannelsByTypeSmart(
+                    context = this@TvLivePreviewActivity,
+                    profileId = active.id,
+                    catalogType = CatalogRepository.CatalogType.LIVE,
+                    onUpdated = { refreshedLive ->
+                        runOnUiThread {
+                            try {
+                                val finalChannels = applyDirectFilterIfNeeded(refreshedLive.filter { it.contentType == "live" }.ifEmpty { refreshedLive })
+                                if (finalChannels.isNotEmpty() && finalChannels != allLiveChannels) {
+                                    allLiveChannels = finalChannels
+                                    selectedChannel = resolveInitialChannel(passedChannel, allLiveChannels)
+                                    initDashboard()
+                                }
+                            } catch (_: Exception) {}
+                        }
+                    }
+                )
+            }.getOrDefault(emptyList())
+            runOnUiThread {
+                if (cachedLive.isNotEmpty()) {
+                    allLiveChannels = applyDirectFilterIfNeeded(cachedLive)
                     selectedChannel = resolveInitialChannel(passedChannel, allLiveChannels)
                     initDashboard()
                 }
