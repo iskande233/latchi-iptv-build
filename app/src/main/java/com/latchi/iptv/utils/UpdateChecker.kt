@@ -18,8 +18,13 @@ import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
 /**
- * تحديث التطبيق عبر Google Apps Script بدل GitHub raw.
- * Dashboard/Codemagic يحدث Config في Google Script برابط APK النهائي.
+ * تحديث التطبيق عبر Google Apps Script.
+ *
+ * يفضّل استخدام رابط APK مباشر من GitHub Releases:
+ * https://github.com/<owner>/<repo>/releases/download/<tag>/app-release.apk
+ *
+ * لوحة التحكم أو السكريبت تحفظ هذا الرابط في Config،
+ * ثم التطبيق يسحبه مباشرة بدون أي Authorization Headers أو Tokens.
  */
 object UpdateChecker {
     private const val UPDATE_URL =

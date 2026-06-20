@@ -34,9 +34,11 @@ import java.io.File
 /**
  * Professional in-app updater.
  *
- * The APK URL comes from Google Script / Dashboard, then DownloadManager downloads it
- * inside the app with live progress. When the download reaches 100%, the button turns
- * into "Install Update" and opens Android's package installer using FileProvider.
+ * The APK URL comes from Google Script / Dashboard.
+ * المسار الموصى به هو رابط APK مباشر من GitHub Releases.
+ * لا نستخدم أي Authorization Headers أو Tokens أثناء التحميل.
+ * When the download reaches 100%, the button turns into "Install Update"
+ * and opens Android's package installer using FileProvider.
  */
 class UpdatePromptActivity : AppCompatActivity() {
     override fun attachBaseContext(newBase: Context) {
@@ -233,18 +235,19 @@ class UpdatePromptActivity : AppCompatActivity() {
         }
 
         val safeVersion = versionName.ifBlank { versionCode.toString().ifBlank { "update" } }.replace(Regex("[^A-Za-z0-9._-]"), "-")
-        val fileName = "Latchi-IPTV-$safeVersion.apk"
+        val suggestedName = apkUrl.substringAfterLast('/').substringBefore('?').takeIf { it.endsWith(".apk", true) }
+        val fileName = suggestedName ?: "Latchi-IPTV-$safeVersion.apk"
         val dir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: filesDir
         val file = File(dir, fileName).apply { parentFile?.mkdirs(); if (exists()) delete() }
         downloadedFile = file
 
         Thread {
             try {
-                val reqBuilder = Request.Builder().url(apkUrl)
-                if (apkUrl.contains("codemagic.io")) {
-                    reqBuilder.header("x-auth-token", "FDMmnLkER_lgElEvjz0r9g1g04PnTFilMfy1d7mTRjk")
-                }
-                val request = reqBuilder.build()
+                val request = Request.Builder()
+                    .url(apkUrl)
+                    .header("Accept", "application/vnd.android.package-archive,application/octet-stream,*/*")
+                    .header("User-Agent", "Mozilla/5.0 (Linux; Android 10)")
+                    .build()
                 
                 val okClient = OkHttpClient.Builder()
                     .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
