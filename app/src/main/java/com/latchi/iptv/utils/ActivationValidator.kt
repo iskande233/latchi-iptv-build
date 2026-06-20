@@ -23,7 +23,9 @@ data class ActivationValidationResult(
     val preparedLiveUrl: String = "",
     val preparedBeinUrl: String = "",
     val preparedMoviesUrl: String = "",
-    val preparedSeriesUrl: String = ""
+    val preparedSeriesUrl: String = "",
+    val customNamesJson: String = "",
+    val customOrderJson: String = ""
 )
 
 object ActivationValidator {
@@ -94,7 +96,9 @@ object ActivationValidator {
             preparedLiveUrl = json.optString("prepared_live_url", json.optString("preparedLiveUrl", "")),
             preparedBeinUrl = json.optString("prepared_bein_url", json.optString("preparedBeinUrl", "")),
             preparedMoviesUrl = json.optString("prepared_movies_url", json.optString("preparedMoviesUrl", "")),
-            preparedSeriesUrl = json.optString("prepared_series_url", json.optString("preparedSeriesUrl", ""))
+            preparedSeriesUrl = json.optString("prepared_series_url", json.optString("preparedSeriesUrl", "")),
+            customNamesJson = json.optString("custom_names", json.optString("customNames", "")),
+            customOrderJson = json.optString("custom_order", json.optString("customOrder", ""))
         )
     }
 }

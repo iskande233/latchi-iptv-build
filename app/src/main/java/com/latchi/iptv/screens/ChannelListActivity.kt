@@ -557,27 +557,42 @@ class ChannelListActivity : AppCompatActivity() {
             val cats = mutableListOf("All", "Favorites")
             cats.addAll(filtered.map { it.category }.distinct())
 
-            val sortedCats = sortCategoriesByPriority(cats)
-            val visibleCats = if (categoryQuery.isBlank()) sortedCats else sortedCats.filter { it.contains(categoryQuery, ignoreCase = true) }
+            // 🛡️ v5.2: تطبيق Category Organizer overrides
+            val remoteConfig = RemoteViewConfigPrefs.getFilterConfig(applicationContext, activeId() ?: "")
+            val orderedRaw = RemoteViewConfigPrefs.getOrderedCategories(remoteConfig, cats)
+            val sortedCats = if (remoteConfig.hasCategoryOverrides) {
+                // تطبيق الترتيب المخصص مع الحفاظ على "All" و "Favorites" في البداية
+                val preserved = orderedRaw.takeWhile { it == "All" || it == "Favorites" }
+                val customOrdered = orderedRaw.dropWhile { it == "All" || it == "Favorites" }
+                preserved + customOrdered
+            } else {
+                sortCategoriesByPriority(orderedRaw)
+            }
+            // 🛡️ تطبيق الأسماء المخصصة على الفئات المرئية
+            val visibleCats = if (categoryQuery.isBlank()) sortedCats else sortedCats.filter {
+                val originalName = remoteConfig.customNames.entries.firstOrNull { e -> e.value == it }?.key ?: it
+                originalName.contains(categoryQuery, ignoreCase = true) || it.contains(categoryQuery, ignoreCase = true)
+            }.map { RemoteViewConfigPrefs.getDisplayName(remoteConfig, it) }
 
             if (!firstCategorySelected && filtered.isNotEmpty()) {
                 val firstReal = sortedCats.firstOrNull { it != "All" && it != "Favorites" }
                 if (!firstReal.isNullOrBlank()) {
                     firstCategorySelected = true
                     currentCategory = firstReal
-                    stickyCatTitle.text = firstReal
+                    stickyCatTitle.text = RemoteViewConfigPrefs.getDisplayName(remoteConfig, firstReal)
                     stickyCatSubtitle.text = "اضغط للتبديل"
                 }
             }
 
             val favoriteUrls = activeId()?.let { FavoritesPrefs.getFavorites(this, it) } ?: emptySet()
-            val listItems = visibleCats.map { cat ->
-                val count = when (cat) {
+            val listItems = visibleCats.map { displayName ->
+                val originalName = remoteConfig.customNames.entries.firstOrNull { it.value == displayName }?.key ?: displayName
+                val count = when (displayName) {
                     "All" -> filtered.size
                     "Favorites" -> filtered.count { favoriteUrls.contains(it.streamUrl) }
-                    else -> filtered.count { it.category.equals(cat, ignoreCase = true) }
+                    else -> filtered.count { it.category.equals(originalName, ignoreCase = true) || it.category.equals(displayName, ignoreCase = true) }
                 }
-                CategoryGridAdapter.CategoryItem(cat, count)
+                CategoryGridAdapter.CategoryItem(displayName, count)
             }
 
             gridAdapter.update(listItems)
@@ -610,7 +625,13 @@ class ChannelListActivity : AppCompatActivity() {
         try {
             val hiddenSet = getHiddenSet()
             val favs = activeId()?.let { FavoritesPrefs.getFavorites(this, it) } ?: emptySet()
-            
+
+            // 🛡️ v5.2: تحميل Category Organizer overrides
+            val remoteConfig = RemoteViewConfigPrefs.getFilterConfig(applicationContext, activeId() ?: "")
+            // تحويل currentCategory (اسم مخصص) إلى الاسم الأصلي للمطابقة
+            val currentCategoryOriginal = remoteConfig.customNames.entries
+                .firstOrNull { it.value == currentCategory }?.key ?: currentCategory
+
             // 👑 تصفية الفئات المخفية من قائمة القنوات
             val allChannels = channelsProvider.channels.value ?: emptyList()
             val searching = currentQuery.isNotBlank()
@@ -620,13 +641,13 @@ class ChannelListActivity : AppCompatActivity() {
                 val catOk = when {
                     currentCategory == "All" -> true
                     currentCategory == "Favorites" -> favs.contains(c.streamUrl)
-                    else -> c.category.equals(currentCategory, ignoreCase = true)
+                    else -> c.category.equals(currentCategoryOriginal, ignoreCase = true)
                 }
                 val searchOk = !searching || c.name.contains(currentQuery, true) || c.category.contains(currentQuery, true)
                 notHidden && typeOk && catOk && searchOk
             }
             adapter.updateChannels(filteredData)
-            
+
         } catch (e: Exception) { Log.e("ChannelList", "Apply Filter Error: ${e.message}") }
     }
 
