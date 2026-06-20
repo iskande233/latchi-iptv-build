@@ -434,6 +434,23 @@ class ChannelListActivity : AppCompatActivity() {
                 return
             }
 
+            if (TvUtils.isTv(this) && (contentType == "movie" || contentType == "series")) {
+                progressBar.visibility = View.VISIBLE
+                Thread {
+                    val synced = runCatching { CatalogRepository.syncNow(applicationContext, active, onlyType = contentType) }.getOrDefault(false)
+                    val roomItems = runCatching { CatalogRepository.getChannelsByTypeBlocking(applicationContext, active.id, contentType) }.getOrDefault(emptyList())
+                    Handler(Looper.getMainLooper()).post {
+                        progressBar.visibility = View.GONE
+                        if (roomItems.isNotEmpty()) {
+                            channelsProvider.setLocalChannels(roomItems)
+                        } else if (!synced) {
+                            channelsProvider.setLocalChannels(emptyList())
+                        }
+                    }
+                }.start()
+                return
+            }
+
             activeSourceUrl = active.m3uUrl
             lazyXtreamMode = channelsProvider.isXtreamSource(activeSourceUrl)
             if (lazyXtreamMode) {

@@ -224,6 +224,18 @@ class TvLivePreviewActivity : AppCompatActivity() {
             return
         }
 
+        Thread {
+            val synced = runCatching { CatalogRepository.syncNow(applicationContext, active, onlyType = "live") }.getOrDefault(false)
+            val roomAfterSync = runCatching { CatalogRepository.getChannelsByTypeBlocking(applicationContext, active.id, "live") }.getOrDefault(emptyList())
+            if (synced && roomAfterSync.isNotEmpty()) {
+                runOnUiThread {
+                    allLiveChannels = applyDirectFilterIfNeeded(roomAfterSync)
+                    selectedChannel = resolveInitialChannel(passedChannel, allLiveChannels)
+                    initDashboard()
+                }
+            }
+        }.start()
+
         ChannelRefreshHelper.ensureFreshChannels(this, active, onlyLive = true) { result ->
             try {
                 val live = result.channels.filter { it.contentType == "live" }

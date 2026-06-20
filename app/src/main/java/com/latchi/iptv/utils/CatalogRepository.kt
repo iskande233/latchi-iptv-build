@@ -50,8 +50,18 @@ object CatalogRepository {
 
     suspend fun syncNow(context: Context, profile: IptvProfile, onlyType: String? = null): Boolean {
         val appContext = context.applicationContext
-        val dao = CatalogDatabase.get(appContext).catalogDao()
         val remoteConfig = RemoteViewConfigPrefs.getFilterConfig(appContext, profile.id)
+
+        if (onlyType != null) {
+            if (syncTypeFromApi(appContext, profile, onlyType, remoteConfig)) return true
+        } else {
+            var any = false
+            listOf("live", "movie", "series").forEach { type ->
+                if (syncTypeFromApi(appContext, profile, type, remoteConfig)) any = true
+            }
+            if (any) return true
+        }
+
         val preparedUsed = when (onlyType) {
             "live" -> syncPreparedType(appContext, profile, "live", remoteConfig.preparedLiveUrl)
             "movie" -> syncPreparedType(appContext, profile, "movie", remoteConfig.preparedMoviesUrl)
@@ -118,6 +128,40 @@ object CatalogRepository {
         replaceAll: Boolean = true
     ) = runBlocking {
         saveChannels(context, profileId, channels, revision, remoteConfig, replaceAll)
+    }
+
+    private suspend fun syncTypeFromApi(
+        context: Context,
+        profile: IptvProfile,
+        contentType: String,
+        remoteConfig: RemoteViewConfigPrefs.FilterConfig
+    ): Boolean {
+        val remoteType = when (contentType) {
+            "movie" -> "movies"
+            else -> contentType
+        }
+        return try {
+            val existingCount = CatalogDatabase.get(context).catalogDao().countByType(profile.id, contentType)
+            val meta = CatalogApiClient.fetchMeta(remoteType, profile.serverRevision)
+            if (!meta.success) return false
+            if (meta.notModified && existingCount > 0) return true
+
+            val channels = if (contentType == "live") {
+                val categories = CatalogApiClient.fetchCategories(remoteType)
+                if (categories.isNotEmpty()) {
+                    categories.flatMap { category -> CatalogApiClient.fetchItemsByCategory(remoteType, category) }
+                } else {
+                    CatalogApiClient.fetchItemsPaged(remoteType)
+                }
+            } else {
+                CatalogApiClient.fetchItemsPaged(remoteType)
+            }
+            if (channels.isEmpty()) return false
+            saveChannels(context, profile.id, channels, meta.revision.takeIf { it > 0L } ?: profile.serverRevision, remoteConfig, replaceAll = false)
+            true
+        } catch (_: Exception) {
+            false
+        }
     }
 
     private suspend fun syncPreparedType(

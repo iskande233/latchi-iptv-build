@@ -212,22 +212,23 @@ class HomeFragment : Fragment() {
         try {
             val active = com.latchi.iptv.utils.SourcePrefs.getActiveProfile(requireContext()) ?: return
             com.latchi.iptv.utils.ChannelCache.clear(requireContext().applicationContext, active.id)
-            ChannelRefreshHelper.ensureFreshChannels(requireContext(), active, onlyLive = false) { result ->
-                try {
-                    channelsProvider.setLocalChannels(result.channels)
-                    if (result.channels.isNotEmpty()) {
-                        Thread {
-                            runCatching {
-                                CatalogRepository.saveChannelsBlocking(requireContext().applicationContext, active.id, result.channels, active.serverRevision)
-                            }
-                        }.start()
-                    }
-                    updateCacheTime(active.id)
-                    if (result.refreshedFromServer) {
-                        com.latchi.iptv.utils.CustomOverlayHelper.show(requireActivity(), "تحديث", getString(R.string.playlist_updated), true)
-                    }
-                } catch (_: Exception) {}
-            }
+            Thread {
+                val synced = runCatching { CatalogRepository.syncNow(requireContext().applicationContext, active, onlyType = null) }.getOrDefault(false)
+                val latest = runCatching {
+                    CatalogRepository.getChannelsByTypeBlocking(requireContext().applicationContext, active.id, "live") +
+                        CatalogRepository.getChannelsByTypeBlocking(requireContext().applicationContext, active.id, "movie") +
+                        CatalogRepository.getChannelsByTypeBlocking(requireContext().applicationContext, active.id, "series")
+                }.getOrDefault(emptyList())
+                Handler(Looper.getMainLooper()).post {
+                    try {
+                        channelsProvider.setLocalChannels(latest)
+                        updateCacheTime(active.id)
+                        if (synced && latest.isNotEmpty()) {
+                            com.latchi.iptv.utils.CustomOverlayHelper.show(requireActivity(), "تحديث", getString(R.string.playlist_updated), true)
+                        }
+                    } catch (_: Exception) {}
+                }
+            }.start()
         } catch (e: Throwable) {
             Log.e("HomeFragment", "Silent refresh failed: ${e.message}")
         }
