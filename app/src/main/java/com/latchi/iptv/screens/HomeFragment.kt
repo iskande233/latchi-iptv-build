@@ -198,7 +198,13 @@ class HomeFragment : Fragment() {
         ServerSyncManager.checkForServerUpdate(requireContext(), force = force) { result ->
             syncInProgress = false
             if (!isAdded || !result.changed) return@checkForServerUpdate
-            GlowingServerUpdateActivity.start(requireActivity(), result.serverRevision)
+            // 🛡️ v5.2+: فقط عند تغيير الـ URL الفعلي نعرض popup "تم تحديث السيرفر"
+            // إذا تغير الـ revision فقط (مثل إضافة مستخدم) → لا popup
+            if (result.isServerUrlChanged) {
+                GlowingServerUpdateActivity.start(requireActivity(), result.serverRevision)
+            }
+            // إذا تغير revision فقط (مثل إضافة/حذف مستخدم) → لا popup
+            // هذا يحل مشكلة "تظهر رسالة تحديث السيرفر عند إضافة مستخدم جديد"
         }
     }
 
@@ -209,11 +215,9 @@ class HomeFragment : Fragment() {
      * 3. إعادة جلب من السيرفر الجديد
      * 4. تحديث ChannelsProvider في الوقت الفعلي
      *
-     * هذا يحل مشكلة "السيرفر لا يتبدل" لأن:
-     *  - عند تحديث السيرفر (ServerSyncManager يكتشف changed=true)
-     *  - Room يُمسح كلياً
-     *  - re-sync يجلب بيانات جديدة + revision/hash جديد
-     *  - الفحص التالي لـ freshness سيكون match=true
+     * 🛡️ v5.2+: لا نعرض popup "تم جلب القنوات" بعد الآن.
+     * الـ popup "تم تحديث السيرفر" يكفي (يختفي تلقائياً عند تحميل القنوات).
+     * هذا يحل مشكلة popup مزدوج/متكرر بعد كل تحديث.
      */
     private fun refreshChannelsSilently() {
         try {
@@ -234,8 +238,10 @@ class HomeFragment : Fragment() {
                     try {
                         channelsProvider.setLocalChannels(latest)
                         updateCacheTime(active.id)
+                        // 🛡️ v5.2+: لا popup بعد الآن - التحديث يحدث بصمت في الواجهة
+                        // الـ GlowingServerUpdateActivity هي الإشارة الوحيدة للتحديث
                         if (synced && latest.isNotEmpty()) {
-                            com.latchi.iptv.utils.CustomOverlayHelper.show(requireActivity(), "تحديث", getString(R.string.playlist_updated), true)
+                            Log.d("HomeFragment", "✅ Silent refresh completed: ${latest.size} channels")
                         }
                     } catch (_: Exception) {}
                 }
@@ -333,10 +339,31 @@ class HomeFragment : Fragment() {
         try {
             val ctx = root.context
             root.findViewById<View?>(R.id.headerLogo)?.startAnimation(AnimationUtils.loadAnimation(ctx, R.anim.float_updown))
-            listOf(R.id.cardLive, R.id.cardMovies, R.id.cardSeries, R.id.cardMatches, R.id.cardBeInSports, R.id.cardSettings, R.id.cardAccounts, R.id.cardTheme).forEachIndexed { i, id ->
+            // 🛡️ v5.2+: ترتيب زمني للتأكد من ظهور البطاقات العلوية أولاً
+            // ثم السفلية بزوم خفيف للتأكيد على أهميتها
+            listOf(R.id.cardLive, R.id.cardMovies, R.id.cardSeries, R.id.cardMatches).forEachIndexed { i, id ->
                 root.findViewById<View?>(id)?.let { c ->
-                    val anim = AnimationUtils.loadAnimation(ctx, R.anim.card_slide_up).apply { startOffset = (i * 90).toLong() }
+                    val anim = AnimationUtils.loadAnimation(ctx, R.anim.card_slide_up).apply { startOffset = (i * 80).toLong() }
                     c.startAnimation(anim)
+                }
+            }
+            // الصف السفلي بزوم خفيف أكبر + offset أكبر ليظهر بعد العلوي
+            listOf(R.id.cardBeInSports, R.id.cardAccounts, R.id.cardTheme, R.id.cardSettings).forEachIndexed { i, id ->
+                root.findViewById<View?>(id)?.let { c ->
+                    val anim = AnimationUtils.loadAnimation(ctx, R.anim.card_slide_up).apply {
+                        startOffset = (320L + i * 80L)  // بعد الصف العلوي
+                    }
+                    c.startAnimation(anim)
+                    // 🛡️ v5.2+: زوم خفيف عند الفوكس للبطاقات السفلية
+                    c.setOnFocusChangeListener { v, hasFocus ->
+                        try {
+                            v.animate()
+                                .scaleX(if (hasFocus) 1.08f else 1f)
+                                .scaleY(if (hasFocus) 1.08f else 1f)
+                                .setDuration(120)
+                                .start()
+                        } catch (_: Exception) {}
+                    }
                 }
             }
         } catch (_: Exception) {}
@@ -590,7 +617,7 @@ class HomeFragment : Fragment() {
                         Handler(Looper.getMainLooper()).post {
                             try {
                                 updateCacheTime(profileId)
-                                com.latchi.iptv.utils.CustomOverlayHelper.show(requireActivity(), "تحديث", getString(R.string.playlist_updated), true)
+                                // 🛡️ v5.2+: لا popup بعد الآن - صامت تماماً
                             } catch (_: Exception) {}
                         }
                     }.start()

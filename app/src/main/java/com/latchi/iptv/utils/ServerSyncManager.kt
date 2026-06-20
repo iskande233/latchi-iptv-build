@@ -12,7 +12,12 @@ data class ServerSyncResult(
     val oldUrl: String = "",
     val newUrl: String = "",
     val profileId: String = "",
-    val serverRevision: Long = 0L
+    val serverRevision: Long = 0L,
+    // 🛡️ v5.2+: تمييز نوع التغيير
+    // - isServerUrlChanged: تغيير في الـ master_url الفعلي → يستحق popup "تم تحديث السيرفر"
+    // - isServerRevisionOnly: تغيير في الـ revision بدون تغيير URL → لا popup
+    val isServerUrlChanged: Boolean = false,
+    val isServerRevisionOnly: Boolean = false
 )
 
 object ServerSyncManager {
@@ -129,7 +134,10 @@ object ServerSyncManager {
                                 oldUrl         = oldUrl,
                                 newUrl         = urlToSave,
                                 profileId      = active.id,
-                                serverRevision = newRevision
+                                serverRevision = newRevision,
+                                // 🛡️ v5.2+: نميز بين تغيير URL فعلي وتغيير revision فقط
+                                isServerUrlChanged = urlChanged,
+                                isServerRevisionOnly = !urlChanged && revisionChanged
                             )
                         )
                     }

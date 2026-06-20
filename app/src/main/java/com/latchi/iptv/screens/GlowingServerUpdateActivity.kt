@@ -183,10 +183,46 @@ class GlowingServerUpdateActivity : AppCompatActivity() {
             if (freshActive != null) {
                 com.latchi.iptv.utils.SourcePrefs.setPendingServerRefresh(appContext, freshActive.id, true)
             }
-            handler.postDelayed({
-                navigateToMain()
-            }, 1500L)
+            // 🛡️ v5.2+: نتأكد من تحميل القنوات فعلياً قبل إغلاق الشاشة
+            // بدل الانتظار الثابت 1500ms، ننتظر حتى CatalogRepository يكتمل
+            waitForChannelsToLoad()
         }
+    }
+
+    /**
+     * 🛡️ v5.2+: ينتظر حتى يكتمل تحميل القنوات فعلياً قبل إغلاق الشاشة.
+     * هذا يضمن أن المستخدم يرى القنوات الجديدة بعد إغلاق popup "تم تحديث السيرفر"
+     * بدون popup إضافي "تم جلب القنوات".
+     */
+    private fun waitForChannelsToLoad() {
+        val appContext = applicationContext
+        val active = com.latchi.iptv.utils.SourcePrefs.getActiveProfile(appContext) ?: run {
+            // إذا لا يوجد profile → انتقل مباشرة
+            handler.postDelayed({ navigateToMain() }, 800L)
+            return
+        }
+
+        // مراقبة تحميل القنوات
+        var attempts = 0
+        val maxAttempts = 30  // 30 * 500ms = 15 ثانية كحد أقصى
+        val checkRunnable = object : Runnable {
+            override fun run() {
+                attempts++
+                val hasData = runCatching {
+                    com.latchi.iptv.utils.CatalogRepository.hasTypeData(appContext, active.id, "live") ||
+                    com.latchi.iptv.utils.CatalogRepository.hasTypeData(appContext, active.id, "movie") ||
+                    com.latchi.iptv.utils.CatalogRepository.hasTypeData(appContext, active.id, "series")
+                }.getOrDefault(false)
+
+                if (hasData || attempts >= maxAttempts) {
+                    // القنوات تم تحميلها (أو انتهى الوقت المخصص)
+                    handler.postDelayed({ navigateToMain() }, 600L)
+                } else {
+                    handler.postDelayed(this, 500L)
+                }
+            }
+        }
+        handler.postDelayed(checkRunnable, 600L)
     }
 
     private fun navigateToMain() {
