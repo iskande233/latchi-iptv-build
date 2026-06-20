@@ -213,7 +213,7 @@ class HomeFragment : Fragment() {
             val active = com.latchi.iptv.utils.SourcePrefs.getActiveProfile(requireContext()) ?: return
             com.latchi.iptv.utils.ChannelCache.clear(requireContext().applicationContext, active.id)
             Thread {
-                val synced = runCatching { CatalogRepository.syncNow(requireContext().applicationContext, active, onlyType = null) }.getOrDefault(false)
+                val synced = runCatching { CatalogRepository.syncNowBlocking(requireContext().applicationContext, active, onlyType = null) }.getOrDefault(false)
                 val latest = runCatching {
                     CatalogRepository.getChannelsByTypeBlocking(requireContext().applicationContext, active.id, "live") +
                         CatalogRepository.getChannelsByTypeBlocking(requireContext().applicationContext, active.id, "movie") +

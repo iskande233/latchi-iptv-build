@@ -225,7 +225,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
         }
 
         Thread {
-            val synced = runCatching { CatalogRepository.syncNow(applicationContext, active, onlyType = "live") }.getOrDefault(false)
+            val synced = runCatching { CatalogRepository.syncNowBlocking(applicationContext, active, onlyType = "live") }.getOrDefault(false)
             val roomAfterSync = runCatching { CatalogRepository.getChannelsByTypeBlocking(applicationContext, active.id, "live") }.getOrDefault(emptyList())
             if (synced && roomAfterSync.isNotEmpty()) {
                 runOnUiThread {

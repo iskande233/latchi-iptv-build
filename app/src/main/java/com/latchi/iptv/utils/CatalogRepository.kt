@@ -82,6 +82,9 @@ object CatalogRepository {
         return true
     }
 
+    fun syncNowBlocking(context: Context, profile: IptvProfile, onlyType: String? = null): Boolean =
+        runBlocking { syncNow(context, profile, onlyType) }
+
     suspend fun saveChannels(
         context: Context,
         profileId: String,

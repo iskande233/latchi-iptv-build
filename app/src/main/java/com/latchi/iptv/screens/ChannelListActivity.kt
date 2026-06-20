@@ -437,7 +437,7 @@ class ChannelListActivity : AppCompatActivity() {
             if (TvUtils.isTv(this) && (contentType == "movie" || contentType == "series")) {
                 progressBar.visibility = View.VISIBLE
                 Thread {
-                    val synced = runCatching { CatalogRepository.syncNow(applicationContext, active, onlyType = contentType) }.getOrDefault(false)
+                    val synced = runCatching { CatalogRepository.syncNowBlocking(applicationContext, active, onlyType = contentType) }.getOrDefault(false)
                     val roomItems = runCatching { CatalogRepository.getChannelsByTypeBlocking(applicationContext, active.id, contentType) }.getOrDefault(emptyList())
                     Handler(Looper.getMainLooper()).post {
                         progressBar.visibility = View.GONE
