@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 
 @Database(
     entities = [CatalogItemEntity::class, CatalogSyncStateEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class CatalogDatabase : RoomDatabase() {

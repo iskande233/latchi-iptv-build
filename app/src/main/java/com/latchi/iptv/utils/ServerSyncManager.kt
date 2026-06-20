@@ -106,6 +106,13 @@ object ServerSyncManager {
                     // ✅ مسح الكاش دايماً عند أي تغيير في الـ revision
                     ChannelCache.clear(appContext, active.id)
                     FavoritesPrefs.clearProfile(appContext, active.id)
+                    // 🛡️ الإصلاح الجذري لمشكلة "السيرفر لا يتبدل":
+                    // مسح Room بالكامل عند أي تغيّر في الـ revision أو الـ URL.
+                    // بدون هذا، freshness قد يطابق البيانات القديمة المحفوظة
+                    // ويعرض روابط قديمة لا تعمل.
+                    try {
+                        CatalogRepository.invalidateAllCatalogsBlocking(appContext, active.id)
+                    } catch (_: Exception) {}
 
                     prefs.edit()
                         .putString("last_applied_url_${active.id}", urlToSave)

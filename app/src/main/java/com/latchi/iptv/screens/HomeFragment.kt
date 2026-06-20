@@ -204,20 +204,31 @@ class HomeFragment : Fragment() {
 
     /**
      * تحديث سلس للقنوات بعد تحديث السيرفر:
-     * 1. مسح الكاش المحلي
-     * 2. إعادة جلب من السيرفر الجديد
-     * 3. تحديث ChannelsProvider في الوقت الفعلي
+     * 1. مسح كل كاش Room (إجبار freshness = false في كل type)
+     * 2. مسح كاش ChannelCache القديم
+     * 3. إعادة جلب من السيرفر الجديد
+     * 4. تحديث ChannelsProvider في الوقت الفعلي
+     *
+     * هذا يحل مشكلة "السيرفر لا يتبدل" لأن:
+     *  - عند تحديث السيرفر (ServerSyncManager يكتشف changed=true)
+     *  - Room يُمسح كلياً
+     *  - re-sync يجلب بيانات جديدة + revision/hash جديد
+     *  - الفحص التالي لـ freshness سيكون match=true
      */
     private fun refreshChannelsSilently() {
         try {
             val active = com.latchi.iptv.utils.SourcePrefs.getActiveProfile(requireContext()) ?: return
-            com.latchi.iptv.utils.ChannelCache.clear(requireContext().applicationContext, active.id)
+            val appContext = requireContext().applicationContext
+            com.latchi.iptv.utils.ChannelCache.clear(appContext, active.id)
+            // 🛡️ الإصلاح الجذري: مسح Room بالكامل عند تحديث السيرفر
+            // بدون هذا، freshness قد يظل يطابق البيانات القديمة المحفوظة
+            CatalogRepository.invalidateAllCatalogsBlocking(appContext, active.id)
             Thread {
-                val synced = runCatching { CatalogRepository.syncNowBlocking(requireContext().applicationContext, active, onlyType = null) }.getOrDefault(false)
+                val synced = runCatching { CatalogRepository.syncNowBlocking(appContext, active, onlyType = null) }.getOrDefault(false)
                 val latest = runCatching {
-                    CatalogRepository.getChannelsByTypeBlocking(requireContext().applicationContext, active.id, "live") +
-                        CatalogRepository.getChannelsByTypeBlocking(requireContext().applicationContext, active.id, "movie") +
-                        CatalogRepository.getChannelsByTypeBlocking(requireContext().applicationContext, active.id, "series")
+                    CatalogRepository.getChannelsByTypeBlocking(appContext, active.id, "live") +
+                        CatalogRepository.getChannelsByTypeBlocking(appContext, active.id, "movie") +
+                        CatalogRepository.getChannelsByTypeBlocking(appContext, active.id, "series")
                 }.getOrDefault(emptyList())
                 Handler(Looper.getMainLooper()).post {
                     try {
@@ -610,10 +621,65 @@ class HomeFragment : Fragment() {
 
             val appContext = requireContext().applicationContext
             Thread {
+                // 🛡️ Freshness-aware load:
+                // 1. نقرأ Room فوراً (Offline-First سريع)
+                // 2. في الخلفية CatalogRepository يفحص freshness لكل نوع
+                //    ويقوم بـ re-sync صامت إذا لزم الأمر
                 val roomCached = runCatching {
-                    CatalogRepository.getChannelsByTypeBlocking(appContext, active.id, "live") +
-                        CatalogRepository.getChannelsByTypeBlocking(appContext, active.id, "movie") +
-                        CatalogRepository.getChannelsByTypeBlocking(appContext, active.id, "series")
+                    CatalogRepository.getChannelsByTypeSmart(
+                        context = appContext,
+                        profileId = active.id,
+                        catalogType = CatalogRepository.CatalogType.LIVE,
+                        onUpdated = { refreshedLive ->
+                            Handler(Looper.getMainLooper()).post {
+                                try {
+                                    val all = (refreshedLive +
+                                        CatalogRepository.getChannelsByTypeBlocking(appContext, active.id, "movie") +
+                                        CatalogRepository.getChannelsByTypeBlocking(appContext, active.id, "series"))
+                                    if (all.isNotEmpty()) {
+                                        channelsProvider.setLocalChannels(all)
+                                        updateCacheTime(active.id)
+                                    }
+                                } catch (_: Exception) {}
+                            }
+                        }
+                    ) +
+                        CatalogRepository.getChannelsByTypeSmart(
+                            context = appContext,
+                            profileId = active.id,
+                            catalogType = CatalogRepository.CatalogType.MOVIES,
+                            onUpdated = { refreshedMovies ->
+                                Handler(Looper.getMainLooper()).post {
+                                    try {
+                                        val all = (CatalogRepository.getChannelsByTypeBlocking(appContext, active.id, "live") +
+                                            refreshedMovies +
+                                            CatalogRepository.getChannelsByTypeBlocking(appContext, active.id, "series"))
+                                        if (all.isNotEmpty()) {
+                                            channelsProvider.setLocalChannels(all)
+                                            updateCacheTime(active.id)
+                                        }
+                                    } catch (_: Exception) {}
+                                }
+                            }
+                        ) +
+                        CatalogRepository.getChannelsByTypeSmart(
+                            context = appContext,
+                            profileId = active.id,
+                            catalogType = CatalogRepository.CatalogType.SERIES,
+                            onUpdated = { refreshedSeries ->
+                                Handler(Looper.getMainLooper()).post {
+                                    try {
+                                        val all = (CatalogRepository.getChannelsByTypeBlocking(appContext, active.id, "live") +
+                                            CatalogRepository.getChannelsByTypeBlocking(appContext, active.id, "movie") +
+                                            refreshedSeries)
+                                        if (all.isNotEmpty()) {
+                                            channelsProvider.setLocalChannels(all)
+                                            updateCacheTime(active.id)
+                                        }
+                                    } catch (_: Exception) {}
+                                }
+                            }
+                        )
                 }.getOrDefault(emptyList())
                 val cached = if (roomCached.isNotEmpty()) roomCached else ChannelCache.load(appContext, active.id)
                 val embedded = if (cached.isEmpty() && active.m3uUrl.isBlank()) {
