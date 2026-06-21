@@ -186,6 +186,10 @@ class TvLivePreviewActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 🛡️ v6.0 Fix: جلب واحد موثوق — Room أولاً، إذا فارغة → force sync من السيرفر.
+     * يتجنب race conditions بين عدة threads وجلبات متعددة.
+     */
     private fun loadLiveChannelsSmart(passedChannel: Channel?) {
         val active = SourcePrefs.getActiveProfile(this)
         if (active == null) {
@@ -193,91 +197,47 @@ class TvLivePreviewActivity : AppCompatActivity() {
             return
         }
 
-        // 🛡️ Freshness-aware path:
-        // 1. نقرأ Room فوراً (Offline-First سريع) عبر smart getter
-        // 2. Smart getter يفحص freshness في الخلفية ويقوم بـ re-sync إذا لزم
-        // 3. عند وصول بيانات جديدة → نستدعي onUpdate لتحديث الواجهة
         Thread {
-            val cachedLive = runCatching {
-                CatalogRepository.getChannelsByTypeSmart(
-                    context = this@TvLivePreviewActivity,
-                    profileId = active.id,
-                    catalogType = CatalogRepository.CatalogType.LIVE,
-                    onUpdated = { refreshedLive ->
-                        runOnUiThread {
-                            try {
-                                val finalChannels = applyDirectFilterIfNeeded(refreshedLive.filter { it.contentType == "live" }.ifEmpty { refreshedLive })
-                                if (finalChannels.isNotEmpty() && finalChannels != allLiveChannels) {
-                                    allLiveChannels = finalChannels
-                                    selectedChannel = resolveInitialChannel(passedChannel, allLiveChannels)
-                                    initDashboard()
-                                }
-                            } catch (_: Exception) {}
-                        }
-                    }
-                )
-            }.getOrDefault(emptyList())
-            runOnUiThread {
-                if (cachedLive.isNotEmpty()) {
-                    allLiveChannels = applyDirectFilterIfNeeded(cachedLive)
-                    selectedChannel = resolveInitialChannel(passedChannel, allLiveChannels)
-                    initDashboard()
-                }
-            }
-        }.start()
-
-        val remoteConfig = RemoteViewConfigPrefs.getFilterConfig(this, active.id)
-        val preparedUrl = when (directFilterMode) {
-            "bein_alwan" -> remoteConfig.preparedBeinUrl
-            else -> remoteConfig.preparedLiveUrl
-        }
-        if (preparedUrl.isNotBlank()) {
-            Thread {
-                val prepared = PreparedCatalogHelper.fetch(preparedUrl, "live")
-                if (prepared.isNotEmpty()) {
-                    runCatching { CatalogRepository.saveChannelsBlocking(applicationContext, active.id, prepared, active.serverRevision, replaceAll = false) }
-                }
-                runOnUiThread {
-                    allLiveChannels = applyDirectFilterIfNeeded(prepared.filter { it.contentType == "live" }.ifEmpty { prepared })
-                    selectedChannel = resolveInitialChannel(passedChannel, allLiveChannels)
-                    initDashboard()
-                }
-            }.start()
-            return
-        }
-
-        Thread {
-            val synced = runCatching { CatalogRepository.syncNowBlocking(applicationContext, active, onlyType = "live") }.getOrDefault(false)
-            val roomAfterSync = runCatching { CatalogRepository.getChannelsByTypeBlocking(applicationContext, active.id, "live") }.getOrDefault(emptyList())
-            if (synced && roomAfterSync.isNotEmpty()) {
-                runOnUiThread {
-                    allLiveChannels = applyDirectFilterIfNeeded(roomAfterSync)
-                    selectedChannel = resolveInitialChannel(passedChannel, allLiveChannels)
-                    initDashboard()
-                }
-            }
-        }.start()
-
-        ChannelRefreshHelper.ensureFreshChannels(this, active, onlyLive = true) { result ->
             try {
-                val live = result.channels.filter { it.contentType == "live" }
+                // 1. محاولة Room أولاً (Offline-First)
+                var liveChannels = runCatching {
+                    CatalogRepository.getChannelsByTypeBlocking(this, active.id, "live")
+                }.getOrDefault(emptyList())
 
-                if (result.usedCacheFallback && result.message.isNotBlank()) {
-                    Toast.makeText(this, "⚠️ تعذر تحديث القنوات فورياً، تم فتح آخر كاش متاح", Toast.LENGTH_SHORT).show()
+                // 2. إذا فارغة → force sync من السيرفر (blocking)
+                if (liveChannels.isEmpty()) {
+                    runOnUiThread {
+                        txtDetailsBottom.text = "⏳ جاري جلب القنوات من السيرفر..."
+                        txtDetailsBottom.setTextColor(Color.parseColor("#A5B4FC"))
+                    }
+                    val synced = runCatching {
+                        CatalogRepository.syncNowBlocking(applicationContext, active, onlyType = "live")
+                    }.getOrDefault(false)
+                    if (synced) {
+                        liveChannels = runCatching {
+                            CatalogRepository.getChannelsByTypeBlocking(this, active.id, "live")
+                        }.getOrDefault(emptyList())
+                    }
                 }
 
-                allLiveChannels = applyDirectFilterIfNeeded(live)
-                if (live.isNotEmpty()) {
-                    Thread { runCatching { CatalogRepository.saveChannelsBlocking(applicationContext, active.id, live, active.serverRevision, replaceAll = false) } }.start()
+                // 3. تحديث UI دائماً — حتى لو فارغة (لعرض حالة "لا توجد قنوات")
+                runOnUiThread {
+                    allLiveChannels = applyDirectFilterIfNeeded(liveChannels)
+                    selectedChannel = resolveInitialChannel(passedChannel, allLiveChannels)
+                    initDashboard()
+                    if (liveChannels.isEmpty()) {
+                        txtDetailsBottom.text = "⚠️ لا توجد قنوات متاحة. تأكد من اتصال السيرفر أو أعد تعميم السيرفر."
+                        txtDetailsBottom.setTextColor(Color.parseColor("#FF5577"))
+                    }
                 }
-                selectedChannel = resolveInitialChannel(passedChannel, allLiveChannels)
-                initDashboard()
-            } catch (_: Exception) {
-                allLiveChannels = emptyList()
-                selectedChannel = null
-                initDashboard()
+            } catch (e: Exception) {
+                runOnUiThread {
+                    txtDetailsBottom.text = "⚠️ تعذر جلب القنوات: ${e.message?.take(100)}"
+                    txtDetailsBottom.setTextColor(Color.parseColor("#FF5577"))
+                    initDashboard()
+                }
             }
-        }
+        }.start()
     }
 
     private fun resolveInitialChannel(passedChannel: Channel?, channels: List<Channel>): Channel? {
