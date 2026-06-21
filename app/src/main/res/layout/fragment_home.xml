@@ -205,44 +205,46 @@
                     <LinearLayout android:id="@+id/toolbarUsersTop" android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginStart="6dp" android:layout_weight="1" android:background="@drawable/bg_update_btn" android:clickable="true" android:focusable="true" android:foreground="@drawable/focus_selector" android:gravity="center"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/favorites" android:textColor="@android:color/white" android:textSize="12sp" android:textStyle="bold" /></LinearLayout>
                 </LinearLayout>
 
-                <!-- 📱 Original Wide Beautiful Touch Screen Mobile Action Cards (الهاتف وحدها) 📱 -->
+                <!-- 📱 Professional Phone Cards with TV-style icons (smaller version) 📱 -->
                 <!-- Live Card -->
-                <LinearLayout
+                <FrameLayout
                     android:id="@+id/cardLive"
                     android:layout_width="match_parent"
-                    android:layout_height="88dp"
+                    android:layout_height="110dp"
                     android:layout_marginTop="20dp"
                     android:background="@drawable/bg_panel_premium_focusable"
                     android:clickable="true"
                     android:focusable="true"
                     android:foreground="@drawable/focus_selector"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:padding="16dp"
                     android:elevation="6dp">
 
-                    <TextView
-                        android:layout_width="50dp"
-                        android:layout_height="wrap_content"
-                        android:gravity="center"
-                        android:text="▣"
-                        android:textColor="#39FF8B"
-                        android:textSize="32sp" />
+                    <ImageView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/phone_card_live"
+                        android:contentDescription="@string/live_tv" />
 
                     <LinearLayout
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
+                        android:layout_gravity="bottom|start"
+                        android:background="#88000000"
                         android:orientation="vertical"
-                        android:layout_marginStart="14dp">
+                        android:paddingHorizontal="14dp"
+                        android:paddingVertical="10dp">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/live_tv"
                             android:textColor="@android:color/white"
-                            android:textSize="18sp"
-                            android:textStyle="bold" />
+                            android:textSize="17sp"
+                            android:textStyle="bold"
+                            android:shadowColor="#000000"
+                            android:shadowDx="2"
+                            android:shadowDy="2"
+                            android:shadowRadius="4" />
 
                         <TextView
                             android:id="@+id/liveCount"
@@ -251,47 +253,53 @@
                             android:layout_marginTop="2dp"
                             android:text="متاح الآن ✓"
                             android:textColor="#39FF8B"
-                            android:textSize="12sp" />
+                            android:textSize="11sp"
+                            android:shadowColor="#000000"
+                            android:shadowDx="2"
+                            android:shadowDy="2"
+                            android:shadowRadius="4" />
                     </LinearLayout>
-                </LinearLayout>
+                </FrameLayout>
 
                 <!-- Movies Card -->
-                <LinearLayout
+                <FrameLayout
                     android:id="@+id/cardMovies"
                     android:layout_width="match_parent"
-                    android:layout_height="88dp"
+                    android:layout_height="110dp"
                     android:layout_marginTop="12dp"
                     android:background="@drawable/bg_panel_premium_focusable"
                     android:clickable="true"
                     android:focusable="true"
                     android:foreground="@drawable/focus_selector"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:padding="16dp"
                     android:elevation="6dp">
 
-                    <TextView
-                        android:layout_width="50dp"
-                        android:layout_height="wrap_content"
-                        android:gravity="center"
-                        android:text="▶"
-                        android:textColor="#7FE6FF"
-                        android:textSize="32sp" />
+                    <ImageView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/phone_card_films"
+                        android:contentDescription="@string/movies" />
 
                     <LinearLayout
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
+                        android:layout_gravity="bottom|start"
+                        android:background="#88000000"
                         android:orientation="vertical"
-                        android:layout_marginStart="14dp">
+                        android:paddingHorizontal="14dp"
+                        android:paddingVertical="10dp">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/movies"
                             android:textColor="@android:color/white"
-                            android:textSize="18sp"
-                            android:textStyle="bold" />
+                            android:textSize="17sp"
+                            android:textStyle="bold"
+                            android:shadowColor="#000000"
+                            android:shadowDx="2"
+                            android:shadowDy="2"
+                            android:shadowRadius="4" />
 
                         <TextView
                             android:id="@+id/movieCount"
@@ -300,47 +308,53 @@
                             android:layout_marginTop="2dp"
                             android:text="متاح الآن ✓"
                             android:textColor="#7FE6FF"
-                            android:textSize="12sp" />
+                            android:textSize="11sp"
+                            android:shadowColor="#000000"
+                            android:shadowDx="2"
+                            android:shadowDy="2"
+                            android:shadowRadius="4" />
                     </LinearLayout>
-                </LinearLayout>
+                </FrameLayout>
 
                 <!-- Series Card -->
-                <LinearLayout
+                <FrameLayout
                     android:id="@+id/cardSeries"
                     android:layout_width="match_parent"
-                    android:layout_height="88dp"
+                    android:layout_height="110dp"
                     android:layout_marginTop="12dp"
                     android:background="@drawable/bg_panel_premium_focusable"
                     android:clickable="true"
                     android:focusable="true"
                     android:foreground="@drawable/focus_selector"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:padding="16dp"
                     android:elevation="6dp">
 
-                    <TextView
-                        android:layout_width="50dp"
-                        android:layout_height="wrap_content"
-                        android:gravity="center"
-                        android:text="▤"
-                        android:textColor="#FFB347"
-                        android:textSize="32sp" />
+                    <ImageView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/phone_card_series"
+                        android:contentDescription="@string/series" />
 
                     <LinearLayout
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
+                        android:layout_gravity="bottom|start"
+                        android:background="#88000000"
                         android:orientation="vertical"
-                        android:layout_marginStart="14dp">
+                        android:paddingHorizontal="14dp"
+                        android:paddingVertical="10dp">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/series"
                             android:textColor="@android:color/white"
-                            android:textSize="18sp"
-                            android:textStyle="bold" />
+                            android:textSize="17sp"
+                            android:textStyle="bold"
+                            android:shadowColor="#000000"
+                            android:shadowDx="2"
+                            android:shadowDy="2"
+                            android:shadowRadius="4" />
 
                         <TextView
                             android:id="@+id/seriesCount"
@@ -349,47 +363,53 @@
                             android:layout_marginTop="2dp"
                             android:text="متاح الآن ✓"
                             android:textColor="#FFB347"
-                            android:textSize="12sp" />
+                            android:textSize="11sp"
+                            android:shadowColor="#000000"
+                            android:shadowDx="2"
+                            android:shadowDy="2"
+                            android:shadowRadius="4" />
                     </LinearLayout>
-                </LinearLayout>
+                </FrameLayout>
 
                 <!-- Matches Card -->
-                <LinearLayout
+                <FrameLayout
                     android:id="@+id/cardMatches"
                     android:layout_width="match_parent"
-                    android:layout_height="88dp"
+                    android:layout_height="110dp"
                     android:layout_marginTop="12dp"
                     android:background="@drawable/bg_panel_premium_focusable"
                     android:clickable="true"
                     android:focusable="true"
                     android:foreground="@drawable/focus_selector"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:padding="16dp"
                     android:elevation="6dp">
 
-                    <TextView
-                        android:layout_width="50dp"
-                        android:layout_height="wrap_content"
-                        android:gravity="center"
-                        android:text="⚽"
-                        android:textColor="#FFD700"
-                        android:textSize="32sp" />
+                    <ImageView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/phone_card_matches"
+                        android:contentDescription="@string/matches_title" />
 
                     <LinearLayout
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
+                        android:layout_gravity="bottom|start"
+                        android:background="#88000000"
                         android:orientation="vertical"
-                        android:layout_marginStart="14dp">
+                        android:paddingHorizontal="14dp"
+                        android:paddingVertical="10dp">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/matches_title"
                             android:textColor="@android:color/white"
-                            android:textSize="18sp"
-                            android:textStyle="bold" />
+                            android:textSize="17sp"
+                            android:textStyle="bold"
+                            android:shadowColor="#000000"
+                            android:shadowDx="2"
+                            android:shadowDy="2"
+                            android:shadowRadius="4" />
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -397,9 +417,68 @@
                             android:layout_marginTop="2dp"
                             android:text="@string/todays_matches"
                             android:textColor="#A5B4FC"
-                            android:textSize="12sp" />
+                            android:textSize="11sp"
+                            android:shadowColor="#000000"
+                            android:shadowDx="2"
+                            android:shadowDy="2"
+                            android:shadowRadius="4" />
                     </LinearLayout>
-                </LinearLayout>
+                </FrameLayout>
+
+                <!-- 🏆 beIN Sports Card (مخصص لقنوات beIN فقط) -->
+                <FrameLayout
+                    android:id="@+id/cardBeInSports"
+                    android:layout_width="match_parent"
+                    android:layout_height="120dp"
+                    android:layout_marginTop="14dp"
+                    android:background="@drawable/bg_panel_premium_focusable"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="@drawable/focus_selector"
+                    android:elevation="8dp">
+
+                    <ImageView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/phone_card_bein"
+                        android:contentDescription="beIN Sports" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="bottom|start"
+                        android:background="#99000000"
+                        android:orientation="vertical"
+                        android:paddingHorizontal="14dp"
+                        android:paddingVertical="10dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🏆 beIN Sports"
+                            android:textColor="@android:color/white"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:shadowColor="#9D4EDD"
+                            android:shadowDx="2"
+                            android:shadowDy="2"
+                            android:shadowRadius="6" />
+
+                        <TextView
+                            android:id="@+id/beinSportsCount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="قنوات beIN + MAX + كأس العالم"
+                            android:textColor="#C77DFF"
+                            android:textSize="11sp"
+                            android:shadowColor="#000000"
+                            android:shadowDx="1"
+                            android:shadowDy="1"
+                            android:shadowRadius="3" />
+                    </LinearLayout>
+                </FrameLayout>
 
                 <!-- Loading Row -->
                 <LinearLayout
