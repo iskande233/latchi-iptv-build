@@ -24,7 +24,7 @@ import com.latchi.iptv.utils.CatalogRepository
 import com.latchi.iptv.utils.ChannelCache
 import com.latchi.iptv.utils.DigitNormalizer
 import com.latchi.iptv.utils.LocaleHelper
-import com.latchi.iptv.utils.PlayerActivity
+import com.latchi.iptv.screens.PlayerActivity
 import com.latchi.iptv.utils.RemoteViewConfigPrefs
 import com.latchi.iptv.utils.SourcePrefs
 import com.latchi.iptv.utils.TvUtils
