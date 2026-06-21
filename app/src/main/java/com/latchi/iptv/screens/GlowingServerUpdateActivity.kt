@@ -209,9 +209,9 @@ class GlowingServerUpdateActivity : AppCompatActivity() {
             override fun run() {
                 attempts++
                 val hasData = runCatching {
-                    com.latchi.iptv.utils.CatalogRepository.hasTypeData(appContext, active.id, "live") ||
-                    com.latchi.iptv.utils.CatalogRepository.hasTypeData(appContext, active.id, "movie") ||
-                    com.latchi.iptv.utils.CatalogRepository.hasTypeData(appContext, active.id, "series")
+                    com.latchi.iptv.utils.CatalogRepository.hasTypeDataBlocking(appContext, active.id, "live") ||
+                    com.latchi.iptv.utils.CatalogRepository.hasTypeDataBlocking(appContext, active.id, "movie") ||
+                    com.latchi.iptv.utils.CatalogRepository.hasTypeDataBlocking(appContext, active.id, "series")
                 }.getOrDefault(false)
 
                 if (hasData || attempts >= maxAttempts) {
