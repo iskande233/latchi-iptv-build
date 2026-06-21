@@ -34,7 +34,6 @@ import com.latchi.iptv.utils.CatalogRepository
 import com.latchi.iptv.utils.ChannelCache
 import com.latchi.iptv.utils.FavoritesPrefs
 import com.latchi.iptv.utils.FloatingBackHelper
-import com.latchi.iptv.utils.PreparedCatalogHelper
 import com.latchi.iptv.utils.RemoteViewConfigPrefs
 import com.latchi.iptv.utils.SourcePrefs
 import com.latchi.iptv.utils.ServerSyncManager
@@ -413,47 +412,8 @@ class ChannelListActivity : AppCompatActivity() {
                 return
             }
 
-            val remoteConfig = RemoteViewConfigPrefs.getFilterConfig(this, active.id)
-            val preparedUrl = when (contentType) {
-                "movie" -> remoteConfig.preparedMoviesUrl
-                "series" -> remoteConfig.preparedSeriesUrl
-                else -> ""
-            }
-            if (TvUtils.isTv(this) && preparedUrl.isNotBlank()) {
-                progressBar.visibility = View.VISIBLE
-                Thread {
-                    val prepared = PreparedCatalogHelper.fetch(preparedUrl, contentType)
-                    if (prepared.isNotEmpty()) {
-                        runCatching { CatalogRepository.saveChannelsBlocking(applicationContext, active.id, prepared, active.serverRevision, replaceAll = false) }
-                    }
-                    Handler(Looper.getMainLooper()).post {
-                        progressBar.visibility = View.GONE
-                        if (prepared.isNotEmpty()) {
-                            channelsProvider.setLocalChannels(prepared)
-                        } else {
-                            channelsProvider.setLocalChannels(emptyList())
-                        }
-                    }
-                }.start()
-                return
-            }
-
-            if (TvUtils.isTv(this) && (contentType == "movie" || contentType == "series")) {
-                progressBar.visibility = View.VISIBLE
-                Thread {
-                    val synced = runCatching { CatalogRepository.syncNowBlocking(applicationContext, active, onlyType = contentType) }.getOrDefault(false)
-                    val roomItems = runCatching { CatalogRepository.getChannelsByTypeBlocking(applicationContext, active.id, contentType) }.getOrDefault(emptyList())
-                    Handler(Looper.getMainLooper()).post {
-                        progressBar.visibility = View.GONE
-                        if (roomItems.isNotEmpty()) {
-                            channelsProvider.setLocalChannels(roomItems)
-                        } else if (!synced) {
-                            channelsProvider.setLocalChannels(emptyList())
-                        }
-                    }
-                }.start()
-                return
-            }
+            // لا نخصص مساراً ثقيلاً للتلفاز في Movies/Series.
+            // الهاتف والتلفاز يستعملان نفس الجلب المرن: Xtream lazy categories ثم M3U fallback.
 
             activeSourceUrl = active.m3uUrl
             lazyXtreamMode = channelsProvider.isXtreamSource(activeSourceUrl)

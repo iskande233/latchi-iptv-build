@@ -78,6 +78,20 @@ class HomeFragment : Fragment() {
     private var usersRecyclerView: RecyclerView? = null
     private var usersAdapter: UserProfilesAdapter? = null
     private var drawerLayout: DrawerLayout? = null
+    private val tvBgHandler = Handler(Looper.getMainLooper())
+    private var tvBgIndex = 0
+    private val tvBackgrounds = intArrayOf(
+        R.drawable.tv_home_bg_01, R.drawable.tv_home_bg_02, R.drawable.tv_home_bg_03,
+        R.drawable.tv_home_bg_04, R.drawable.tv_home_bg_05, R.drawable.tv_home_bg_06,
+        R.drawable.tv_home_bg_07, R.drawable.tv_home_bg_08, R.drawable.tv_home_bg_09,
+        R.drawable.tv_home_bg_10, R.drawable.tv_home_bg_11, R.drawable.tv_home_bg_12
+    )
+    private val tvBgRunnable = object : Runnable {
+        override fun run() {
+            rotateTvBackground()
+            tvBgHandler.postDelayed(this, 5 * 60 * 1000L)
+        }
+    }
 
     private var cardAIVoice: View? = null
     private var voiceOverlay: FrameLayout? = null
@@ -155,9 +169,13 @@ class HomeFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         try {
             try {
-                val activeBg = com.latchi.iptv.utils.DailyWallpaperManager.loadActiveWallpaperDrawable(requireContext())
-                if (activeBg != null) {
-                    view.findViewById<View>(R.id.drawerLayout)?.background = activeBg
+                if (com.latchi.iptv.utils.TvUtils.isTv(requireContext())) {
+                    startTvBackgroundRotator()
+                } else {
+                    val activeBg = com.latchi.iptv.utils.DailyWallpaperManager.loadActiveWallpaperDrawable(requireContext())
+                    if (activeBg != null) {
+                        view.findViewById<View>(R.id.drawerLayout)?.background = activeBg
+                    }
                 }
             } catch (_: Exception) {}
 
@@ -257,9 +275,13 @@ class HomeFragment : Fragment() {
         super.onResume()
         try {
             try {
-                val activeBg = com.latchi.iptv.utils.DailyWallpaperManager.loadActiveWallpaperDrawable(requireContext())
-                if (activeBg != null) {
-                    view?.findViewById<View>(R.id.drawerLayout)?.background = activeBg
+                if (com.latchi.iptv.utils.TvUtils.isTv(requireContext())) {
+                    startTvBackgroundRotator()
+                } else {
+                    val activeBg = com.latchi.iptv.utils.DailyWallpaperManager.loadActiveWallpaperDrawable(requireContext())
+                    if (activeBg != null) {
+                        view?.findViewById<View>(R.id.drawerLayout)?.background = activeBg
+                    }
                 }
             } catch (_: Exception) {}
 
@@ -409,8 +431,8 @@ class HomeFragment : Fragment() {
         cardSettings?.setOnClickListener { startActivity(Intent(requireContext(), SettingsActivity::class.java)) }
         // 🔑 الحسابات - شاشة VIP النظيفة الجديدة
         cardAccounts?.setOnClickListener { startActivity(Intent(requireContext(), VipAccountsActivity::class.java)) }
-        // 🎨 الثيم - بطاقة التلفاز الثامنة
-        cardTheme?.setOnClickListener { startActivity(Intent(requireContext(), ThemeSettingsActivity::class.java)) }
+        // ⭐ بطاقة المفضلة في التلفاز بدل الثيمات
+        cardTheme?.setOnClickListener { startActivity(Intent(requireContext(), RoyalFavoritesDashboardActivity::class.java)) }
 
         // 🔧 شريط أدوات علوي قديم (للتوافق)
         toolbarSettings?.setOnClickListener { startActivity(Intent(requireContext(), SettingsActivity::class.java)) }
@@ -814,12 +836,33 @@ class HomeFragment : Fragment() {
         updatedText?.text = "Last Server Update:  $timeStr  :آخر تحديث للسيرفر"
     }
 
+    private fun startTvBackgroundRotator() {
+        stopTvBackgroundRotator()
+        tvBgIndex = ((System.currentTimeMillis() / (5 * 60 * 1000L)) % tvBackgrounds.size).toInt()
+        rotateTvBackground()
+        tvBgHandler.postDelayed(tvBgRunnable, 5 * 60 * 1000L)
+    }
+
+    private fun rotateTvBackground() {
+        try {
+            if (!com.latchi.iptv.utils.TvUtils.isTv(requireContext())) return
+            val bg = tvBackgrounds[tvBgIndex % tvBackgrounds.size]
+            drawerLayout?.setBackgroundResource(bg)
+            tvBgIndex = (tvBgIndex + 1) % tvBackgrounds.size
+        } catch (_: Exception) {}
+    }
+
+    private fun stopTvBackgroundRotator() {
+        try { tvBgHandler.removeCallbacks(tvBgRunnable) } catch (_: Exception) {}
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         voiceHandler?.destroy()
         voiceHandler = null
         stopClockUpdater()
         stopAdhkarRotator()
+        stopTvBackgroundRotator()
     }
 
     private fun startAdhkarRotator() {

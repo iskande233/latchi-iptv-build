@@ -89,10 +89,10 @@ object ServerSyncManager {
                             if (health.online) "online:${health.responseMs}" else "offline:${health.message}"
                         ).apply()
                         if (!health.online) {
-                            onMain {
-                                onResult(ServerSyncResult(false, "server_offline:${health.message}", profileId = active.id))
-                            }
-                            return@thread
+                            // لا نوقف تطبيق تحديث السيرفر بسبب فحص health.
+                            // في السيرفرات الكبيرة قد يتأخر/يفشل الفحص بينما Google Sheet و revision تبدلو عادي.
+                            // المهم أن يظهر إشعار "تم تحديث السيرفر" ويتفرغ الجلب لاحقاً بطريقة التطبيق المرنة.
+                            prefs.edit().putString(KEY_LAST_STATUS, "health_soft_fail:${health.message}").apply()
                         }
                     }
 

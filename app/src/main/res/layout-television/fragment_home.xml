@@ -416,7 +416,7 @@
                             android:contentDescription="الحسابات" />
                     </androidx.cardview.widget.CardView>
 
-                    <!-- Item 7: THEME (Wallpapers) -->
+                    <!-- Item 7: FAVORITES -->
                     <androidx.cardview.widget.CardView
                         android:id="@+id/cardTheme"
                         android:layout_width="168dp"
@@ -433,8 +433,8 @@
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:scaleType="centerCrop"
-                            android:src="@drawable/tv_card_theme"
-                            android:contentDescription="خلفيات الشاشة" />
+                            android:src="@drawable/tv_card_favorites"
+                            android:contentDescription="Favorites" />
                     </androidx.cardview.widget.CardView>
 
                     <!-- Item 8: SETTINGS -->
