@@ -86,11 +86,11 @@ class TvLivePreviewActivity : AppCompatActivity() {
     private lateinit var frameVideo: FrameLayout
 
     // Views
-    private lateinit var mainDashboardContainer: LinearLayout
+    private lateinit var mainDashboardContainer: FrameLayout
     private lateinit var panelCategories: LinearLayout
     private lateinit var panelAlphabet: LinearLayout
     private lateinit var panelChannels: LinearLayout
-    private lateinit var panelPlayer: LinearLayout
+    private lateinit var panelPlayer: FrameLayout
     private lateinit var recyclerCategories: RecyclerView
     private lateinit var recyclerChannels: RecyclerView
     private lateinit var txtFilterHint: TextView
@@ -100,6 +100,8 @@ class TvLivePreviewActivity : AppCompatActivity() {
     private lateinit var txtCategorySubtitle: TextView
     private lateinit var txtEpgInfo: TextView
     private lateinit var txtDetailsBottom: TextView
+    private var darkOverlay: View? = null
+    private var menuOverlay: View? = null
 
     // Adapters
     private var categoriesAdapter: RoyalCategoriesAdapter? = null
@@ -339,8 +341,10 @@ class TvLivePreviewActivity : AppCompatActivity() {
         txtCategorySubtitle = findViewById(R.id.txtCategorySubtitle)
         txtEpgInfo = findViewById(R.id.txtEpgInfo)
         frameVideo = findViewById(R.id.frameVideo)
-        viewPlayer = findViewById(R.id.viewPlayer)
+        viewPlayer = findViewById(R.id.player_view)
         txtDetailsBottom = findViewById(R.id.txtDetailsBottom)
+        darkOverlay = findViewById(R.id.dark_overlay)
+        menuOverlay = findViewById(R.id.menuOverlay)
 
         recyclerCategories.layoutManager = LinearLayoutManager(this)
         recyclerChannels.layoutManager = LinearLayoutManager(this)
@@ -362,21 +366,21 @@ class TvLivePreviewActivity : AppCompatActivity() {
 
     private fun applyDashboardModeLayout() {
         try {
+            // Cinematic Overlay UI: الفيديو يبقى دائماً في الخلفية بكامل الشاشة،
+            // والقوائم تظهر فوقه بطبقة زجاجية شفافة بدون تغيير طريقة جلب القنوات.
+            darkOverlay?.visibility = View.VISIBLE
+            menuOverlay?.visibility = View.VISIBLE
             if (hideCategories) {
                 panelCategories.visibility = View.GONE
                 panelAlphabet.visibility = View.GONE
                 alphabetScroller.visibility = View.GONE
-                updatePanelWeight(panelChannels, 0.44f, marginStart = 0, marginEnd = dp(6))
-                updatePanelWeight(panelPlayer, 0.56f, marginStart = dp(6), marginEnd = 0)
             } else {
                 panelCategories.visibility = View.VISIBLE
                 panelAlphabet.visibility = View.VISIBLE
                 alphabetScroller.visibility = View.VISIBLE
-                updatePanelWeight(panelCategories, 0.22f, marginStart = 0, marginEnd = dp(4))
-                updatePanelWeight(panelAlphabet, 0.08f, marginStart = 0, marginEnd = dp(4))
-                updatePanelWeight(panelChannels, 0.34f, marginStart = 0, marginEnd = dp(4))
-                updatePanelWeight(panelPlayer, 0.36f, marginStart = 0, marginEnd = 0)
             }
+            panelChannels.visibility = View.VISIBLE
+            panelPlayer.visibility = View.VISIBLE
 
             txtFilterHint.textSize = 13f
             txtChannelTitle.textSize = if (hideCategories) 18f else 16f
@@ -399,14 +403,11 @@ class TvLivePreviewActivity : AppCompatActivity() {
     }
 
     private fun applyCompactPlayerCardLayout() {
-        frameVideo.layoutParams = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            dp(if (hideCategories) 250 else 188)
-        ).apply {
-            topMargin = dp(4)
-            bottomMargin = dp(8)
-        }
-        viewPlayer.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+        frameVideo.layoutParams = FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.MATCH_PARENT
+        )
+        viewPlayer.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
     }
 
     private fun requestChannelFocusByUrl(url: String?, fallbackToFirst: Boolean = false) {
@@ -651,11 +652,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
                     isClickable = true
                     isFocusable = true
                     setPadding(dp(4), dp(4), dp(4), dp(4))
-                    background = GradientDrawable().apply {
-                        setColor(Color.parseColor("#121228"))
-                        cornerRadius = dp(8).toFloat()
-                        setStroke(dp(1), Color.parseColor("#3d3d5c"))
-                    }
+                    setBackgroundResource(R.drawable.tv_item_selector)
                     layoutParams = LinearLayout.LayoutParams(dp(34), dp(28)).apply {
                         bottomMargin = if (index == letters.lastIndex) 0 else dp(4)
                     }
@@ -683,11 +680,9 @@ class TvLivePreviewActivity : AppCompatActivity() {
 
     private fun highlightAlphabetButton(selectedButton: TextView) {
         letterButtons.forEach { button ->
-            (button.background as? GradientDrawable)?.setColor(Color.parseColor("#121228"))
-            button.setTextColor(Color.parseColor("#A5B4FC"))
+            button.isSelected = button == selectedButton
+            button.setTextColor(if (button == selectedButton) Color.parseColor("#050A1A") else Color.parseColor("#A5B4FC"))
         }
-        (selectedButton.background as? GradientDrawable)?.setColor(Color.parseColor("#FFD700"))
-        selectedButton.setTextColor(Color.parseColor("#050A1A"))
     }
 
     private fun filterCategoriesByAlphabet(letter: String?) {
@@ -784,6 +779,8 @@ class TvLivePreviewActivity : AppCompatActivity() {
                 panelCategories.visibility = View.GONE
                 panelAlphabet.visibility = View.GONE
                 panelChannels.visibility = View.GONE
+                darkOverlay?.visibility = View.GONE
+                menuOverlay?.visibility = View.GONE
                 txtChannelTitle.visibility = View.GONE
                 txtCategorySubtitle.visibility = View.GONE
                 txtEpgInfo.visibility = View.GONE
@@ -794,26 +791,23 @@ class TvLivePreviewActivity : AppCompatActivity() {
                 mainDashboardContainer.setPadding(0, 0, 0, 0)
                 panelPlayer.setPadding(0, 0, 0, 0)
                 panelPlayer.setBackgroundColor(Color.BLACK)
-                panelPlayer.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT)
-                frameVideo.layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.MATCH_PARENT
-                ).apply {
-                    marginStart = 0
-                    marginEnd = 0
-                    topMargin = 0
-                    bottomMargin = 0
-                }
+                panelPlayer.layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+                frameVideo.layoutParams = FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+                )
                 frameVideo.foreground = null
                 frameVideo.clearFocus()
                 viewPlayer.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
 
                 Toast.makeText(this, "وضع الشاشة الكامله • اضغط Back للعودة", Toast.LENGTH_SHORT).show()
             } else {
-                mainDashboardContainer.setPadding(dp(10), dp(10), dp(10), dp(10))
+                mainDashboardContainer.setPadding(0, 0, 0, 0)
                 panelPlayer.setPadding(dp(10), dp(10), dp(10), dp(10))
                 panelPlayer.setBackgroundResource(R.drawable.bg_panel)
-                frameVideo.foreground = getDrawable(R.drawable.focus_ring_vip)
+                frameVideo.foreground = null
+                darkOverlay?.visibility = View.VISIBLE
+                menuOverlay?.visibility = View.VISIBLE
                 panelCategories.visibility = if (hideCategories) View.GONE else View.VISIBLE
                 panelAlphabet.visibility = if (hideCategories) View.GONE else View.VISIBLE
                 panelChannels.visibility = View.VISIBLE
@@ -985,7 +979,8 @@ class TvLivePreviewActivity : AppCompatActivity() {
                     view.setOnLongClickListener { onLongClick(ch); true }
                     view.setOnFocusChangeListener { v, has ->
                         try {
-                            v.animate().scaleX(if (has) 1.03f else 1f).scaleY(if (has) 1.03f else 1f).setDuration(90).start()
+                            v.animate().scaleX(if (has) 1.1f else 1f).scaleY(if (has) 1.1f else 1f).setDuration(200).start()
+                            v.elevation = if (has) 10f else 0f
                             if (has) {
                                 lastFocusedChannelUrl = ch.streamUrl
                                 activePanel = ActivePanel.CHANNELS

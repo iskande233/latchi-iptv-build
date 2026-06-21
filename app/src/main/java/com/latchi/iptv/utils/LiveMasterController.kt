@@ -124,14 +124,26 @@ object LiveMasterController {
                         return@thread
                     }
 
-                    // 2. Server Sync Pro Priority (Glowing Fullscreen Screen)
+                    // 2. Server Sync Pro Priority
+                    // لا نعرض شاشة "تم تحديث السيرفر" بمجرد ملاحظة revision من الـ poller.
+                    // أولاً نُجري المزامنة الحقيقية عبر ServerSyncManager، وبعد حفظ البروفايل
+                    // ومسح الكاش/Room بنجاح فقط نظهر الرسالة. هذا يمنع الظهور المسبق أو العشوائي.
                     if (serverRevision > localRevision && localRevision > 0L && activeProfile != null) {
-                        Log.d(TAG, "Instant Server Revision Detected: $serverRevision > $localRevision")
-                        prefs.edit().putLong(KEY_LAST_REVISION, serverRevision).apply()
-                        onMain {
-                            val activity = currentActivity
-                            if (activity != null && activity !is GlowingServerUpdateActivity) {
-                                GlowingServerUpdateActivity.start(activity, serverRevision)
+                        Log.d(TAG, "Server Revision Detected, waiting for real sync: $serverRevision > $localRevision")
+                        ServerSyncManager.checkForServerUpdate(appContext, force = true) { result ->
+                            if (result.changed) {
+                                prefs.edit().putLong(KEY_LAST_REVISION, result.serverRevision.takeIf { it > 0L } ?: serverRevision).apply()
+                                val activity = currentActivity
+                                if (activity != null && activity !is GlowingServerUpdateActivity) {
+                                    GlowingServerUpdateActivity.start(
+                                        activity,
+                                        result.serverRevision.takeIf { it > 0L } ?: serverRevision
+                                    )
+                                }
+                            } else {
+                                // لا توجد مزامنة فعلية مطبقة، نحدّث آخر revision فقط حتى لا تتكرر رسالة وهمية.
+                                prefs.edit().putLong(KEY_LAST_REVISION, serverRevision).apply()
+                                Log.d(TAG, "Server revision ignored without applied sync: ${result.message}")
                             }
                         }
                     } else if (localRevision == 0L && serverRevision > 0L) {

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- حالة الضغط والاختيار وتثبيت الحرف -->
+    <item android:state_selected="true">
+        <shape android:shape="rectangle">
+            <corners android:radius="8dp"/>
+            <solid android:color="#FFC107"/>
+        </shape>
+    </item>
+
+    <!-- إصلاح الشفافية: عند مرور الريموت فوق الحرف (Focus) -->
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <corners android:radius="8dp"/>
+            <solid android:color="#4DFFFFFF"/>
+            <stroke android:width="2dp" android:color="#FFFFFF"/>
+        </shape>
+    </item>
+
+    <!-- الحالة العادية الافتراضية -->
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="8dp"/>
+            <solid android:color="@android:color/transparent"/>
+        </shape>
+    </item>
+</selector>

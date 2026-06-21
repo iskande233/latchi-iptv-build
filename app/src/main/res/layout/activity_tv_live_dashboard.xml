@@ -1,192 +1,198 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/mainDashboardContainer"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bg_app"
-    android:orientation="horizontal"
-    android:padding="10dp">
+    android:background="#000000">
 
-    <LinearLayout
-        android:id="@+id/panelCategories"
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="0.22"
-        android:layout_marginEnd="4dp"
-        android:background="@drawable/bg_panel"
-        android:orientation="vertical"
-        android:padding="8dp">
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:gravity="center"
-            android:text="📁 الفئات"
-            android:textColor="#FFD700"
-            android:textSize="13sp"
-            android:textStyle="bold" />
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recyclerCategories"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:clipToPadding="false" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/panelAlphabet"
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="0.08"
-        android:layout_marginEnd="4dp"
-        android:background="@drawable/bg_panel"
-        android:gravity="center_horizontal"
-        android:orientation="vertical"
-        android:padding="6dp">
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="6dp"
-            android:gravity="center"
-            android:text="A-Z"
-            android:textColor="#7FE6FF"
-            android:textSize="11sp"
-            android:textStyle="bold" />
-
-        <ScrollView
-            android:id="@+id/alphabetScroller"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:fadeScrollbars="false"
-            android:overScrollMode="never"
-            android:scrollbars="none">
-
-            <LinearLayout
-                android:id="@+id/containerAlphabet"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_horizontal"
-                android:orientation="vertical" />
-        </ScrollView>
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/panelChannels"
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="0.34"
-        android:layout_marginEnd="4dp"
-        android:background="@drawable/bg_panel"
-        android:orientation="vertical"
-        android:padding="8dp">
-
-        <TextView
-            android:id="@+id/txtFilterHint"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:gravity="center"
-            android:text="📺 قائمة القنوات"
-            android:textColor="#7FE6FF"
-            android:textSize="13sp"
-            android:textStyle="bold" />
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recyclerChannels"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:clipToPadding="false" />
-    </LinearLayout>
-
-    <LinearLayout
+    <!-- 1. مشغل الفيديو في الخلفية ملء الشاشة -->
+    <FrameLayout
         android:id="@+id/panelPlayer"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_weight="0.36"
-        android:background="@drawable/bg_panel"
-        android:gravity="top"
-        android:orientation="vertical"
-        android:padding="10dp">
-
-        <TextView
-            android:id="@+id/txtChannelTitle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:gravity="start|center_vertical"
-            android:singleLine="true"
-            android:text="اسم القناة"
-            android:textColor="#FFD700"
-            android:textSize="16sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/txtCategorySubtitle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:gravity="start|center_vertical"
-            android:singleLine="true"
-            android:text="الفئة"
-            android:textColor="#C7B7D8"
-            android:textSize="11.5sp" />
-
-        <TextView
-            android:id="@+id/txtEpgInfo"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:layout_marginBottom="8dp"
-            android:ellipsize="end"
-            android:gravity="start|center_vertical"
-            android:maxLines="2"
-            android:text="EPG: جاري التحميل..."
-            android:textColor="#39FF8B"
-            android:textSize="11sp" />
+        android:background="#000000">
 
         <FrameLayout
             android:id="@+id/frameVideo"
             android:layout_width="match_parent"
-            android:layout_height="188dp"
-            android:layout_marginVertical="4dp"
+            android:layout_height="match_parent"
             android:background="#000000"
             android:clickable="true"
-            android:elevation="6dp"
-            android:focusable="true"
-            android:foreground="@drawable/focus_ring_vip">
+            android:focusable="true">
 
             <com.google.android.exoplayer2.ui.PlayerView
-                android:id="@+id/viewPlayer"
+                android:id="@+id/player_view"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                app:resize_mode="fit"
+                android:focusable="false"
+                app:resize_mode="zoom"
                 app:show_buffering="never"
                 app:use_controller="false" />
         </FrameLayout>
+    </FrameLayout>
 
-        <TextView
-            android:id="@+id/txtDetailsBottom"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:gravity="start|center_vertical"
-            android:text="▶ البث المباشر مستمر"
-            android:textColor="#FFFFFF"
-            android:textSize="10.5sp" />
+    <!-- 2. طبقة التظليل الشفافة عند استدعاء القائمة -->
+    <View
+        android:id="@+id/dark_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#B3000000" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:gravity="start|center_vertical"
-            android:text="💡 اضغط OK على نفس القناة مرة ثانية لتكبير الشاشة"
-            android:textColor="#8891B8"
-            android:textSize="10sp" />
+    <!-- 3. القوائم التفاعلية فوق التظليل Glassmorphism -->
+    <LinearLayout
+        android:id="@+id/menuOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:padding="20dp"
+        android:clipChildren="false"
+        android:clipToPadding="false">
+
+        <!-- قائمة الفئات -->
+        <LinearLayout
+            android:id="@+id/panelCategories"
+            android:layout_width="260dp"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="10dp"
+            android:background="@drawable/bg_tv_glass_panel"
+            android:orientation="vertical"
+            android:padding="8dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:gravity="center"
+                android:text="📁 الفئات"
+                android:textColor="#FFD700"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerCategories"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:clipToPadding="false" />
+        </LinearLayout>
+
+        <!-- قائمة الحروف -->
+        <LinearLayout
+            android:id="@+id/panelAlphabet"
+            android:layout_width="80dp"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="10dp"
+            android:background="@drawable/bg_tv_glass_panel"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:padding="6dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="6dp"
+                android:gravity="center"
+                android:text="A-Z"
+                android:textColor="#7FE6FF"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+
+            <ScrollView
+                android:id="@+id/alphabetScroller"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:fadeScrollbars="false"
+                android:overScrollMode="never"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:id="@+id/containerAlphabet"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical" />
+            </ScrollView>
+        </LinearLayout>
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="10dp"
+            android:background="#33FFFFFF" />
+
+        <!-- شبكة/قائمة عرض القنوات فوق الفيديو -->
+        <LinearLayout
+            android:id="@+id/panelChannels"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/bg_tv_glass_panel"
+            android:orientation="vertical"
+            android:padding="8dp">
+
+            <TextView
+                android:id="@+id/txtFilterHint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:gravity="center"
+                android:text="📺 قائمة القنوات"
+                android:textColor="#7FE6FF"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/txtChannelTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:singleLine="true"
+                android:text="اسم القناة"
+                android:textColor="#FFD700"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/txtCategorySubtitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:singleLine="true"
+                android:text="الفئة"
+                android:textColor="#C7B7D8"
+                android:textSize="11.5sp" />
+
+            <TextView
+                android:id="@+id/txtEpgInfo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="8dp"
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:text="EPG: جاري التحميل..."
+                android:textColor="#39FF8B"
+                android:textSize="11sp" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerChannels"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:padding="6dp" />
+
+            <TextView
+                android:id="@+id/txtDetailsBottom"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="▶ البث المباشر مستمر"
+                android:textColor="#FFFFFF"
+                android:textSize="10.5sp" />
+        </LinearLayout>
     </LinearLayout>
-</LinearLayout>
+</FrameLayout>
