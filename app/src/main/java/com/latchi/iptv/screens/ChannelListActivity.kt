@@ -304,8 +304,11 @@ class ChannelListActivity : AppCompatActivity() {
         catGridRecyclerView.isFocusable = true
         buildCategories(lastChannels)
         catGridRecyclerView.postDelayed({
-            catGridRecyclerView.requestFocus()
-            catGridRecyclerView.findViewHolderForAdapterPosition(0)?.itemView?.requestFocus()
+            // 🛡️ v6.0 Fix: تحقق من أن الفئات محملة قبل requestFocus (يمنع Crash على RecyclerView فارغ)
+            if (gridAdapter.itemCount > 0) {
+                catGridRecyclerView.requestFocus()
+                catGridRecyclerView.findViewHolderForAdapterPosition(0)?.itemView?.requestFocus()
+            }
         }, 120L)
     }
 

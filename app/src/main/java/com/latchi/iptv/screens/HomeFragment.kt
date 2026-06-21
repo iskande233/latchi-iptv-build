@@ -266,8 +266,9 @@ class HomeFragment : Fragment() {
             loadHomePrayerSummary()
             val active = com.latchi.iptv.utils.SourcePrefs.getActiveProfile(requireContext())
             if (active != null && com.latchi.iptv.utils.SourcePrefs.isPendingServerRefresh(requireContext(), active.id)) {
-                // نترك pending=true إلى أن ينجح الجلب فعلياً داخل ChannelRefreshHelper
+                // ✅ v6.0 Fix: مسح + جلب فوري عند تغيير السيرفر (بدلاً من الانتظار بلا نتيجة)
                 com.latchi.iptv.utils.ChannelCache.clear(requireContext().applicationContext, active.id)
+                com.latchi.iptv.utils.SourcePrefs.setPendingServerRefresh(requireContext(), active.id, false)
                 view?.post { refreshChannelsSilently() }
             } else {
                 view?.post { startSilentServerSync(force = false) }
@@ -372,9 +373,9 @@ class HomeFragment : Fragment() {
     }
 
     private fun setupClicks(view: View) {
-        // isTv: نجمع بين TvUtils + فحص إضافي من layout
-        // إذا cardBeInSports موجود ويشتغل = نحن على TV بيقين
-        val isTv = com.latchi.iptv.utils.TvUtils.isTv(requireContext()) || (cardBeInSports != null)
+        // 🛡️ v6.0 Fix: الهاتف يُكشف فقط عبر TvUtils.isTv()
+        // cardBeInSports موجود في layout الهاتف والتلفاز → لا يُستخدم للكشف
+        val isTv = com.latchi.iptv.utils.TvUtils.isTv(requireContext())
 
         // 🎬 البث المباشر
         cardLive?.setOnClickListener {

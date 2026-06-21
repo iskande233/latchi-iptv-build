@@ -175,40 +175,18 @@ class BeinSportsActivity : AppCompatActivity() {
         }
 
         progressBar.visibility = View.VISIBLE
-        countText.text = "⏳ جاري جلب قنوات beIN..."
+        countText.text = "⏳ جاري تحميل قنوات beIN..."
 
-        // جلب القنوات من Room أولاً (Offline-First)
+        // 🛡️ v6.0 Fix: لا نستدعي syncNowBlocking هنا (تسبب ANR/Crash)
+        // فقط نقرأ من Cache أو Room — التحديث يتم في HomeFragment
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val liveChannels = CatalogRepository.getChannelsByTypeBlocking(this@BeinSportsActivity, active.id, "live")
-                val beinFiltered = filterBeinSports(liveChannels)
-                withContext(Dispatchers.Main) {
-                    progressBar.visibility = View.GONE
-                    if (beinFiltered.isEmpty()) {
-                        // إذا لا توجد بيانات محفوظة، جلب من السيرفر
-                        loadFromServer(active.id)
-                    } else {
-                        allBeinChannels = beinFiltered
-                        displayChannels()
-                    }
+                // 1) محاولة قراءة من الكاش السريع
+                var liveChannels = ChannelCache.load(this@BeinSportsActivity, active.id).filter { it.contentType == "live" }
+                if (liveChannels.isEmpty()) {
+                    // 2) محاولة Room
+                    liveChannels = CatalogRepository.getChannelsByTypeBlocking(this@BeinSportsActivity, active.id, "live")
                 }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    progressBar.visibility = View.GONE
-                    loadFromServer(active.id)
-                }
-            }
-        }
-    }
-
-    private fun loadFromServer(profileId: String) {
-        countText.text = "🌐 جاري الاتصال بالسيرفر..."
-        // إعادة التحميل من السيرفر
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val remoteConfig = RemoteViewConfigPrefs.getFilterConfig(this@BeinSportsActivity, profileId)
-                CatalogRepository.syncNowBlocking(this@BeinSportsActivity, SourcePrefs.getActiveProfile(this@BeinSportsActivity)!!, onlyType = "live")
-                val liveChannels = CatalogRepository.getChannelsByTypeBlocking(this@BeinSportsActivity, profileId, "live")
                 val beinFiltered = filterBeinSports(liveChannels)
                 withContext(Dispatchers.Main) {
                     progressBar.visibility = View.GONE
@@ -218,7 +196,7 @@ class BeinSportsActivity : AppCompatActivity() {
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     progressBar.visibility = View.GONE
-                    showEmpty("❌ تعذر جلب القنوات:\n${e.message?.take(100) ?: "خطأ غير معروف"}")
+                    showEmpty("📭 لا توجد قنوات beIN محفوظة.\n\nافتح البث المباشر أولاً لتحميل القنوات.")
                 }
             }
         }

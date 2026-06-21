@@ -190,39 +190,11 @@ class GlowingServerUpdateActivity : AppCompatActivity() {
     }
 
     /**
-     * 🛡️ v5.2+: ينتظر حتى يكتمل تحميل القنوات فعلياً قبل إغلاق الشاشة.
-     * هذا يضمن أن المستخدم يرى القنوات الجديدة بعد إغلاق popup "تم تحديث السيرفر"
-     * بدون popup إضافي "تم جلب القنوات".
+     * 🛡️ v6.0 Fix: لا نستخدم runBlocking في Main Thread (يمنع ANR/Crash).
+     * ننتظر 1.5 ثانية فقط — HomeFragment ستعيد التحميل في onResume.
      */
     private fun waitForChannelsToLoad() {
-        val appContext = applicationContext
-        val active = com.latchi.iptv.utils.SourcePrefs.getActiveProfile(appContext) ?: run {
-            // إذا لا يوجد profile → انتقل مباشرة
-            handler.postDelayed({ navigateToMain() }, 800L)
-            return
-        }
-
-        // مراقبة تحميل القنوات
-        var attempts = 0
-        val maxAttempts = 30  // 30 * 500ms = 15 ثانية كحد أقصى
-        val checkRunnable = object : Runnable {
-            override fun run() {
-                attempts++
-                val hasData = runCatching {
-                    com.latchi.iptv.utils.CatalogRepository.hasTypeDataBlocking(appContext, active.id, "live") ||
-                    com.latchi.iptv.utils.CatalogRepository.hasTypeDataBlocking(appContext, active.id, "movie") ||
-                    com.latchi.iptv.utils.CatalogRepository.hasTypeDataBlocking(appContext, active.id, "series")
-                }.getOrDefault(false)
-
-                if (hasData || attempts >= maxAttempts) {
-                    // القنوات تم تحميلها (أو انتهى الوقت المخصص)
-                    handler.postDelayed({ navigateToMain() }, 600L)
-                } else {
-                    handler.postDelayed(this, 500L)
-                }
-            }
-        }
-        handler.postDelayed(checkRunnable, 600L)
+        handler.postDelayed({ navigateToMain() }, 1500L)
     }
 
     private fun navigateToMain() {

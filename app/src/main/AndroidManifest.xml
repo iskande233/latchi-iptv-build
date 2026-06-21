@@ -36,6 +36,7 @@
         <activity android:name=".screens.ChannelListActivity" android:exported="false" android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|smallestScreenSize" />
         <activity android:name=".screens.TvLivePreviewActivity" android:exported="false" android:screenOrientation="landscape" android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|smallestScreenSize" />
         <activity android:name=".screens.BeInSportsCategoriesActivity" android:exported="false" android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|smallestScreenSize" />
+        <activity android:name=".screens.BeinSportsActivity" android:exported="false" android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|smallestScreenSize" />
         <activity android:name=".screens.RoyalFavoritesDashboardActivity" android:exported="false" android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|smallestScreenSize" />
         <activity android:name=".screens.VipAccountsActivity" android:exported="false" android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|smallestScreenSize" />
         <activity android:name=".screens.SeriesDetailActivity" android:exported="false" android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|smallestScreenSize" />
