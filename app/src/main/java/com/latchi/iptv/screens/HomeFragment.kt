@@ -379,13 +379,11 @@ class HomeFragment : Fragment() {
 
         // 🎬 البث المباشر
         cardLive?.setOnClickListener {
-            // 🛑 لا نجيب القنوات هنا باش ما نعطلش الواجهة ولا نمرر كمية كبيرة عبر Intent
-            // TvLivePreviewActivity يتكفل بجلب القنوات بذكاء من الكاش أو من المصدر إذا كان الكاش قديماً
-            if (isTv) {
-                TvLivePreviewActivity.startAllChannels(requireContext(), emptyList())
-            } else {
-                ChannelListActivity.start(requireContext(), "live", getString(R.string.live_tv))
-            }
+            // الإصلاح الجذري: التلفاز لازم يدخل لنفس واجهة/آلية الهاتف أولاً (ChannelListActivity)
+            // لأنها تستعمل lazy Xtream categories وتجيب القنوات حسب الفئة بسرعة.
+            // الدخول المباشر القديم لـ TvLivePreviewActivity كان يحاول يحمّل كل Live دفعة واحدة،
+            // وهذا هو سبب الواجهة الفارغة في التلفاز رغم أن الهاتف يخدم.
+            ChannelListActivity.start(requireContext(), "live", getString(R.string.live_tv))
         }
         cardMovies?.setOnClickListener { ChannelListActivity.start(requireContext(), "movie", getString(R.string.movies)) }
         cardSeries?.setOnClickListener { ChannelListActivity.start(requireContext(), "series", getString(R.string.series)) }
@@ -397,7 +395,9 @@ class HomeFragment : Fragment() {
         // على الهاتف: BeinSportsActivity (قائمة عمودية احترافية)
         cardBeInSports?.setOnClickListener {
             if (com.latchi.iptv.utils.TvUtils.isTv(requireContext())) {
-                TvLivePreviewActivity.startDirectBeinSports(requireContext())
+                // نفس المبدأ: لا ندخل مباشرة للـ Preview بقائمة فارغة.
+                // نفتح شاشة فئات beIN أولاً، وهي تمرّر القنوات الجاهزة للمعاينة.
+                startActivity(Intent(requireContext(), BeInSportsCategoriesActivity::class.java))
             } else {
                 startActivity(Intent(requireContext(), BeinSportsActivity::class.java))
             }
