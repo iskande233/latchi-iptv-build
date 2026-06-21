@@ -86,6 +86,13 @@ object CatalogRepository {
         return CatalogDatabase.get(context).catalogDao().countByType(profileId, contentType) > 0
     }
 
+    /**
+     * Blocking version of hasTypeData - safe to call from non-coroutine contexts
+     * (e.g., Runnable, Handler callbacks).
+     */
+    fun hasTypeDataBlocking(context: Context, profileId: String, contentType: String): Boolean =
+        runBlocking { hasTypeData(context, profileId, contentType) }
+
     fun syncSilently(context: Context, onlyType: String? = null) {
         val profile = SourcePrefs.getActiveProfile(context.applicationContext) ?: return
         scope.launch {
