@@ -69,7 +69,8 @@ object ChannelRefreshHelper {
         // مهم للتلفاز و beIN: أحياناً يكون الكاش موجوداً لكنه لا يحتوي Live TV
         // (مثلاً كاش أفلام/مسلسلات أو كاش جزئي)، فلا نرجع قائمة فارغة ونعتبره fresh.
         val requestedLiveMissing = onlyLive && cachedAll.none { it.contentType == "live" }
-        val shouldRefresh = pendingRefresh || cachedAll.isEmpty() || revisionMismatch || requestedLiveMissing
+        val requestedTypeStale = onlyLive && !ChannelCache.isTypeCacheFresh(appContext, profile, "live")
+        val shouldRefresh = pendingRefresh || cachedAll.isEmpty() || revisionMismatch || requestedLiveMissing || requestedTypeStale
 
         if (!shouldRefresh) {
             onMain {

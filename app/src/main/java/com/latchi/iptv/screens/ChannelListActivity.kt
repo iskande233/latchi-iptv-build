@@ -32,7 +32,6 @@ import com.latchi.iptv.provider.ChannelCategory
 import com.latchi.iptv.provider.ChannelsProvider
 import com.latchi.iptv.utils.CatalogRepository
 import com.latchi.iptv.utils.ChannelCache
-import com.latchi.iptv.utils.DigitNormalizer
 import com.latchi.iptv.utils.FavoritesPrefs
 import com.latchi.iptv.utils.FloatingBackHelper
 import com.latchi.iptv.utils.PreparedCatalogHelper
@@ -42,6 +41,7 @@ import com.latchi.iptv.utils.ServerSyncManager
 import com.latchi.iptv.utils.ServerUpdateOverlayHelper
 import com.latchi.iptv.utils.ThemeManager
 import com.latchi.iptv.utils.TvUtils
+import com.latchi.iptv.utils.UnifiedChannelRepository
 
 class ChannelListActivity : AppCompatActivity() {
 
@@ -488,7 +488,12 @@ class ChannelListActivity : AppCompatActivity() {
                         }
                     )
                 }.getOrDefault(emptyList())
-                val cached = if (roomCached.isNotEmpty()) roomCached else ChannelCache.load(applicationContext, active.id)
+                val diskCached = if (ChannelCache.isTypeCacheFresh(applicationContext, active, contentType)) {
+                    ChannelCache.loadByType(applicationContext, active.id, contentType)
+                } else {
+                    emptyList()
+                }
+                val cached = if (roomCached.isNotEmpty()) roomCached else diskCached
                 val embedded = if (cached.isEmpty() && active.m3uUrl.isBlank()) {
                     com.latchi.iptv.utils.EmbeddedChannelsLoader.load(applicationContext)
                 } else emptyList()
@@ -633,12 +638,7 @@ class ChannelListActivity : AppCompatActivity() {
             // تحويل currentCategory (اسم مخصص) إلى الاسم الأصلي للمطابقة
             val currentCategoryOriginal = remoteConfig.customNames.entries
                 .firstOrNull { it.value.equals(currentCategory, ignoreCase = true) }?.key ?: currentCategory
-            fun normCat(v: String): String = DigitNormalizer.normalizeDigits(v)
-                .lowercase()
-                .replace("بي إن", "بي ان")
-                .replace(Regex("[^a-z0-9\u0600-\u06FF]+"), "")
-            fun sameCategory(a: String, b: String): Boolean =
-                a.equals(b, ignoreCase = true) || normCat(a) == normCat(b)
+            fun sameCategory(a: String, b: String): Boolean = UnifiedChannelRepository.sameCategory(a, b)
 
             // 👑 تصفية الفئات المخفية من قائمة القنوات
             val allChannels = channelsProvider.channels.value ?: emptyList()

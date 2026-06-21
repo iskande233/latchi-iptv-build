@@ -32,8 +32,6 @@ import com.google.android.exoplayer2.ui.AspectRatioFrameLayout
 import com.google.android.exoplayer2.ui.PlayerView
 import com.latchi.iptv.R
 import com.latchi.iptv.model.Channel
-import com.latchi.iptv.utils.BeinChannelResolver
-import com.latchi.iptv.utils.ChannelRefreshHelper
 import com.latchi.iptv.utils.DigitNormalizer
 import com.latchi.iptv.utils.FavoriteManager
 import com.latchi.iptv.utils.PreparedCatalogHelper
@@ -202,10 +200,10 @@ class TvLivePreviewActivity : AppCompatActivity() {
             txtDetailsBottom.setTextColor(Color.parseColor("#A5B4FC"))
         }
 
-        // توحيد آلية الجلب: التلفاز يعتمد على ChannelRefreshHelper/ChannelsProvider
-        // وهي نفس سلسلة الجلب المرنة المستعملة في واجهة الهاتف (Xtream API ثم M3U fallback).
-        ChannelRefreshHelper.ensureFreshChannels(applicationContext, active, onlyLive = true) { result ->
-            if (isFinishing) return@ensureFreshChannels
+        // توحيد آلية الجلب: نفس Repository ونفس الداتا للهاتف والتلفاز.
+        // الاختلاف فقط في الواجهة (Overlay/Focus)، أما القنوات والفلترة فمصدرها واحد.
+        UnifiedChannelRepository.loadLive(applicationContext, active) { result ->
+            if (isFinishing) return@loadLive
 
             fun applyLoadedChannels(source: List<Channel>, forceMessage: String? = null) {
                 val liveOnly = source.filter { it.contentType == "live" }.ifEmpty { source }
@@ -224,18 +222,17 @@ class TvLivePreviewActivity : AppCompatActivity() {
             val loaded = result.channels.filter { it.contentType == "live" }.ifEmpty { result.channels }
             val directFiltered = applyDirectFilterIfNeeded(loaded)
 
-            // إذا كانت واجهة beIN/ALWAN فارغة رغم وجود قنوات عامة، نفحص السيرفر مباشرة
-            // عبر BeinChannelResolver حتى لا تبقى فئة beIN فارغة بسبب كاش جزئي أو mapping قديم.
+            // إذا كانت واجهة beIN/ALWAN فارغة رغم وجود قنوات عامة، نفحصها بالفلتر الذكي الموحد.
             if (directFilterMode == "bein_alwan" && directFiltered.isEmpty()) {
-                BeinChannelResolver.resolve(this, active) { beinChannels ->
+                UnifiedChannelRepository.loadBein(this, active) { beinResult ->
                     if (!isFinishing) {
-                        applyLoadedChannels(beinChannels, if (beinChannels.isEmpty()) "📭 لم يتم العثور على قنوات beIN في السيرفر الحالي" else null)
+                        applyLoadedChannels(beinResult.channels, if (beinResult.channels.isEmpty()) "📭 لم يتم العثور على قنوات beIN في السيرفر الحالي" else null)
                     }
                 }
-                return@ensureFreshChannels
+                return@loadLive
             }
 
-            applyLoadedChannels(loaded, if (result.usedCacheFallback) "⚠️ تم عرض آخر كاش متوفر" else null)
+            applyLoadedChannels(loaded, if (result.source == "cache_fallback") "⚠️ تم عرض آخر كاش متوفر" else null)
         }
     }
 
@@ -570,12 +567,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
             val remoteConfig = RemoteViewConfigPrefs.getFilterConfig(this, profileId)
             val originalCatName = remoteConfig.customNames.entries
                 .firstOrNull { it.value.equals(realCatName, ignoreCase = true) }?.key ?: realCatName
-            fun normCat(v: String): String = DigitNormalizer.normalizeDigits(v)
-                .lowercase()
-                .replace("بي إن", "بي ان")
-                .replace(Regex("[^a-z0-9\u0600-\u06FF]+"), "")
-            fun sameCategory(a: String, b: String): Boolean =
-                a.equals(b, ignoreCase = true) || normCat(a) == normCat(b)
+            fun sameCategory(a: String, b: String): Boolean = UnifiedChannelRepository.sameCategory(a, b)
 
             var rawList = when {
                 hideCategories -> allLiveChannels

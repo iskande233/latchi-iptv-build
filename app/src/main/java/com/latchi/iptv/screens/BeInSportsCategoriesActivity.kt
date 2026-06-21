@@ -11,15 +11,13 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.latchi.iptv.R
 import com.latchi.iptv.model.Channel
-import com.latchi.iptv.utils.BeinChannelResolver
-import com.latchi.iptv.utils.ChannelCache
 import com.latchi.iptv.utils.LocaleHelper
 import com.latchi.iptv.utils.SourcePrefs
 import com.latchi.iptv.utils.TvFocusHelper
 import com.latchi.iptv.utils.TvUtils
+import com.latchi.iptv.utils.UnifiedChannelRepository
 
 /**
  * شاشة فئات قنوات beIN Sports المفلترة فقط.
@@ -193,8 +191,8 @@ class BeInSportsCategoriesActivity : AppCompatActivity() {
             return
         }
 
-        BeinChannelResolver.resolve(this, active) { beinChannels ->
-            val groups = groupByCategory(beinChannels)
+        UnifiedChannelRepository.loadBein(this, active) { result ->
+            val groups = groupByCategory(result.channels)
             renderCategories(groups)
         }
     }

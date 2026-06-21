@@ -18,13 +18,13 @@ import androidx.recyclerview.widget.RecyclerView
 import com.latchi.iptv.R
 import com.latchi.iptv.adapter.ChannelsAdapter
 import com.latchi.iptv.model.Channel
-import com.latchi.iptv.utils.BeinChannelResolver
 import com.latchi.iptv.utils.DigitNormalizer
 import com.latchi.iptv.utils.LocaleHelper
 import com.latchi.iptv.screens.PlayerActivity
 import com.latchi.iptv.utils.RemoteViewConfigPrefs
 import com.latchi.iptv.utils.SourcePrefs
 import com.latchi.iptv.utils.TvUtils
+import com.latchi.iptv.utils.UnifiedChannelRepository
 
 /**
  * 🏆 BeinSportsActivity — واجهة beIN Sports احترافية مخصصة للهاتف
@@ -172,9 +172,9 @@ class BeinSportsActivity : AppCompatActivity() {
 
         // نفس آلية الجلب الموحدة المستعملة في التلفاز/القائمة العامة:
         // Cache/Room أولاً، وإذا كانت beIN فارغة يتم إجبار قراءة السيرفر مباشرة داخل BeinChannelResolver.
-        BeinChannelResolver.resolve(this, active) { beinChannels ->
+        UnifiedChannelRepository.loadBein(this, active) { result ->
             progressBar.visibility = View.GONE
-            allBeinChannels = beinChannels
+            allBeinChannels = result.channels
             displayChannels()
         }
     }
