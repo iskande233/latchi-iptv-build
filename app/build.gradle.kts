@@ -12,11 +12,12 @@ android {
         applicationId = "com.latchi.iptv"
         minSdk = 21
         targetSdk = 34
-        // versionCode يزيد تلقائياً في كل بناء (timestamp)
-        // هكذا Android يعرف أنها نسخة جديدة
+        // versionCode موحّد مع Codemagic/GitHub Releases.
+        // إذا Codemagic أرسل BUILD_VERSION_CODE نستعمله، وإلا fallback timestamp.
+        // المهم: نفس الرقم المبني داخل APK هو نفس الرقم المنشور في Google Sheet.
         val buildTimestamp = (System.currentTimeMillis() / 1000).toInt()
-        versionCode = buildTimestamp
-        versionName = "2.1.1"
+        versionCode = (System.getenv("BUILD_VERSION_CODE")?.toIntOrNull() ?: buildTimestamp)
+        versionName = (System.getenv("BUILD_VERSION_NAME") ?: "2.1.1")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

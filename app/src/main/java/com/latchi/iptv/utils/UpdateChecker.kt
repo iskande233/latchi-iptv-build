@@ -79,14 +79,17 @@ object UpdateChecker {
                 res.body?.string() ?: return null
             }
             val json = JSONObject(body)
-            val available = json.optBoolean("update_available", false)
+            val serverVersionCode = json.optInt("versionCode", json.optInt("version_code", 0))
+            val available = json.optBoolean("update_available", false) && serverVersionCode > BuildConfig.VERSION_CODE
             val apkUrl = json.optString("apkUrl", json.optString("url", ""))
+            // حماية إضافية: حتى لو السكريبت رجّع update_available=true بالغلط،
+            // التطبيق لا يعرض التحديث إلا إذا versionCode المنشور أكبر من النسخة المثبتة فعلاً.
             if (!available || apkUrl.isBlank()) return null
             val notesObj = json.optJSONObject("notes") ?: json.optJSONObject("releaseNotes")
             val notes = notesObj?.optString("ar")?.takeIf { it.isNotBlank() }
                 ?: json.optString("notes", "تحديث جديد متوفر لتطبيق LATCHI IPTV.")
             UpdateInfo(
-                versionCode = json.optInt("versionCode", 0),
+                versionCode = serverVersionCode,
                 versionName = json.optString("versionName", ""),
                 apkUrl = apkUrl,
                 notes = notes,
