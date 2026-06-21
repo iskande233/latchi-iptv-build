@@ -38,11 +38,37 @@ object BeinChannelResolver {
         try {
             ChannelRefreshHelper.ensureFreshChannels(appContext, profile, onlyLive = true) { result ->
                 val finalBein = filterBein(result.channels)
-                Log.d(
-                    TAG,
-                    "Resolved ${finalBein.size} beIN channels (${if (result.refreshedFromServer) "fresh" else if (result.usedCacheFallback) "cache_fallback" else "cache"})"
-                )
-                onResolved(finalBein)
+                if (finalBein.isNotEmpty()) {
+                    Log.d(
+                        TAG,
+                        "Resolved ${finalBein.size} beIN channels (${if (result.refreshedFromServer) "fresh" else if (result.usedCacheFallback) "cache_fallback" else "cache"})"
+                    )
+                    onResolved(finalBein)
+                    return@ensureFreshChannels
+                }
+
+                // إذا كان الكاش/Room جزئياً أو قديماً ولا يحتوي beIN، نفحص السيرفر مباشرة.
+                // هذا يحل حالة: البث المباشر العام يعمل لكن واجهة beIN فارغة.
+                thread(name = "LatchiBeinForceResolve") {
+                    val freshLive = runCatching { fetchFromServer(profile.m3uUrl) }.getOrDefault(emptyList())
+                    if (freshLive.isNotEmpty()) {
+                        runCatching {
+                            val oldNonLive = ChannelCache.load(appContext, profile.id).filter { it.contentType != "live" }
+                            ChannelCache.save(appContext, profile.id, oldNonLive + freshLive)
+                            CatalogRepository.saveChannelsBlocking(
+                                appContext,
+                                profile.id,
+                                freshLive,
+                                profile.serverRevision,
+                                replaceAll = false,
+                                replaceTypeFallback = "live"
+                            )
+                        }
+                    }
+                    val forcedBein = filterBein(freshLive)
+                    Log.d(TAG, "Force-resolved ${forcedBein.size} beIN channels from provider")
+                    onMain { onResolved(forcedBein) }
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Resolver Error: ${e.message}")

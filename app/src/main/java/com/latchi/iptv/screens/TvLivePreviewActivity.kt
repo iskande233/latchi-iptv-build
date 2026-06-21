@@ -8,8 +8,6 @@ import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import android.view.Gravity
 import android.view.KeyEvent
@@ -34,7 +32,7 @@ import com.google.android.exoplayer2.ui.AspectRatioFrameLayout
 import com.google.android.exoplayer2.ui.PlayerView
 import com.latchi.iptv.R
 import com.latchi.iptv.model.Channel
-import com.latchi.iptv.utils.CatalogRepository
+import com.latchi.iptv.utils.BeinChannelResolver
 import com.latchi.iptv.utils.ChannelRefreshHelper
 import com.latchi.iptv.utils.DigitNormalizer
 import com.latchi.iptv.utils.FavoriteManager
@@ -199,47 +197,46 @@ class TvLivePreviewActivity : AppCompatActivity() {
             return
         }
 
-        Thread {
-            try {
-                // 1. محاولة Room أولاً (Offline-First)
-                var liveChannels = runCatching {
-                    CatalogRepository.getChannelsByTypeBlocking(this, active.id, "live")
-                }.getOrDefault(emptyList())
+        runOnUiThread {
+            txtDetailsBottom.text = "⏳ جاري تحميل القنوات بنفس آلية الهاتف..."
+            txtDetailsBottom.setTextColor(Color.parseColor("#A5B4FC"))
+        }
 
-                // 2. إذا فارغة → force sync من السيرفر (blocking)
-                if (liveChannels.isEmpty()) {
-                    runOnUiThread {
-                        txtDetailsBottom.text = "⏳ جاري جلب القنوات من السيرفر..."
-                        txtDetailsBottom.setTextColor(Color.parseColor("#A5B4FC"))
-                    }
-                    val synced = runCatching {
-                        CatalogRepository.syncNowBlocking(applicationContext, active, onlyType = "live")
-                    }.getOrDefault(false)
-                    if (synced) {
-                        liveChannels = runCatching {
-                            CatalogRepository.getChannelsByTypeBlocking(this, active.id, "live")
-                        }.getOrDefault(emptyList())
-                    }
-                }
+        // توحيد آلية الجلب: التلفاز يعتمد على ChannelRefreshHelper/ChannelsProvider
+        // وهي نفس سلسلة الجلب المرنة المستعملة في واجهة الهاتف (Xtream API ثم M3U fallback).
+        ChannelRefreshHelper.ensureFreshChannels(applicationContext, active, onlyLive = true) { result ->
+            if (isFinishing) return@ensureFreshChannels
 
-                // 3. تحديث UI دائماً — حتى لو فارغة (لعرض حالة "لا توجد قنوات")
-                runOnUiThread {
-                    allLiveChannels = applyDirectFilterIfNeeded(liveChannels)
-                    selectedChannel = resolveInitialChannel(passedChannel, allLiveChannels)
-                    initDashboard()
-                    if (liveChannels.isEmpty()) {
-                        txtDetailsBottom.text = "⚠️ لا توجد قنوات متاحة. تأكد من اتصال السيرفر أو أعد تعميم السيرفر."
-                        txtDetailsBottom.setTextColor(Color.parseColor("#FF5577"))
-                    }
-                }
-            } catch (e: Exception) {
-                runOnUiThread {
-                    txtDetailsBottom.text = "⚠️ تعذر جلب القنوات: ${e.message?.take(100)}"
+            fun applyLoadedChannels(source: List<Channel>, forceMessage: String? = null) {
+                val liveOnly = source.filter { it.contentType == "live" }.ifEmpty { source }
+                allLiveChannels = applyDirectFilterIfNeeded(liveOnly)
+                selectedChannel = resolveInitialChannel(passedChannel, allLiveChannels)
+                initDashboard()
+                if (allLiveChannels.isEmpty()) {
+                    txtDetailsBottom.text = forceMessage ?: "⚠️ لا توجد قنوات Live متاحة حالياً. تأكد من اتصال السيرفر أو أعد التحديث."
                     txtDetailsBottom.setTextColor(Color.parseColor("#FF5577"))
-                    initDashboard()
+                } else {
+                    txtDetailsBottom.text = forceMessage ?: "✅ تم تحميل ${allLiveChannels.size} قناة Live"
+                    txtDetailsBottom.setTextColor(Color.parseColor("#39FF8B"))
                 }
             }
-        }.start()
+
+            val loaded = result.channels.filter { it.contentType == "live" }.ifEmpty { result.channels }
+            val directFiltered = applyDirectFilterIfNeeded(loaded)
+
+            // إذا كانت واجهة beIN/ALWAN فارغة رغم وجود قنوات عامة، نفحص السيرفر مباشرة
+            // عبر BeinChannelResolver حتى لا تبقى فئة beIN فارغة بسبب كاش جزئي أو mapping قديم.
+            if (directFilterMode == "bein_alwan" && directFiltered.isEmpty()) {
+                BeinChannelResolver.resolve(this, active) { beinChannels ->
+                    if (!isFinishing) {
+                        applyLoadedChannels(beinChannels, if (beinChannels.isEmpty()) "📭 لم يتم العثور على قنوات beIN في السيرفر الحالي" else null)
+                    }
+                }
+                return@ensureFreshChannels
+            }
+
+            applyLoadedChannels(loaded, if (result.usedCacheFallback) "⚠️ تم عرض آخر كاش متوفر" else null)
+        }
     }
 
     private fun resolveInitialChannel(passedChannel: Channel?, channels: List<Channel>): Channel? {
@@ -570,13 +567,25 @@ class TvLivePreviewActivity : AppCompatActivity() {
             val realCatName = if (isFavCatSection) catLabel.removePrefix("📁 ") else catLabel
             val keepFocusUrl = lastFocusedChannelUrl ?: selectedChannel?.streamUrl
             val hiddenSet = getHiddenSet()
+            val remoteConfig = RemoteViewConfigPrefs.getFilterConfig(this, profileId)
+            val originalCatName = remoteConfig.customNames.entries
+                .firstOrNull { it.value.equals(realCatName, ignoreCase = true) }?.key ?: realCatName
+            fun normCat(v: String): String = DigitNormalizer.normalizeDigits(v)
+                .lowercase()
+                .replace("بي إن", "بي ان")
+                .replace(Regex("[^a-z0-9\u0600-\u06FF]+"), "")
+            fun sameCategory(a: String, b: String): Boolean =
+                a.equals(b, ignoreCase = true) || normCat(a) == normCat(b)
 
             var rawList = when {
                 hideCategories -> allLiveChannels
                 isFavSection -> FavoriteManager.getFavoriteChannels(this, profileId)
-                isFavCatSection -> allLiveChannels.filter { it.category.equals(realCatName, true) }
+                isFavCatSection -> allLiveChannels.filter { sameCategory(it.category, originalCatName) || sameCategory(it.category, realCatName) }
                 realCatName == "All" -> allLiveChannels.filter { !hiddenSet.contains(it.category.trim().lowercase()) }
-                else -> allLiveChannels.filter { it.category.equals(realCatName, true) && !hiddenSet.contains(it.category.trim().lowercase()) }
+                else -> allLiveChannels.filter {
+                    (sameCategory(it.category, originalCatName) || sameCategory(it.category, realCatName)) &&
+                        !hiddenSet.contains(it.category.trim().lowercase())
+                }
             }
 
             if (rawList.isEmpty() && !isFavSection) {

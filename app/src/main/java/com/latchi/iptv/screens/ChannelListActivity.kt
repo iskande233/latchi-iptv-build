@@ -32,6 +32,7 @@ import com.latchi.iptv.provider.ChannelCategory
 import com.latchi.iptv.provider.ChannelsProvider
 import com.latchi.iptv.utils.CatalogRepository
 import com.latchi.iptv.utils.ChannelCache
+import com.latchi.iptv.utils.DigitNormalizer
 import com.latchi.iptv.utils.FavoritesPrefs
 import com.latchi.iptv.utils.FloatingBackHelper
 import com.latchi.iptv.utils.PreparedCatalogHelper
@@ -564,10 +565,8 @@ class ChannelListActivity : AppCompatActivity() {
             val remoteConfig = RemoteViewConfigPrefs.getFilterConfig(applicationContext, activeId() ?: "")
             val orderedRaw = RemoteViewConfigPrefs.getOrderedCategories(remoteConfig, cats)
             val sortedCats = if (remoteConfig.hasCategoryOverrides) {
-                // تطبيق الترتيب المخصص مع الحفاظ على "All" و "Favorites" في البداية
-                val preserved = orderedRaw.takeWhile { it == "All" || it == "Favorites" }
-                val customOrdered = orderedRaw.dropWhile { it == "All" || it == "Favorites" }
-                preserved + customOrdered
+                // تطبيق الترتيب المخصص مع تثبيت "All" و "Favorites" دائماً في البداية
+                listOf("All", "Favorites") + orderedRaw.filter { it != "All" && it != "Favorites" }
             } else {
                 sortCategoriesByPriority(orderedRaw)
             }
@@ -633,7 +632,13 @@ class ChannelListActivity : AppCompatActivity() {
             val remoteConfig = RemoteViewConfigPrefs.getFilterConfig(applicationContext, activeId() ?: "")
             // تحويل currentCategory (اسم مخصص) إلى الاسم الأصلي للمطابقة
             val currentCategoryOriginal = remoteConfig.customNames.entries
-                .firstOrNull { it.value == currentCategory }?.key ?: currentCategory
+                .firstOrNull { it.value.equals(currentCategory, ignoreCase = true) }?.key ?: currentCategory
+            fun normCat(v: String): String = DigitNormalizer.normalizeDigits(v)
+                .lowercase()
+                .replace("بي إن", "بي ان")
+                .replace(Regex("[^a-z0-9\u0600-\u06FF]+"), "")
+            fun sameCategory(a: String, b: String): Boolean =
+                a.equals(b, ignoreCase = true) || normCat(a) == normCat(b)
 
             // 👑 تصفية الفئات المخفية من قائمة القنوات
             val allChannels = channelsProvider.channels.value ?: emptyList()
@@ -644,7 +649,7 @@ class ChannelListActivity : AppCompatActivity() {
                 val catOk = when {
                     currentCategory == "All" -> true
                     currentCategory == "Favorites" -> favs.contains(c.streamUrl)
-                    else -> c.category.equals(currentCategoryOriginal, ignoreCase = true)
+                    else -> sameCategory(c.category, currentCategoryOriginal) || sameCategory(c.category, currentCategory)
                 }
                 val searchOk = !searching || c.name.contains(currentQuery, true) || c.category.contains(currentQuery, true)
                 notHidden && typeOk && catOk && searchOk

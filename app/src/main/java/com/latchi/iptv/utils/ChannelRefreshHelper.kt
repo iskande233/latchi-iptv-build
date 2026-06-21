@@ -66,7 +66,10 @@ object ChannelRefreshHelper {
         val cacheRevision = ChannelCache.revision(appContext, profile.id)
         val expectedRevision = profile.serverRevision
         val revisionMismatch = expectedRevision > 0L && cacheRevision != expectedRevision
-        val shouldRefresh = pendingRefresh || cachedAll.isEmpty() || revisionMismatch
+        // مهم للتلفاز و beIN: أحياناً يكون الكاش موجوداً لكنه لا يحتوي Live TV
+        // (مثلاً كاش أفلام/مسلسلات أو كاش جزئي)، فلا نرجع قائمة فارغة ونعتبره fresh.
+        val requestedLiveMissing = onlyLive && cachedAll.none { it.contentType == "live" }
+        val shouldRefresh = pendingRefresh || cachedAll.isEmpty() || revisionMismatch || requestedLiveMissing
 
         if (!shouldRefresh) {
             onMain {

@@ -4,8 +4,6 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -20,18 +18,13 @@ import androidx.recyclerview.widget.RecyclerView
 import com.latchi.iptv.R
 import com.latchi.iptv.adapter.ChannelsAdapter
 import com.latchi.iptv.model.Channel
-import com.latchi.iptv.utils.CatalogRepository
-import com.latchi.iptv.utils.ChannelCache
+import com.latchi.iptv.utils.BeinChannelResolver
 import com.latchi.iptv.utils.DigitNormalizer
 import com.latchi.iptv.utils.LocaleHelper
 import com.latchi.iptv.screens.PlayerActivity
 import com.latchi.iptv.utils.RemoteViewConfigPrefs
 import com.latchi.iptv.utils.SourcePrefs
 import com.latchi.iptv.utils.TvUtils
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 /**
  * 🏆 BeinSportsActivity — واجهة beIN Sports احترافية مخصصة للهاتف
@@ -177,28 +170,12 @@ class BeinSportsActivity : AppCompatActivity() {
         progressBar.visibility = View.VISIBLE
         countText.text = "⏳ جاري تحميل قنوات beIN..."
 
-        // 🛡️ v6.0 Fix: لا نستدعي syncNowBlocking هنا (تسبب ANR/Crash)
-        // فقط نقرأ من Cache أو Room — التحديث يتم في HomeFragment
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                // 1) محاولة قراءة من الكاش السريع
-                var liveChannels = ChannelCache.load(this@BeinSportsActivity, active.id).filter { it.contentType == "live" }
-                if (liveChannels.isEmpty()) {
-                    // 2) محاولة Room
-                    liveChannels = CatalogRepository.getChannelsByTypeBlocking(this@BeinSportsActivity, active.id, "live")
-                }
-                val beinFiltered = filterBeinSports(liveChannels)
-                withContext(Dispatchers.Main) {
-                    progressBar.visibility = View.GONE
-                    allBeinChannels = beinFiltered
-                    displayChannels()
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    progressBar.visibility = View.GONE
-                    showEmpty("📭 لا توجد قنوات beIN محفوظة.\n\nافتح البث المباشر أولاً لتحميل القنوات.")
-                }
-            }
+        // نفس آلية الجلب الموحدة المستعملة في التلفاز/القائمة العامة:
+        // Cache/Room أولاً، وإذا كانت beIN فارغة يتم إجبار قراءة السيرفر مباشرة داخل BeinChannelResolver.
+        BeinChannelResolver.resolve(this, active) { beinChannels ->
+            progressBar.visibility = View.GONE
+            allBeinChannels = beinChannels
+            displayChannels()
         }
     }
 
