@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.util.JsonReader
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.LayoutInflater
@@ -42,6 +43,11 @@ import com.latchi.iptv.utils.SourcePrefs
 import com.latchi.iptv.utils.ThemeManager
 import com.latchi.iptv.utils.TvFocusHelper
 import com.latchi.iptv.utils.UnifiedChannelRepository
+import com.latchi.iptv.utils.XtreamHelper
+import java.util.concurrent.TimeUnit
+import java.net.URLEncoder
+import okhttp3.Request
+import okhttp3.OkHttpClient
 
 /**
  * 👑 TvLivePreviewActivity — الواجهة الملكية الموحدة للتلفاز (Live TV All-in-One Dashboard v4.0 Ultra Safe)
@@ -78,6 +84,21 @@ class TvLivePreviewActivity : AppCompatActivity() {
     private var directFilterMode: String? = null
     private var lastFocusedChannelUrl: String? = null
     private var dashboardInitialized: Boolean = false
+    private var lazyXtreamLiveMode: Boolean = false
+    private val lazyCategoryCache = mutableMapOf<String, List<Channel>>()
+    private var lazyTvCategories: List<TvLazyCategory> = emptyList()
+    private var lazyCurrentRawChannels: List<Channel> = emptyList()
+    private var lazyLoadingCategory: Boolean = false
+
+    private data class TvLazyCategory(val id: String, val name: String, val count: Int = -1)
+
+    private val lazyClient = OkHttpClient.Builder()
+        .connectTimeout(12, TimeUnit.SECONDS)
+        .readTimeout(35, TimeUnit.SECONDS)
+        .retryOnConnectionFailure(true)
+        .followRedirects(true)
+        .followSslRedirects(true)
+        .build()
 
     // ExoPlayer
     private var player: ExoPlayer? = null
@@ -205,6 +226,12 @@ class TvLivePreviewActivity : AppCompatActivity() {
             txtDetailsBottom.setTextColor(Color.parseColor("#A5B4FC"))
         }
 
+        val xtreamCreds = XtreamHelper.parseCreds(active.m3uUrl)
+        if (xtreamCreds != null && directFilterMode != "bein_alwan") {
+            loadXtreamLiveCategoriesLazy(active, xtreamCreds, passedChannel)
+            return
+        }
+
         // توحيد آلية الجلب: نفس Repository ونفس الداتا للهاتف والتلفاز.
         // الاختلاف فقط في الواجهة (Overlay/Focus)، أما القنوات والفلترة فمصدرها واحد.
         UnifiedChannelRepository.loadLive(applicationContext, active) { result ->
@@ -240,6 +267,189 @@ class TvLivePreviewActivity : AppCompatActivity() {
             applyLoadedChannels(loaded, if (result.source == "cache_fallback") "⚠️ تم عرض آخر كاش متوفر" else null)
         }
     }
+
+    private fun loadXtreamLiveCategoriesLazy(active: com.latchi.iptv.utils.IptvProfile, creds: XtreamHelper.Creds, passedChannel: Channel?) {
+        lazyXtreamLiveMode = true
+        Thread {
+            val cats = runCatching { fetchXtreamLiveCategories(creds) }.getOrDefault(emptyList())
+            runOnUiThread {
+                if (isFinishing) return@runOnUiThread
+                if (cats.isEmpty()) {
+                    lazyXtreamLiveMode = false
+                    // fallback للمنطق العام إذا API الفئات فشل.
+                    loadLiveChannelsSmartFallback(active, passedChannel)
+                    return@runOnUiThread
+                }
+                lazyTvCategories = sortLazyCategories(cats)
+                currentCategories = lazyTvCategories.map { it.name }
+                val preferred = chooseInitialLazyCategory(lazyTvCategories, requestedCategoryName)
+                selectedCategoryName = preferred.name
+                renderCategoriesList()
+                requestCategoryFocus(preferred.name)
+                loadLazyXtreamCategory(preferred.name, null, passedChannel)
+            }
+        }.start()
+    }
+
+    private fun loadLiveChannelsSmartFallback(active: com.latchi.iptv.utils.IptvProfile, passedChannel: Channel?) {
+        UnifiedChannelRepository.loadLive(applicationContext, active) { result ->
+            if (isFinishing) return@loadLive
+            val loaded = result.channels.filter { it.contentType == "live" }.ifEmpty { result.channels }
+            allLiveChannels = applyDirectFilterIfNeeded(loaded)
+            selectedChannel = resolveInitialChannel(passedChannel, allLiveChannels)
+            initDashboard()
+            if (allLiveChannels.isEmpty()) {
+                txtDetailsBottom.text = "⚠️ لا توجد قنوات Live متاحة حالياً. تأكد من اتصال السيرفر أو أعد التحديث."
+                txtDetailsBottom.setTextColor(Color.parseColor("#FF5577"))
+            }
+        }
+    }
+
+    private fun fetchXtreamLiveCategories(creds: XtreamHelper.Creds): List<TvLazyCategory> {
+        val url = "${creds.server}/player_api.php?username=${enc(creds.username)}&password=${enc(creds.password)}&action=get_live_categories"
+        val req = Request.Builder().url(url).header("User-Agent", "Mozilla/5.0 (Linux; Android 10)").get().build()
+        lazyClient.newCall(req).execute().use { res ->
+            if (!res.isSuccessful) return emptyList()
+            val stream = res.body?.byteStream() ?: return emptyList()
+            val out = mutableListOf<TvLazyCategory>()
+            JsonReader(stream.bufferedReader(Charsets.UTF_8)).use { r ->
+                r.beginArray()
+                while (r.hasNext()) {
+                    var id = ""
+                    var name = ""
+                    var count = -1
+                    r.beginObject()
+                    while (r.hasNext()) {
+                        when (r.nextName()) {
+                            "category_id" -> id = readJsonStringSafe(r)
+                            "category_name" -> name = readJsonStringSafe(r)
+                            "count", "category_count" -> count = readJsonStringSafe(r).toIntOrNull() ?: -1
+                            else -> r.skipValue()
+                        }
+                    }
+                    r.endObject()
+                    if (id.isNotBlank() && name.isNotBlank()) out.add(TvLazyCategory(id, name.trim(), count))
+                }
+                r.endArray()
+            }
+            return out
+        }
+    }
+
+    private fun fetchXtreamLiveCategoryChannels(creds: XtreamHelper.Creds, cat: TvLazyCategory): List<Channel> {
+        val url = "${creds.server}/player_api.php?username=${enc(creds.username)}&password=${enc(creds.password)}&action=get_live_streams&category_id=${enc(cat.id)}"
+        val req = Request.Builder().url(url).header("User-Agent", "Mozilla/5.0 (Linux; Android 10)").get().build()
+        val out = mutableListOf<Channel>()
+        lazyClient.newCall(req).execute().use { res ->
+            if (!res.isSuccessful) return emptyList()
+            val stream = res.body?.byteStream() ?: return emptyList()
+            JsonReader(stream.bufferedReader(Charsets.UTF_8)).use { r ->
+                r.beginArray()
+                while (r.hasNext()) {
+                    var id = ""
+                    var name = ""
+                    var icon = ""
+                    r.beginObject()
+                    while (r.hasNext()) {
+                        when (r.nextName()) {
+                            "stream_id" -> id = readJsonStringSafe(r)
+                            "name" -> name = readJsonStringSafe(r).ifBlank { "Live Stream" }
+                            "stream_icon" -> icon = readJsonStringSafe(r)
+                            else -> r.skipValue()
+                        }
+                    }
+                    r.endObject()
+                    if (id.isNotBlank() && name.isNotBlank()) {
+                        out.add(Channel(name, icon, "${creds.server}/live/${creds.username}/${creds.password}/$id.ts", cat.name, "live"))
+                    }
+                }
+                r.endArray()
+            }
+        }
+        return out.distinctBy { it.streamUrl }
+    }
+
+    private fun loadLazyXtreamCategory(catLabel: String, filterLetter: String?, passedChannel: Channel? = null) {
+        val active = SourcePrefs.getActiveProfile(this) ?: return
+        val creds = XtreamHelper.parseCreds(active.m3uUrl) ?: return
+        val cat = lazyTvCategories.firstOrNull { UnifiedChannelRepository.sameCategory(it.name, catLabel) } ?: return
+        selectedCategoryName = cat.name
+        activeChLetter = filterLetter
+        activePanel = ActivePanel.CHANNELS
+        categoriesAdapter?.setSelectedCat(cat.name)
+        updateAlphabetHint()
+        val cached = lazyCategoryCache[cat.id]
+        if (cached != null) {
+            applyLazyCategoryChannels(cat, cached, filterLetter, passedChannel)
+            return
+        }
+        if (lazyLoadingCategory) return
+        lazyLoadingCategory = true
+        txtDetailsBottom.text = "⏳ جاري تحميل فئة ${cat.name}..."
+        txtDetailsBottom.setTextColor(Color.parseColor("#A5B4FC"))
+        Thread {
+            val channels = runCatching { fetchXtreamLiveCategoryChannels(creds, cat) }.getOrDefault(emptyList())
+            runOnUiThread {
+                lazyLoadingCategory = false
+                if (channels.isNotEmpty()) lazyCategoryCache[cat.id] = channels
+                applyLazyCategoryChannels(cat, channels, filterLetter, passedChannel)
+            }
+        }.start()
+    }
+
+    private fun applyLazyCategoryChannels(cat: TvLazyCategory, channels: List<Channel>, filterLetter: String?, passedChannel: Channel?) {
+        lazyCurrentRawChannels = channels
+        allLiveChannels = channels
+        currentCategoryChannels = if (filterLetter != null && filterLetter != "All") {
+            channels.filter { it.name.trim().startsWith(filterLetter, true) }
+        } else channels
+        renderChannelsList()
+        txtFilterHint.text = "📺 ${cat.name}${if (filterLetter != null) " (حرف $filterLetter)" else ""}"
+        if (currentCategoryChannels.isEmpty()) {
+            releasePreviewPlayer()
+            txtChannelTitle.text = "لا توجد قناة"
+            txtCategorySubtitle.text = "الفئة '${cat.name}' فارغة حالياً"
+            txtDetailsBottom.text = "📭 لا توجد قنوات في هذه الفئة"
+            return
+        }
+        val target = resolveInitialChannel(passedChannel ?: selectedChannel, currentCategoryChannels) ?: currentCategoryChannels.first()
+        playRoyalLiveChannel(target)
+        requestChannelFocusByUrl(target.streamUrl, fallbackToFirst = true)
+        txtDetailsBottom.text = "✅ ${currentCategoryChannels.size} قناة في ${cat.name}"
+        txtDetailsBottom.setTextColor(Color.parseColor("#39FF8B"))
+    }
+
+    private fun chooseInitialLazyCategory(cats: List<TvLazyCategory>, requested: String): TvLazyCategory {
+        return cats.firstOrNull { it.name.equals(requested, true) }
+            ?: cats.firstOrNull { c -> c.name.lowercase().let { it.contains("world cup") || it.contains("كأس العالم") } }
+            ?: cats.firstOrNull { c -> c.name.lowercase().let { it.contains("bein") || it.contains("sport") || it.contains("رياض") } }
+            ?: cats.first()
+    }
+
+    private fun sortLazyCategories(cats: List<TvLazyCategory>): List<TvLazyCategory> {
+        fun score(name: String): Int {
+            val l = name.lowercase()
+            return when {
+                l.contains("world cup") || l.contains("كأس العالم") -> 0
+                l.contains("bein") || l.contains("بي ان") || l.contains("بي إن") -> 1
+                l.contains("sport") || l.contains("رياض") || l.contains("ssc") || l.contains("alkass") -> 2
+                l.contains("news") || l.contains("أخبار") || l.contains("اخبار") -> 3
+                l.contains("kid") || l.contains("أطفال") || l.contains("اطفال") -> 4
+                else -> 10
+            }
+        }
+        return cats.sortedWith(compareBy<TvLazyCategory> { score(it.name) }.thenBy { it.name.lowercase() })
+    }
+
+    private fun readJsonStringSafe(r: JsonReader): String {
+        return try {
+            r.nextString()
+        } catch (_: Exception) {
+            try { r.nextInt().toString() } catch (_: Exception) { r.skipValue(); "" }
+        }
+    }
+
+    private fun enc(value: String): String = URLEncoder.encode(value, "UTF-8")
 
     private fun resolveInitialChannel(passedChannel: Channel?, channels: List<Channel>): Channel? {
         if (channels.isEmpty()) return passedChannel
@@ -418,7 +628,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
         } catch (_: Exception) {}
     }
 
-    private fun scheduleMenuOverlayHide(delayMs: Long = 500L) {
+    private fun scheduleMenuOverlayHide(delayMs: Long = 3000L) {
         try {
             overlayHandler.removeCallbacks(hideOverlayRunnable)
             overlayHandler.postDelayed(hideOverlayRunnable, delayMs)
@@ -547,7 +757,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
     private fun renderCategoriesList() {
         if (hideCategories) return
         categoriesAdapter = RoyalCategoriesAdapter(currentCategories, selectedCategoryName) { chosen ->
-            loadCategoryChannels(chosen, null)
+            if (lazyXtreamLiveMode) loadLazyXtreamCategory(chosen, null) else loadCategoryChannels(chosen, null)
             lastFocusedChannelUrl = currentCategoryChannels.firstOrNull()?.streamUrl
             recyclerChannels.postDelayed({
                 requestChannelFocusByUrl(lastFocusedChannelUrl, fallbackToFirst = true)
@@ -608,6 +818,18 @@ class TvLivePreviewActivity : AppCompatActivity() {
             val originalCatName = remoteConfig.customNames.entries
                 .firstOrNull { it.value.equals(realCatName, ignoreCase = true) }?.key ?: realCatName
             fun sameCategory(a: String, b: String): Boolean = UnifiedChannelRepository.sameCategory(a, b)
+
+            if (lazyXtreamLiveMode && !isFavSection) {
+                val catExists = lazyTvCategories.any { sameCategory(it.name, realCatName) }
+                if (catExists && lazyTvCategories.none { sameCategory(it.name, selectedCategoryName) && lazyCategoryCache.containsKey(it.id) }) {
+                    loadLazyXtreamCategory(realCatName, filterLetter)
+                    return
+                }
+                if (catExists && !sameCategory(realCatName, selectedCategoryName)) {
+                    loadLazyXtreamCategory(realCatName, filterLetter)
+                    return
+                }
+            }
 
             var rawList = when {
                 hideCategories -> allLiveChannels
