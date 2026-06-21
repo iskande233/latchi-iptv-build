@@ -39,7 +39,11 @@ object ActivationConfig {
             return "mac://stalker?portal=${urlEncode(portal)}&mac=${urlEncode(mac)}"
         }
 
-        var raw = firstString(json, listOf("playlist_url", "m3u_url", "m3u", "url", "playlist", "link", "server_link"))
+        var raw = firstString(json, listOf(
+            "playlist_url", "playlistUrl", "m3u_url", "m3uUrl", "m3u", "url", "playlist", "link", "server_link",
+            // توافق مباشر مع سكريبت v6.2 / get_live_master_state عند استعمال رابط السيرفر العام كـ fallback
+            "master_url", "masterUrl", "default_playlist_url", "defaultPlaylistUrl"
+        ))
         if (raw.isBlank()) {
             val server = firstString(json, listOf("server", "server_url", "host", "portal_host"))
             val username = firstString(json, listOf("username", "user", "login"))
