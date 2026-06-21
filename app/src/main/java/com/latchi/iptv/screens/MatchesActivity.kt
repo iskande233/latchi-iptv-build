@@ -45,6 +45,19 @@ class MatchesActivity : AppCompatActivity() {
                 } else {
                     PlayerActivity.start(this, mi.channel)
                 }
+            } else if (mi.yacineStream != null) {
+                val ch = Channel(
+                    name = mi.channelName ?: "Yacine TV",
+                    logoUrl = "",
+                    streamUrl = mi.yacineStream.url,
+                    category = "Yacine TV Matches",
+                    contentType = "live"
+                )
+                if (TvUtils.isTv(this)) {
+                    TvLivePreviewActivity.startWithChannels(this, ch, listOf(ch), ch.category)
+                } else {
+                    PlayerActivity.start(this, ch)
+                }
             } else {
                 Toast.makeText(this, "لم نجد القناة الناقلة في سيرفرك الحالي، سيتم فتح البحث.", Toast.LENGTH_LONG).show()
                 val searchIntent = Intent(this, ChannelListActivity::class.java).apply {
@@ -79,13 +92,13 @@ class MatchesActivity : AppCompatActivity() {
                 try {
                     val matches = YacineTvHelper.fetchMatches()
                     val resolved = matches.map { mt ->
-                        SmartMatchItem(
-                            mt,
-                            if (allChannels.isNotEmpty() && mt.channelName.isNotBlank()) {
-                                MatchChannelMapper.findChannelInSportsGroups(mt.channelName, allChannels)
-                            } else null,
-                            mt.channelName
-                        )
+                        val localChannel = if (allChannels.isNotEmpty() && mt.channelName.isNotBlank()) {
+                            MatchChannelMapper.findChannelInSportsGroups(mt.channelName, allChannels)
+                        } else null
+                        val yacineStream = if (localChannel == null && mt.channelName.isNotBlank()) {
+                            runCatching { YacineTvHelper.resolveStreamForChannelName(mt.channelName) }.getOrNull()
+                        } else null
+                        SmartMatchItem(mt, localChannel, mt.channelName, yacineStream)
                     }.toMutableList()
 
                     runOnUiThread {
@@ -110,7 +123,7 @@ class MatchesActivity : AppCompatActivity() {
         }
     }
     override fun onDestroy(){super.onDestroy();autoRefreshRunnable?.let{uiHandler.removeCallbacks(it)}}
-    data class SmartMatchItem(val yacineMatch: YacineTvHelper.YacineMatch, val channel: Channel?, val channelName: String?)
+    data class SmartMatchItem(val yacineMatch: YacineTvHelper.YacineMatch, val channel: Channel?, val channelName: String?, val yacineStream: YacineTvHelper.YacineStream? = null)
     class SmartMatchesAdapter(private val items:List<SmartMatchItem>,private val onClick:(SmartMatchItem)->Unit):RecyclerView.Adapter<SmartMatchesAdapter.VH>(){
         class VH(v:View):RecyclerView.ViewHolder(v){val league:TextView=v.findViewById(R.id.matchLeague);val status:TextView=v.findViewById(R.id.matchStatus);val homeLogo:ImageView=v.findViewById(R.id.homeLogo);val homeTeam:TextView=v.findViewById(R.id.homeTeam);val awayLogo:ImageView=v.findViewById(R.id.awayLogo);val awayTeam:TextView=v.findViewById(R.id.awayTeam);val vsScore:TextView=v.findViewById(R.id.vsScore);val time:TextView=v.findViewById(R.id.matchTime);val channel:TextView=v.findViewById(R.id.matchChannel)}
         override fun onCreateViewHolder(p:ViewGroup,t:Int): VH { val v=LayoutInflater.from(p.context).inflate(R.layout.item_match,p,false); com.latchi.iptv.utils.TvFocusHelper.setupFocusableItem(v); return VH(v) }
@@ -121,7 +134,7 @@ class MatchesActivity : AppCompatActivity() {
             Glide.with(h.itemView.context).load(mt.team1Logo.ifBlank{null}).placeholder(R.drawable.ic_tv).error(R.drawable.ic_tv).into(h.homeLogo)
             Glide.with(h.itemView.context).load(mt.team2Logo.ifBlank{null}).placeholder(R.drawable.ic_tv).error(R.drawable.ic_tv).into(h.awayLogo)
             h.vsScore.text="VS";h.time.text=YacineTvHelper.formatMatchTime(mt)
-            if(!m.channelName.isNullOrBlank()){h.channel.visibility=View.VISIBLE;val ct=if(mt.commentary.isNotBlank())" | 🎙️ ${mt.commentary}" else "";h.channel.text=if(m.channel!=null)"📺 ${m.channelName} ✓$ct" else "📺 ${m.channelName}$ct";h.channel.setTextColor(if(m.channel!=null)android.graphics.Color.parseColor("#4ADE80") else android.graphics.Color.parseColor("#FFFFFF"))}else h.channel.visibility=View.GONE
+            if(!m.channelName.isNullOrBlank()){h.channel.visibility=View.VISIBLE;val ct=if(mt.commentary.isNotBlank())" | 🎙️ ${mt.commentary}" else "";h.channel.text=when{m.channel!=null->"📺 ${m.channelName} ✓$ct";m.yacineStream!=null->"📺 ${m.channelName} • Yacine ✓$ct";else->"📺 ${m.channelName}$ct"};h.channel.setTextColor(if(m.channel!=null||m.yacineStream!=null)android.graphics.Color.parseColor("#4ADE80") else android.graphics.Color.parseColor("#FFFFFF"))}else h.channel.visibility=View.GONE
             h.itemView.setOnClickListener{onClick(m)}}}
 
     override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent?): Boolean {

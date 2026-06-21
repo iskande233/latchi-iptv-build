@@ -23,6 +23,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.latchi.iptv.R
 import com.latchi.iptv.model.Channel
+import com.latchi.iptv.utils.CatalogRepository
+import com.latchi.iptv.utils.ChannelCache
 import com.latchi.iptv.utils.FavoriteManager
 import com.latchi.iptv.utils.SourcePrefs
 import com.latchi.iptv.utils.ThemeManager
@@ -132,6 +134,27 @@ class RoyalFavoritesDashboardActivity : AppCompatActivity() {
         }
     }
 
+    private fun currentServerChannels(): List<Channel> {
+        val active = SourcePrefs.getActiveProfile(this) ?: return emptyList()
+        return ChannelCache.load(this, active.id).ifEmpty {
+            runCatching { CatalogRepository.getChannelsByTypeBlocking(this, active.id, "live") }.getOrDefault(emptyList())
+        }
+    }
+
+    private fun filterChannelsForCurrentServer(list: List<Channel>): List<Channel> {
+        val current = currentServerChannels()
+        if (current.isEmpty()) return list
+        val urls = current.map { it.streamUrl }.toHashSet()
+        return list.filter { it.streamUrl in urls }
+    }
+
+    private fun filterCategoriesForCurrentServer(list: List<String>): List<String> {
+        val current = currentServerChannels()
+        if (current.isEmpty()) return list
+        val cats = current.map { it.category.lowercase().trim() }.toSet()
+        return list.filter { it.lowercase().trim() in cats }
+    }
+
     private fun selectTab(mode: Int) {
         currentMode = mode
         tabFavChannels.setTextColor(if (mode == MODE_FAV_CHANNELS) Color.parseColor("#FFD700") else Color.WHITE)
@@ -139,9 +162,9 @@ class RoyalFavoritesDashboardActivity : AppCompatActivity() {
         tabRecentChannels.setTextColor(if (mode == MODE_RECENT_CHANNELS) Color.parseColor("#FFD700") else Color.WHITE)
 
         when (mode) {
-            MODE_FAV_CHANNELS -> loadChannels(FavoriteManager.getFavoriteChannels(this, profileId))
-            MODE_FAV_CATEGORIES -> loadCategories(FavoriteManager.getFavoriteCategories(this, profileId))
-            MODE_RECENT_CHANNELS -> loadChannels(FavoriteManager.getRecentChannels(this, profileId))
+            MODE_FAV_CHANNELS -> loadChannels(filterChannelsForCurrentServer(FavoriteManager.getFavoriteChannels(this, profileId)))
+            MODE_FAV_CATEGORIES -> loadCategories(filterCategoriesForCurrentServer(FavoriteManager.getFavoriteCategories(this, profileId)))
+            MODE_RECENT_CHANNELS -> loadChannels(filterChannelsForCurrentServer(FavoriteManager.getRecentChannels(this, profileId)))
         }
     }
 

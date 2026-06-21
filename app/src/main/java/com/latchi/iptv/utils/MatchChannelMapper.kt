@@ -9,6 +9,10 @@ import com.latchi.iptv.model.Channel
 object MatchChannelMapper {
 
     private val knownMappings = mapOf(
+        "bein max 1" to listOf("bein max 1", "bein sports max 1", "bein sport max 1", "bein sports max1", "bein max1"),
+        "bein max 2" to listOf("bein max 2", "bein sports max 2", "bein sport max 2", "bein sports max2", "bein max2"),
+        "bein max 3" to listOf("bein max 3", "bein sports max 3", "bein sport max 3", "bein sports max3", "bein max3"),
+        "bein max 4" to listOf("bein max 4", "bein sports max 4", "bein sport max 4", "bein sports max4", "bein max4"),
         "bein premium 1" to listOf("bein premium 1", "bein sports 1 premium", "bein sports premium 1", "bein sport 1 premium", "bein premium1", "bein 1 premium"),
         "bein premium 2" to listOf("bein premium 2", "bein sports 2 premium", "bein sports premium 2", "bein sport 2 premium", "bein premium2", "bein 2 premium"),
         "bein premium 3" to listOf("bein premium 3", "bein sports 3 premium", "bein sports premium 3", "bein sport 3 premium", "bein premium3", "bein 3 premium"),
