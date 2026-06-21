@@ -66,6 +66,7 @@ class HomeFragment : Fragment() {
     private var liveCount: TextView? = null
     private var movieCount: TextView? = null
     private var seriesCount: TextView? = null
+    private var beinSportsCount: TextView? = null
     private var prayerLocationText: TextView? = null
     private var prayerNextNameText: TextView? = null
     private var prayerNextTimeText: TextView? = null
@@ -108,6 +109,7 @@ class HomeFragment : Fragment() {
             liveCount = view.findViewById(R.id.liveCount)
             movieCount = view.findViewById(R.id.movieCount)
             seriesCount = view.findViewById(R.id.seriesCount)
+            beinSportsCount = view.findViewById(R.id.beinSportsCount)
             prayerLocationText = view.findViewById(R.id.prayerLocationText)
             prayerNextNameText = view.findViewById(R.id.prayerNextNameText)
             prayerNextTimeText = view.findViewById(R.id.prayerNextTimeText)
@@ -389,8 +391,16 @@ class HomeFragment : Fragment() {
         cardMatches?.setOnClickListener { startActivity(Intent(requireContext(), MatchesActivity::class.java)) }
 
         // ⚙️ الصف الثاني
-        // 🏆 beIN Sports - فتح الواجهة المباشرة (قنوات + مشغل فقط)
-        cardBeInSports?.setOnClickListener { TvLivePreviewActivity.startDirectBeinSports(requireContext()) }
+        // 🏆 beIN Sports - فتح الواجهة الاحترافية لقنوات beIN فقط
+        // على التلفاز: TvLivePreviewActivity (لوحة معلومات كاملة)
+        // على الهاتف: BeinSportsActivity (قائمة عمودية احترافية)
+        cardBeInSports?.setOnClickListener {
+            if (com.latchi.iptv.utils.TvUtils.isTv(requireContext())) {
+                TvLivePreviewActivity.startDirectBeinSports(requireContext())
+            } else {
+                startActivity(Intent(requireContext(), BeinSportsActivity::class.java))
+            }
+        }
         // ⚙️ الإعدادات
         cardSettings?.setOnClickListener { startActivity(Intent(requireContext(), SettingsActivity::class.java)) }
         // 🔑 الحسابات - شاشة VIP النظيفة الجديدة
@@ -772,6 +782,26 @@ class HomeFragment : Fragment() {
         setCount(liveCount, data.count { it.contentType == "live" }, getString(R.string.channels_suffix))
         setCount(movieCount, data.count { it.contentType == "movie" }, getString(R.string.movies_suffix))
         setCount(seriesCount, data.count { it.contentType == "series" }, getString(R.string.series_suffix))
+        // 🛡️ beIN Sports count (فقط قنوات beIN + MAX + World Cup)
+        beinSportsCount?.let {
+            val remoteConfig = com.latchi.iptv.utils.RemoteViewConfigPrefs.getFilterConfig(requireContext(), com.latchi.iptv.utils.SourcePrefs.getActiveProfile(requireContext())?.id ?: "")
+            val beinTokens = remoteConfig.beinKeywords
+            val beinMaxTokens = remoteConfig.beinMaxKeywords
+            val alwanTokens = remoteConfig.alwanKeywords
+            fun norm(ch: com.latchi.iptv.model.Channel): String = com.latchi.iptv.utils.DigitNormalizer.normalizeDigits("${ch.name} ${ch.category}").lowercase()
+            fun hasAny(text: String, tokens: List<String>): Boolean = tokens.any { token -> text.contains(token.lowercase()) }
+            val liveBeinCount = data.count { ch ->
+                val text = norm(ch)
+                hasAny(text, beinTokens) || hasAny(text, alwanTokens) || 
+                text.contains("world cup") || text.contains("كاس العالم") || text.contains("كأس العالم") || text.contains("fifa")
+            }
+            if (liveBeinCount > 0) {
+                it.visibility = View.VISIBLE
+                it.text = "$liveBeinCount قناة beIN متاحة"
+            } else {
+                it.visibility = View.GONE
+            }
+        }
     }
 
     private fun updateCacheTime(profileId: String) {
