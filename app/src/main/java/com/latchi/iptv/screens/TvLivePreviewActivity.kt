@@ -8,6 +8,8 @@ import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.Gravity
 import android.view.KeyEvent
@@ -99,6 +101,8 @@ class TvLivePreviewActivity : AppCompatActivity() {
     private lateinit var txtDetailsBottom: TextView
     private var darkOverlay: View? = null
     private var menuOverlay: View? = null
+    private val overlayHandler = Handler(Looper.getMainLooper())
+    private val hideOverlayRunnable = Runnable { hideMenuOverlay() }
 
     // Adapters
     private var categoriesAdapter: RoyalCategoriesAdapter? = null
@@ -403,6 +407,41 @@ class TvLivePreviewActivity : AppCompatActivity() {
             FrameLayout.LayoutParams.MATCH_PARENT
         )
         viewPlayer.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+    }
+
+    private fun showMenuOverlay(autoHide: Boolean = true) {
+        try {
+            overlayHandler.removeCallbacks(hideOverlayRunnable)
+            darkOverlay?.visibility = View.VISIBLE
+            menuOverlay?.visibility = View.VISIBLE
+            if (autoHide) scheduleMenuOverlayHide()
+        } catch (_: Exception) {}
+    }
+
+    private fun scheduleMenuOverlayHide(delayMs: Long = 500L) {
+        try {
+            overlayHandler.removeCallbacks(hideOverlayRunnable)
+            overlayHandler.postDelayed(hideOverlayRunnable, delayMs)
+        } catch (_: Exception) {}
+    }
+
+    private fun hideMenuOverlay() {
+        try {
+            if (isFullscreenMode) return
+            darkOverlay?.visibility = View.GONE
+            menuOverlay?.visibility = View.GONE
+            frameVideo.requestFocus()
+        } catch (_: Exception) {}
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (event.action == KeyEvent.ACTION_DOWN && !isFullscreenMode) {
+            val wasHidden = menuOverlay?.visibility != View.VISIBLE
+            showMenuOverlay(autoHide = true)
+            // أول ضغطة بعد اختفاء القائمة هدفها إظهار القائمة فقط، بلا ما تبدل الفوكس بالغلط.
+            if (wasHidden && event.keyCode != KeyEvent.KEYCODE_BACK) return true
+        }
+        return super.dispatchKeyEvent(event)
     }
 
     private fun requestChannelFocusByUrl(url: String?, fallbackToFirst: Boolean = false) {
@@ -738,6 +777,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
                     exo.setMediaItem(MediaItem.fromUri(Uri.parse(ch.streamUrl.trim().replace("&amp;", "&"))))
                     exo.playWhenReady = true
                     exo.prepare()
+                    showMenuOverlay(autoHide = true)
                     exo.addListener(object : Player.Listener {
                         override fun onPlayerError(error: PlaybackException) {
                             txtDetailsBottom.text = "⚠️ البث متوقف أو غير متاح: ${ch.name}"
@@ -808,8 +848,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
                 panelPlayer.setPadding(dp(10), dp(10), dp(10), dp(10))
                 panelPlayer.setBackgroundResource(R.drawable.bg_panel)
                 frameVideo.foreground = null
-                darkOverlay?.visibility = View.VISIBLE
-                menuOverlay?.visibility = View.VISIBLE
+                showMenuOverlay(autoHide = true)
                 panelCategories.visibility = if (hideCategories) View.GONE else View.VISIBLE
                 panelAlphabet.visibility = if (hideCategories) View.GONE else View.VISIBLE
                 panelChannels.visibility = View.VISIBLE
@@ -852,6 +891,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        try { overlayHandler.removeCallbacks(hideOverlayRunnable) } catch (_: Exception) {}
         try { player?.release(); player = null } catch (_: Exception) {}
         super.onDestroy()
     }

@@ -379,11 +379,14 @@ class HomeFragment : Fragment() {
 
         // 🎬 البث المباشر
         cardLive?.setOnClickListener {
-            // الإصلاح الجذري: التلفاز لازم يدخل لنفس واجهة/آلية الهاتف أولاً (ChannelListActivity)
-            // لأنها تستعمل lazy Xtream categories وتجيب القنوات حسب الفئة بسرعة.
-            // الدخول المباشر القديم لـ TvLivePreviewActivity كان يحاول يحمّل كل Live دفعة واحدة،
-            // وهذا هو سبب الواجهة الفارغة في التلفاز رغم أن الهاتف يخدم.
-            ChannelListActivity.start(requireContext(), "live", getString(R.string.live_tv))
+            // التلفاز يرجع للواجهة المباشرة السينمائية (الصورة الثانية)،
+            // لكن الجلب يبقى من UnifiedChannelRepository داخل TvLivePreviewActivity.
+            // الهاتف يبقى في واجهة List/Grid العادية.
+            if (isTv) {
+                TvLivePreviewActivity.startAllChannels(requireContext(), emptyList())
+            } else {
+                ChannelListActivity.start(requireContext(), "live", getString(R.string.live_tv))
+            }
         }
         cardMovies?.setOnClickListener { ChannelListActivity.start(requireContext(), "movie", getString(R.string.movies)) }
         cardSeries?.setOnClickListener { ChannelListActivity.start(requireContext(), "series", getString(R.string.series)) }
