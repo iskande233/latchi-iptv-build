@@ -354,7 +354,8 @@ class ChannelListActivity : AppCompatActivity() {
     private fun setupObservers() {
         channelsProvider.categories.observe(this, Observer { data ->
             if (!lazyXtreamMode) return@Observer
-            xtreamCategories = data.filter { it.contentType == contentType }
+            val hiddenSet = getHiddenSet()
+            xtreamCategories = data.filter { it.contentType == contentType && !hiddenSet.contains(it.name.trim().lowercase()) }
             if (!firstCategorySelected && xtreamCategories.isNotEmpty()) {
                 val first = xtreamCategories.first()
                 firstCategorySelected = true
@@ -516,7 +517,9 @@ class ChannelListActivity : AppCompatActivity() {
     private fun buildCategories(data: List<Channel>) {
         try {
             if (lazyXtreamMode) {
-                val visible = if (categoryQuery.isBlank()) xtreamCategories else xtreamCategories.filter { it.name.contains(categoryQuery, ignoreCase = true) }
+                val hiddenSet = getHiddenSet()
+                val base = xtreamCategories.filter { !hiddenSet.contains(it.name.trim().lowercase()) }
+                val visible = if (categoryQuery.isBlank()) base else base.filter { it.name.contains(categoryQuery, ignoreCase = true) }
                 gridAdapter.update(visible.map { CategoryGridAdapter.CategoryItem(it.name, it.count) })
                 return
             }

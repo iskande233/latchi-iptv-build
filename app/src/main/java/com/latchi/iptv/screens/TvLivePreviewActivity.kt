@@ -280,8 +280,14 @@ class TvLivePreviewActivity : AppCompatActivity() {
                     loadLiveChannelsSmartFallback(active, passedChannel)
                     return@runOnUiThread
                 }
-                lazyTvCategories = sortLazyCategories(cats)
+                val hiddenSet = getHiddenSet()
+                lazyTvCategories = sortLazyCategories(cats).filter { !hiddenSet.contains(it.name.trim().lowercase()) }
                 currentCategories = lazyTvCategories.map { it.name }
+                if (lazyTvCategories.isEmpty()) {
+                    txtDetailsBottom.text = "📭 كل فئات Live مخفية حالياً من لوحة التحكم"
+                    txtDetailsBottom.setTextColor(Color.parseColor("#FFB347"))
+                    return@runOnUiThread
+                }
                 val preferred = chooseInitialLazyCategory(lazyTvCategories, requestedCategoryName)
                 selectedCategoryName = preferred.name
                 renderCategoriesList()

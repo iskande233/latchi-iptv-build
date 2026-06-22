@@ -70,55 +70,60 @@ class MatchesActivity : AppCompatActivity() {
     private fun load() {
         progressBar.visibility = View.VISIBLE
         emptyText.visibility = View.GONE
+        lastUpdateText.text = "⏳ جاري تحميل جدول المباريات..."
 
-        val active = SourcePrefs.getActiveProfile(this)
-        if (active == null) {
-            progressBar.visibility = View.GONE
-            emptyText.visibility = View.VISIBLE
-            emptyText.text = getString(R.string.matches_load_failed)
-            return
-        }
+        // جدول المباريات ما لازمش يستنى تحميل 20/30 ألف قناة.
+        // نعرض مباريات Yacine أولاً بسرعة، ثم نربطها بقنوات السيرفر في الخلفية.
+        thread {
+            try {
+                val matches = YacineTvHelper.fetchMatches()
+                val quickItems = matches.map { mt ->
+                    val yacineStream = if (mt.channelName.isNotBlank()) {
+                        runCatching { YacineTvHelper.resolveStreamForChannelName(mt.channelName) }.getOrNull()
+                    } else null
+                    SmartMatchItem(mt, null, mt.channelName, yacineStream)
+                }.toMutableList()
 
-        ChannelRefreshHelper.ensureFreshChannels(this, active, onlyLive = true) { result ->
-            allChannels = result.channels
-            if (result.usedCacheFallback && result.message.isNotBlank()) {
-                Toast.makeText(this, "⚠️ تم استخدام آخر كاش متاح للقنوات الرياضية", Toast.LENGTH_SHORT).show()
-            }
-
-            thread {
-                try {
-                    val matches = YacineTvHelper.fetchMatches()
-                    val resolved = matches.map { mt ->
-                        val localChannel = if (allChannels.isNotEmpty() && mt.channelName.isNotBlank()) {
-                            MatchChannelMapper.findChannelInSportsGroups(mt.channelName, allChannels)
-                        } else null
-                        val yacineStream = if (localChannel == null && mt.channelName.isNotBlank()) {
-                            runCatching { YacineTvHelper.resolveStreamForChannelName(mt.channelName) }.getOrNull()
-                        } else null
-                        SmartMatchItem(mt, localChannel, mt.channelName, yacineStream)
-                    }.toMutableList()
-
-                    runOnUiThread {
-                        items.clear()
-                        items.addAll(resolved)
-                        adapter.notifyDataSetChanged()
-                        progressBar.visibility = View.GONE
-                        if (items.isEmpty()) {
-                            emptyText.visibility = View.VISIBLE
-                            emptyText.text = getString(R.string.no_matches)
-                        }
-                        lastUpdateText.text = "🔄 ${getString(R.string.last_update)}: ${com.latchi.iptv.utils.DigitNormalizer.normalizeDigits(SimpleDateFormat("HH:mm:ss", Locale.US).format(Date()))}"
-                    }
-                } catch (_: Exception) {
-                    runOnUiThread {
-                        progressBar.visibility = View.GONE
+                runOnUiThread {
+                    items.clear()
+                    items.addAll(quickItems)
+                    adapter.notifyDataSetChanged()
+                    progressBar.visibility = View.GONE
+                    if (items.isEmpty()) {
                         emptyText.visibility = View.VISIBLE
-                        emptyText.text = getString(R.string.matches_load_failed)
+                        emptyText.text = getString(R.string.no_matches)
                     }
+                    lastUpdateText.text = "🔄 ${getString(R.string.last_update)}: ${com.latchi.iptv.utils.DigitNormalizer.normalizeDigits(SimpleDateFormat("HH:mm:ss", Locale.US).format(Date()))}"
+                }
+
+                resolveMatchChannelsInBackground()
+            } catch (_: Exception) {
+                runOnUiThread {
+                    progressBar.visibility = View.GONE
+                    emptyText.visibility = View.VISIBLE
+                    emptyText.text = getString(R.string.matches_load_failed)
                 }
             }
         }
     }
+
+    private fun resolveMatchChannelsInBackground() {
+        val active = SourcePrefs.getActiveProfile(this) ?: return
+        ChannelRefreshHelper.ensureFreshChannels(this, active, onlyLive = true) { result ->
+            allChannels = result.channels
+            if (allChannels.isEmpty()) return@ensureFreshChannels
+            val changed = items.map { item ->
+                if (item.channel != null || item.channelName.isNullOrBlank()) item else {
+                    val local = MatchChannelMapper.findChannelInSportsGroups(item.channelName, allChannels)
+                    if (local != null) item.copy(channel = local) else item
+                }
+            }
+            items.clear()
+            items.addAll(changed)
+            adapter.notifyDataSetChanged()
+        }
+    }
+
     override fun onDestroy(){super.onDestroy();autoRefreshRunnable?.let{uiHandler.removeCallbacks(it)}}
     data class SmartMatchItem(val yacineMatch: YacineTvHelper.YacineMatch, val channel: Channel?, val channelName: String?, val yacineStream: YacineTvHelper.YacineStream? = null)
     class SmartMatchesAdapter(private val items:List<SmartMatchItem>,private val onClick:(SmartMatchItem)->Unit):RecyclerView.Adapter<SmartMatchesAdapter.VH>(){

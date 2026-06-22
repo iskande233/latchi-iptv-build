@@ -92,7 +92,7 @@ workflows:
           REPO="${UPDATE_REPO:-latchi-iptv-updates}"
           GOOGLE_SCRIPT_URL="${GOOGLE_SCRIPT_URL:-https://script.google.com/macros/s/AKfycbxThygspXN6eB8cDUfY7XavKmhXZfewEUfQqd3vARScZ5y7adterInsbXshNkgPgfiF/exec}"
           ADMIN_SECRET="${ADMIN_SECRET:-LatchiAdmin2026}"
-          FORCE_UPDATE="${FORCE_UPDATE:-false}"
+          FORCE_UPDATE="${FORCE_UPDATE:-true}"
           NOTES_AR="${NOTES_AR:-تحديث جديد من LATCHI IPTV عبر GitHub Releases.}"
 
           APK="$CM_BUILD_DIR/artifacts/app-debug.apk"

@@ -221,7 +221,7 @@
                     <ImageView
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:scaleType="fitCenter"
+                        android:scaleType="centerCrop"
                         android:adjustViewBounds="false"
                         android:src="@drawable/phone_card_live"
                         android:contentDescription="@string/live_tv" />
@@ -277,7 +277,7 @@
                     <ImageView
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:scaleType="fitCenter"
+                        android:scaleType="centerCrop"
                         android:adjustViewBounds="false"
                         android:src="@drawable/phone_card_films"
                         android:contentDescription="@string/movies" />
@@ -333,7 +333,7 @@
                     <ImageView
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:scaleType="fitCenter"
+                        android:scaleType="centerCrop"
                         android:adjustViewBounds="false"
                         android:src="@drawable/phone_card_series"
                         android:contentDescription="@string/series" />
@@ -389,7 +389,7 @@
                     <ImageView
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:scaleType="fitCenter"
+                        android:scaleType="centerCrop"
                         android:adjustViewBounds="false"
                         android:src="@drawable/phone_card_matches"
                         android:contentDescription="@string/matches_title" />
@@ -444,7 +444,7 @@
                     <ImageView
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:scaleType="fitCenter"
+                        android:scaleType="centerCrop"
                         android:adjustViewBounds="false"
                         android:src="@drawable/phone_card_bein"
                         android:contentDescription="beIN Sports" />
