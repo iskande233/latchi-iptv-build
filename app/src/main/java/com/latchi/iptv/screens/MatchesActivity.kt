@@ -56,13 +56,7 @@ class MatchesActivity : AppCompatActivity() {
                 // Yacine streams تحتاج أحياناً Headers، لذلك نفتح PlayerActivity مباشرة حتى في التلفاز.
                 PlayerActivity.startWithHeaders(this, ch, mi.yacineStream.userAgent, mi.yacineStream.referer)
             } else {
-                Toast.makeText(this, "لم نجد القناة الناقلة في سيرفرك الحالي، سيتم فتح البحث.", Toast.LENGTH_LONG).show()
-                val searchIntent = Intent(this, ChannelListActivity::class.java).apply {
-                    putExtra("extra_type", "live")
-                    putExtra("extra_title", "بحث: ${mi.channelName ?: "قناة"}")
-                    putExtra("search_query", mi.channelName ?: "")
-                }
-                startActivity(searchIntent)
+                playYacineOrOpenSearch(mi)
             }
         }
         recyclerView.layoutManager=LinearLayoutManager(this); com.latchi.iptv.utils.TvFocusHelper.setupRecycler(recyclerView); recyclerView.adapter=adapter; load()
@@ -78,10 +72,8 @@ class MatchesActivity : AppCompatActivity() {
             try {
                 val matches = YacineTvHelper.fetchMatches()
                 val quickItems = matches.map { mt ->
-                    val yacineStream = if (mt.channelName.isNotBlank()) {
-                        runCatching { YacineTvHelper.resolveStreamForChannelName(mt.channelName) }.getOrNull()
-                    } else null
-                    SmartMatchItem(mt, null, mt.channelName, yacineStream)
+                    // سريع جداً: نعرض الجدول فقط، وما نحلّش روابط القنوات حتى يضغط المستخدم.
+                    SmartMatchItem(mt, null, mt.channelName, null)
                 }.toMutableList()
 
                 runOnUiThread {
@@ -122,6 +114,36 @@ class MatchesActivity : AppCompatActivity() {
             items.addAll(changed)
             adapter.notifyDataSetChanged()
         }
+    }
+
+    private fun playYacineOrOpenSearch(mi: SmartMatchItem) {
+        val channelName = mi.channelName ?: ""
+        if (channelName.isBlank()) {
+            openMatchSearch(channelName)
+            return
+        }
+        Toast.makeText(this, "⏳ جاري فتح قناة المباراة...", Toast.LENGTH_SHORT).show()
+        thread {
+            val stream = runCatching { YacineTvHelper.resolveStreamForChannelName(channelName) }.getOrNull()
+            runOnUiThread {
+                if (stream != null) {
+                    val ch = Channel(channelName, "", stream.url, "Yacine TV Matches", "live")
+                    PlayerActivity.startWithHeaders(this, ch, stream.userAgent, stream.referer)
+                } else {
+                    openMatchSearch(channelName)
+                }
+            }
+        }
+    }
+
+    private fun openMatchSearch(channelName: String) {
+        Toast.makeText(this, "لم نجد القناة الناقلة، سيتم فتح البحث.", Toast.LENGTH_LONG).show()
+        val searchIntent = Intent(this, ChannelListActivity::class.java).apply {
+            putExtra("extra_type", "live")
+            putExtra("extra_title", "بحث: ${channelName.ifBlank { "قناة" }}")
+            putExtra("search_query", channelName)
+        }
+        startActivity(searchIntent)
     }
 
     override fun onDestroy(){super.onDestroy();autoRefreshRunnable?.let{uiHandler.removeCallbacks(it)}}

@@ -230,6 +230,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_gravity="bottom|start"
+                        android:visibility="gone"
                         android:background="#88000000"
                         android:orientation="vertical"
                         android:paddingHorizontal="12dp"
@@ -262,6 +263,63 @@
                     </LinearLayout>
                 </FrameLayout>
 
+                <!-- 🏆 beIN Sports Card (مخصص لقنوات beIN فقط) -->
+                <FrameLayout
+                    android:id="@+id/cardBeInSports"
+                    android:layout_width="match_parent"
+                    android:layout_height="84dp"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_panel_premium_focusable"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="@drawable/focus_selector"
+                    android:elevation="8dp">
+
+                    <ImageView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        android:adjustViewBounds="false"
+                        android:src="@drawable/phone_card_bein"
+                        android:contentDescription="beIN Sports" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="bottom|start"
+                        android:visibility="gone"
+                        android:background="#99000000"
+                        android:orientation="vertical"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="4dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🏆 beIN Sports"
+                            android:textColor="@android:color/white"
+                            android:textSize="17sp"
+                            android:textStyle="bold"
+                            android:shadowColor="#9D4EDD"
+                            android:shadowDx="2"
+                            android:shadowDy="2"
+                            android:shadowRadius="6" />
+
+                        <TextView
+                            android:id="@+id/beinSportsCount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="1dp"
+                            android:text="قنوات beIN + MAX + كأس العالم"
+                            android:textColor="#C77DFF"
+                            android:textSize="10sp"
+                            android:shadowColor="#000000"
+                            android:shadowDx="1"
+                            android:shadowDy="1"
+                            android:shadowRadius="3" />
+                    </LinearLayout>
+                </FrameLayout>
+
                 <!-- Movies Card -->
                 <FrameLayout
                     android:id="@+id/cardMovies"
@@ -286,6 +344,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_gravity="bottom|start"
+                        android:visibility="gone"
                         android:background="#88000000"
                         android:orientation="vertical"
                         android:paddingHorizontal="12dp"
@@ -342,6 +401,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_gravity="bottom|start"
+                        android:visibility="gone"
                         android:background="#88000000"
                         android:orientation="vertical"
                         android:paddingHorizontal="12dp"
@@ -398,6 +458,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_gravity="bottom|start"
+                        android:visibility="gone"
                         android:background="#88000000"
                         android:orientation="vertical"
                         android:paddingHorizontal="12dp"
@@ -426,62 +487,6 @@
                             android:shadowDx="2"
                             android:shadowDy="2"
                             android:shadowRadius="4" />
-                    </LinearLayout>
-                </FrameLayout>
-
-                <!-- 🏆 beIN Sports Card (مخصص لقنوات beIN فقط) -->
-                <FrameLayout
-                    android:id="@+id/cardBeInSports"
-                    android:layout_width="match_parent"
-                    android:layout_height="84dp"
-                    android:layout_marginTop="10dp"
-                    android:background="@drawable/bg_panel_premium_focusable"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="@drawable/focus_selector"
-                    android:elevation="8dp">
-
-                    <ImageView
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:scaleType="centerCrop"
-                        android:adjustViewBounds="false"
-                        android:src="@drawable/phone_card_bein"
-                        android:contentDescription="beIN Sports" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="bottom|start"
-                        android:background="#99000000"
-                        android:orientation="vertical"
-                        android:paddingHorizontal="12dp"
-                        android:paddingVertical="4dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="🏆 beIN Sports"
-                            android:textColor="@android:color/white"
-                            android:textSize="17sp"
-                            android:textStyle="bold"
-                            android:shadowColor="#9D4EDD"
-                            android:shadowDx="2"
-                            android:shadowDy="2"
-                            android:shadowRadius="6" />
-
-                        <TextView
-                            android:id="@+id/beinSportsCount"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="1dp"
-                            android:text="قنوات beIN + MAX + كأس العالم"
-                            android:textColor="#C77DFF"
-                            android:textSize="10sp"
-                            android:shadowColor="#000000"
-                            android:shadowDx="1"
-                            android:shadowDy="1"
-                            android:shadowRadius="3" />
                     </LinearLayout>
                 </FrameLayout>
 
