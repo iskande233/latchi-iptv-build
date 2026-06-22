@@ -53,11 +53,8 @@ class MatchesActivity : AppCompatActivity() {
                     category = "Yacine TV Matches",
                     contentType = "live"
                 )
-                if (TvUtils.isTv(this)) {
-                    TvLivePreviewActivity.startWithChannels(this, ch, listOf(ch), ch.category)
-                } else {
-                    PlayerActivity.start(this, ch)
-                }
+                // Yacine streams تحتاج أحياناً Headers، لذلك نفتح PlayerActivity مباشرة حتى في التلفاز.
+                PlayerActivity.startWithHeaders(this, ch, mi.yacineStream.userAgent, mi.yacineStream.referer)
             } else {
                 Toast.makeText(this, "لم نجد القناة الناقلة في سيرفرك الحالي، سيتم فتح البحث.", Toast.LENGTH_LONG).show()
                 val searchIntent = Intent(this, ChannelListActivity::class.java).apply {

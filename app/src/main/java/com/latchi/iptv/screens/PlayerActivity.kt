@@ -72,6 +72,14 @@ class PlayerActivity : AppCompatActivity() {
             val intent = Intent(context, PlayerActivity::class.java).apply { putExtra("channel", channel) }
             context.startActivity(intent)
         }
+        fun startWithHeaders(context: Context, channel: Channel, userAgent: String, referer: String = "") {
+            val intent = Intent(context, PlayerActivity::class.java).apply {
+                putExtra("channel", channel)
+                putExtra("user_agent", userAgent)
+                putExtra("referer", referer)
+            }
+            context.startActivity(intent)
+        }
     }
 
     @SuppressLint("SourceLockedOrientationActivity")
@@ -286,8 +294,13 @@ class PlayerActivity : AppCompatActivity() {
         errorTextView.visibility = View.GONE
         playerView.visibility = View.VISIBLE
 
+        val extraUserAgent = intent.getStringExtra("user_agent").orEmpty()
+        val extraReferer = intent.getStringExtra("referer").orEmpty()
+        val headers = mutableMapOf<String, String>()
+        if (extraReferer.isNotBlank()) headers["Referer"] = extraReferer
         val dataSourceFactory = DefaultHttpDataSource.Factory()
-            .setUserAgent("Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36")
+            .setUserAgent(extraUserAgent.ifBlank { "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36" })
+            .setDefaultRequestProperties(headers)
             .setAllowCrossProtocolRedirects(true)
 
         val streamUrl = channel.streamUrl.trim().replace("&amp;", "&")
