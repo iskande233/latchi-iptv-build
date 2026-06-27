@@ -33,6 +33,13 @@ object ActivationValidator {
         if (profile.activationCode == "MANUAL") {
             return ActivationValidationResult(true, "OK", profile.name, profile.m3uUrl, profile.expiresAt, profile.maxDevices, profile.serverRevision)
         }
+        if (AppModeManager.isFreeProfile(profile)) {
+            val cfg = AppModeManager.fetchConfigBlocking()
+            if (cfg.success && cfg.appMode == AppModeManager.MODE_FREE && cfg.masterUrl.isNotBlank()) {
+                return ActivationValidationResult(true, "FREE", "LATCHI FREE", cfg.masterUrl, "FREE", 1, cfg.serverRevision, hiddenCategories = cfg.hiddenCategories)
+            }
+            return ActivationValidationResult(false, "Free mode disabled")
+        }
         return validateCode(context, profile.activationCode, profile)
     }
 
@@ -46,7 +53,7 @@ object ActivationValidator {
         val code = URLEncoder.encode(activationCode.trim(), "UTF-8")
         val device = URLEncoder.encode(deviceId, "UTF-8")
         val ts = System.currentTimeMillis().toString()
-        val requestUrl = "$apiUrl?code=$code&device_id=$device&_t=$ts"
+        val requestUrl = "$apiUrl?action=verify_code&code=$code&device_id=$device&_t=$ts"
 
         val connection = URL(requestUrl).openConnection() as HttpURLConnection
         connection.requestMethod = "GET"

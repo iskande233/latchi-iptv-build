@@ -11,6 +11,7 @@ import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.commit
 import com.latchi.iptv.screens.*
+import com.latchi.iptv.utils.AppModeManager
 import com.latchi.iptv.utils.FloatingBackHelper
 import com.latchi.iptv.utils.LocaleHelper
 import com.latchi.iptv.utils.MatchNotificationHelper
@@ -72,6 +73,12 @@ class MainActivity : AppCompatActivity() {
 
                 if (supportFragmentManager.backStackEntryCount > 0) {
                     supportFragmentManager.popBackStack()
+                    return
+                }
+
+                // في الوضع المجاني لا توجد شاشة حسابات/كود؛ الخروج يرجع للخلفية مباشرة.
+                if (AppModeManager.isFreeProfile(com.latchi.iptv.utils.SourcePrefs.getActiveProfile(this@MainActivity))) {
+                    moveTaskToBack(true)
                     return
                 }
 

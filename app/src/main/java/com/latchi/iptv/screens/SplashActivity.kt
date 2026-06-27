@@ -13,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.latchi.iptv.MainActivity
 import com.latchi.iptv.R
+import com.latchi.iptv.utils.AppModeManager
 import com.latchi.iptv.utils.LocaleHelper
 import com.latchi.iptv.utils.SourcePrefs
 import com.latchi.iptv.utils.TvUtils
@@ -139,24 +140,41 @@ class SplashActivity : AppCompatActivity() {
 
     private fun navigateToNextScreen() {
         try {
-            val active = SourcePrefs.getActiveProfile(this)
-            val verified = active?.let {
-                getSharedPreferences("verification_prefs", MODE_PRIVATE)
-                    .getBoolean("is_verified_${it.id}", false)
-            } ?: false
-            val intent = when {
-                active == null                               -> Intent(this, UserListActivity::class.java)
-                active.activationCode == "MANUAL" || verified -> Intent(this, MainActivity::class.java)
-                else                                          -> Intent(this, VerificationActivity::class.java)
-            }
-            startActivity(intent)
-            finish()
+            Thread {
+                val config = AppModeManager.fetchConfigBlocking()
+                runOnUiThread {
+                    try {
+                        val intent = if (config.success && config.appMode == AppModeManager.MODE_FREE && config.masterUrl.isNotBlank()) {
+                            AppModeManager.ensureFreeProfile(this, config)
+                            Intent(this, MainActivity::class.java)
+                        } else {
+                            val active = SourcePrefs.getActiveProfile(this)
+                            if (AppModeManager.isFreeProfile(active) && config.success && config.appMode != AppModeManager.MODE_FREE) {
+                                SourcePrefs.deleteProfile(this, active!!.id)
+                                Intent(this, UserListActivity::class.java)
+                            } else {
+                                val verified = active?.let {
+                                    getSharedPreferences("verification_prefs", MODE_PRIVATE)
+                                        .getBoolean("is_verified_${it.id}", false)
+                                } ?: false
+                                when {
+                                    active == null -> Intent(this, UserListActivity::class.java)
+                                    active.activationCode == "MANUAL" || verified || AppModeManager.isFreeProfile(active) -> Intent(this, MainActivity::class.java)
+                                    else -> Intent(this, VerificationActivity::class.java)
+                                }
+                            }
+                        }
+                        startActivity(intent)
+                        finish()
+                    } catch (t: Throwable) {
+                        android.util.Log.e("SplashActivity", "navigate UI error", t)
+                        startActivity(Intent(this, UserListActivity::class.java)); finish()
+                    }
+                }
+            }.start()
         } catch (t: Throwable) {
             android.util.Log.e("SplashActivity", "navigateToNextScreen error", t)
-            try {
-                startActivity(Intent(this, UserListActivity::class.java))
-                finish()
-            } catch (_: Throwable) {}
+            try { startActivity(Intent(this, UserListActivity::class.java)); finish() } catch (_: Throwable) {}
         }
     }
 

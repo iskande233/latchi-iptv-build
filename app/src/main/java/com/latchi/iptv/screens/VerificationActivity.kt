@@ -18,6 +18,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.latchi.iptv.MainActivity
 import com.latchi.iptv.R
 import com.latchi.iptv.utils.ActivationValidator
+import com.latchi.iptv.utils.AppModeManager
 import com.latchi.iptv.utils.ChannelCache
 import com.latchi.iptv.utils.LocaleHelper
 import com.latchi.iptv.utils.RemoteViewConfigPrefs
@@ -49,7 +50,7 @@ class VerificationActivity : AppCompatActivity() {
             goToUsers()
             return
         }
-        if (profile.activationCode == "MANUAL") {
+        if (profile.activationCode == "MANUAL" || AppModeManager.isFreeProfile(profile)) {
             goToMain()
             return
         }
