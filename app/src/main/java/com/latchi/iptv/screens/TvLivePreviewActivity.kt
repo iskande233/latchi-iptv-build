@@ -84,6 +84,9 @@ class TvLivePreviewActivity : AppCompatActivity() {
     private var directFilterMode: String? = null
     private var lastFocusedChannelUrl: String? = null
     private var dashboardInitialized: Boolean = false
+    private val streamRetryHandler = Handler(Looper.getMainLooper())
+    private var streamRetryCount = 0
+    private val streamMaxRetryCount = 20
     private var lazyXtreamLiveMode: Boolean = false
     private val lazyCategoryCache = mutableMapOf<String, List<Channel>>()
     private var lazyTvCategories: List<TvLazyCategory> = emptyList()
@@ -996,8 +999,14 @@ class TvLivePreviewActivity : AppCompatActivity() {
             FavoriteManager.addRecentChannel(this, profileId, ch)
             loadRoyalEpg(ch)
 
+            streamRetryHandler.removeCallbacksAndMessages(null)
+            streamRetryCount = 0
             player?.release()
+            val loadControl = com.google.android.exoplayer2.DefaultLoadControl.Builder()
+                .setBufferDurationsMs(25000, 65000, 2500, 7000)
+                .build()
             player = ExoPlayer.Builder(this)
+                .setLoadControl(loadControl)
                 .build()
                 .also { exo ->
                     viewPlayer.player = exo
@@ -1007,14 +1016,35 @@ class TvLivePreviewActivity : AppCompatActivity() {
                     exo.prepare()
                     showMenuOverlay(autoHide = true)
                     exo.addListener(object : Player.Listener {
+                        override fun onPlaybackStateChanged(playbackState: Int) {
+                            if (playbackState == Player.STATE_READY) streamRetryCount = 0
+                            if (playbackState == Player.STATE_ENDED) scheduleRoyalStreamRetry(ch, "ended")
+                        }
                         override fun onPlayerError(error: PlaybackException) {
-                            txtDetailsBottom.text = "⚠️ البث متوقف أو غير متاح: ${ch.name}"
+                            scheduleRoyalStreamRetry(ch, error.errorCodeName)
                         }
                     })
                 }
         } catch (e: Exception) {
             txtDetailsBottom.text = "❌ خطأ في التشغيل: ${e.message}"
         }
+    }
+
+    private fun scheduleRoyalStreamRetry(ch: Channel, reason: String = "") {
+        if (isFinishing) return
+        streamRetryCount++
+        val delay = (1500L * streamRetryCount).coerceAtMost(12_000L)
+        txtDetailsBottom.text = "⏳ إعادة الاتصال بالبث... ${streamRetryCount}/${streamMaxRetryCount}"
+        txtDetailsBottom.setTextColor(Color.parseColor("#FFB347"))
+        streamRetryHandler.removeCallbacksAndMessages(null)
+        streamRetryHandler.postDelayed({
+            if (!isFinishing && currentPlayingUrl == ch.streamUrl && streamRetryCount <= streamMaxRetryCount) {
+                try { playRoyalLiveChannel(ch) } catch (_: Exception) {}
+            } else if (streamRetryCount > streamMaxRetryCount) {
+                txtDetailsBottom.text = "⚠️ البث متوقف أو غير متاح: ${ch.name}"
+                txtDetailsBottom.setTextColor(Color.parseColor("#FF5577"))
+            }
+        }, delay)
     }
 
     private fun loadRoyalEpg(ch: Channel) {
@@ -1120,6 +1150,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         try { overlayHandler.removeCallbacks(hideOverlayRunnable) } catch (_: Exception) {}
+        try { streamRetryHandler.removeCallbacksAndMessages(null) } catch (_: Exception) {}
         try { player?.release(); player = null } catch (_: Exception) {}
         super.onDestroy()
     }

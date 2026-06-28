@@ -65,6 +65,9 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var watermarkText: TextView
     private var watermarkHandler: android.os.Handler? = null
     private var playerControlReceiver: BroadcastReceiver? = null
+    private val retryHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var retryCount = 0
+    private val maxRetryCount = 20
 
     companion object {
         private const val INCREMENT_MILLIS = 5000L
@@ -308,7 +311,8 @@ class PlayerActivity : AppCompatActivity() {
         val mode = PlayerPrefs.getMode(this)
 
         val loadControl = com.google.android.exoplayer2.DefaultLoadControl.Builder()
-            .setBufferDurationsMs(15000, 30000, 2500, 5000)
+            // Buffer أطول حتى لا يتوقف البث عند تقطيع خفيف في السيرفر.
+            .setBufferDurationsMs(25000, 65000, 2500, 7000)
             .build()
 
         player = if (mode == PlayerPrefs.MODE_AUTO) {
@@ -349,21 +353,46 @@ class PlayerActivity : AppCompatActivity() {
 
                 override fun onPlaybackStateChanged(playbackState: Int) {
                     if (playbackState == Player.STATE_READY) {
+                        retryCount = 0
                         isPlayerReady = true
                         progressBar.visibility = View.GONE
                         errorTextView.visibility = View.GONE
                         playerView.visibility = View.VISIBLE
+                    } else if (playbackState == Player.STATE_ENDED && channel.contentType == "live") {
+                        scheduleStreamRetry("stream_ended")
                     }
                 }
 
                 override fun onPlayerError(error: PlaybackException) {
-                    progressBar.visibility = View.GONE
-                    playerView.visibility = View.GONE
-                    errorTextView.visibility = View.VISIBLE
-                    errorTextView.text = getString(R.string.channel_unavailable)
+                    scheduleStreamRetry(error.errorCodeName)
                 }
             })
         }
+    }
+
+    private fun scheduleStreamRetry(reason: String = "") {
+        if (isFinishing) return
+        retryCount++
+        val delay = (1500L * retryCount).coerceAtMost(12_000L)
+        progressBar.visibility = View.VISIBLE
+        playerView.visibility = View.VISIBLE
+        errorTextView.visibility = View.VISIBLE
+        errorTextView.text = "إعادة الاتصال بالبث... ${retryCount}/${maxRetryCount}"
+        retryHandler.removeCallbacksAndMessages(null)
+        retryHandler.postDelayed({
+            try {
+                if (retryCount <= maxRetryCount) {
+                    val pos = if (channel.contentType == "live") 0L else (player?.currentPosition ?: playbackPosition)
+                    player?.stop()
+                    player?.clearMediaItems()
+                    setupPlayer()
+                    if (pos > 0L) player?.seekTo(pos)
+                } else {
+                    progressBar.visibility = View.GONE
+                    errorTextView.text = getString(R.string.channel_unavailable)
+                }
+            } catch (_: Exception) {}
+        }, delay)
     }
 
     private fun lockScreen(lock: Boolean) {
@@ -457,7 +486,7 @@ class PlayerActivity : AppCompatActivity() {
     private fun audioManager(): AudioManager? = getSystemService(Context.AUDIO_SERVICE) as? AudioManager
 
     override fun onStop() { super.onStop(); watermarkHandler?.removeCallbacksAndMessages(null); saveResumePosition(); if (Util.SDK_INT > 23) player?.let { playbackPosition = it.currentPosition; it.playWhenReady = false } }
-    override fun onDestroy() { super.onDestroy(); playerControlReceiver?.let { try { unregisterReceiver(it) } catch (_: Exception) {} }; playerControlReceiver = null; player?.release(); player = null }
+    override fun onDestroy() { super.onDestroy(); retryHandler.removeCallbacksAndMessages(null); playerControlReceiver?.let { try { unregisterReceiver(it) } catch (_: Exception) {} }; playerControlReceiver = null; player?.release(); player = null }
     @Deprecated("Deprecated in Java") override fun onBackPressed() { if (!isLock) super.onBackPressed() }
 
     // TV remote / d-pad control for the player
