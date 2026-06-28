@@ -66,6 +66,7 @@ class PlayerActivity : AppCompatActivity() {
     private var watermarkHandler: android.os.Handler? = null
     private var playerControlReceiver: BroadcastReceiver? = null
     private val retryHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val stallHandler = android.os.Handler(android.os.Looper.getMainLooper())
     private var retryCount = 0
     private val maxRetryCount = 20
 
@@ -351,13 +352,28 @@ class PlayerActivity : AppCompatActivity() {
                     progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
                 }
 
+                override fun onIsPlayingChanged(isPlaying: Boolean) {
+                    if (channel.contentType == "live" && !isPlaying && player?.playbackState == Player.STATE_READY) {
+                        // بعض السيرفرات توقف الصورة بعد 15/30 ثانية بدون error. نضغط play تلقائياً بدل المستخدم.
+                        stallHandler.postDelayed({
+                            if (!isFinishing && player?.playbackState == Player.STATE_READY && player?.isPlaying != true) {
+                                player?.playWhenReady = true
+                                player?.play()
+                            }
+                        }, 1200L)
+                    }
+                }
+
                 override fun onPlaybackStateChanged(playbackState: Int) {
                     if (playbackState == Player.STATE_READY) {
                         retryCount = 0
+                        stallHandler.removeCallbacksAndMessages(null)
                         isPlayerReady = true
                         progressBar.visibility = View.GONE
                         errorTextView.visibility = View.GONE
                         playerView.visibility = View.VISIBLE
+                    } else if (playbackState == Player.STATE_BUFFERING && channel.contentType == "live") {
+                        scheduleBufferingWatchdog()
                     } else if (playbackState == Player.STATE_ENDED && channel.contentType == "live") {
                         scheduleStreamRetry("stream_ended")
                     }
@@ -368,6 +384,15 @@ class PlayerActivity : AppCompatActivity() {
                 }
             })
         }
+    }
+
+    private fun scheduleBufferingWatchdog() {
+        stallHandler.removeCallbacksAndMessages(null)
+        stallHandler.postDelayed({
+            if (!isFinishing && channel.contentType == "live" && player?.playbackState == Player.STATE_BUFFERING) {
+                scheduleStreamRetry("buffering_timeout")
+            }
+        }, 7000L)
     }
 
     private fun scheduleStreamRetry(reason: String = "") {
@@ -486,7 +511,7 @@ class PlayerActivity : AppCompatActivity() {
     private fun audioManager(): AudioManager? = getSystemService(Context.AUDIO_SERVICE) as? AudioManager
 
     override fun onStop() { super.onStop(); watermarkHandler?.removeCallbacksAndMessages(null); saveResumePosition(); if (Util.SDK_INT > 23) player?.let { playbackPosition = it.currentPosition; it.playWhenReady = false } }
-    override fun onDestroy() { super.onDestroy(); retryHandler.removeCallbacksAndMessages(null); playerControlReceiver?.let { try { unregisterReceiver(it) } catch (_: Exception) {} }; playerControlReceiver = null; player?.release(); player = null }
+    override fun onDestroy() { super.onDestroy(); retryHandler.removeCallbacksAndMessages(null); stallHandler.removeCallbacksAndMessages(null); playerControlReceiver?.let { try { unregisterReceiver(it) } catch (_: Exception) {} }; playerControlReceiver = null; player?.release(); player = null }
     @Deprecated("Deprecated in Java") override fun onBackPressed() { if (!isLock) super.onBackPressed() }
 
     // TV remote / d-pad control for the player

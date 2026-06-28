@@ -85,6 +85,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
     private var lastFocusedChannelUrl: String? = null
     private var dashboardInitialized: Boolean = false
     private val streamRetryHandler = Handler(Looper.getMainLooper())
+    private val streamStallHandler = Handler(Looper.getMainLooper())
     private var streamRetryCount = 0
     private val streamMaxRetryCount = 20
     private var lazyXtreamLiveMode: Boolean = false
@@ -985,7 +986,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
     // ─────────────────────────────────────────────────────────────
     // تشغيل القناة في المشغل (ExoPlayer)
     // ─────────────────────────────────────────────────────────────
-    private fun playRoyalLiveChannel(ch: Channel) {
+    private fun playRoyalLiveChannel(ch: Channel, resetRetry: Boolean = true) {
         try {
             selectedChannel = ch
             currentPlayingUrl = ch.streamUrl
@@ -1000,7 +1001,8 @@ class TvLivePreviewActivity : AppCompatActivity() {
             loadRoyalEpg(ch)
 
             streamRetryHandler.removeCallbacksAndMessages(null)
-            streamRetryCount = 0
+            streamStallHandler.removeCallbacksAndMessages(null)
+            if (resetRetry) streamRetryCount = 0
             player?.release()
             val loadControl = com.google.android.exoplayer2.DefaultLoadControl.Builder()
                 .setBufferDurationsMs(25000, 65000, 2500, 7000)
@@ -1016,8 +1018,22 @@ class TvLivePreviewActivity : AppCompatActivity() {
                     exo.prepare()
                     showMenuOverlay(autoHide = true)
                     exo.addListener(object : Player.Listener {
+                        override fun onIsPlayingChanged(isPlaying: Boolean) {
+                            if (!isPlaying && exo.playbackState == Player.STATE_READY) {
+                                streamStallHandler.postDelayed({
+                                    if (!isFinishing && currentPlayingUrl == ch.streamUrl && exo.playbackState == Player.STATE_READY && !exo.isPlaying) {
+                                        exo.playWhenReady = true
+                                        exo.play()
+                                    }
+                                }, 1200L)
+                            }
+                        }
                         override fun onPlaybackStateChanged(playbackState: Int) {
-                            if (playbackState == Player.STATE_READY) streamRetryCount = 0
+                            if (playbackState == Player.STATE_READY) {
+                                streamRetryCount = 0
+                                streamStallHandler.removeCallbacksAndMessages(null)
+                            }
+                            if (playbackState == Player.STATE_BUFFERING) scheduleRoyalBufferingWatchdog(ch)
                             if (playbackState == Player.STATE_ENDED) scheduleRoyalStreamRetry(ch, "ended")
                         }
                         override fun onPlayerError(error: PlaybackException) {
@@ -1030,6 +1046,15 @@ class TvLivePreviewActivity : AppCompatActivity() {
         }
     }
 
+    private fun scheduleRoyalBufferingWatchdog(ch: Channel) {
+        streamStallHandler.removeCallbacksAndMessages(null)
+        streamStallHandler.postDelayed({
+            if (!isFinishing && currentPlayingUrl == ch.streamUrl && player?.playbackState == Player.STATE_BUFFERING) {
+                scheduleRoyalStreamRetry(ch, "buffering_timeout")
+            }
+        }, 7000L)
+    }
+
     private fun scheduleRoyalStreamRetry(ch: Channel, reason: String = "") {
         if (isFinishing) return
         streamRetryCount++
@@ -1039,7 +1064,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
         streamRetryHandler.removeCallbacksAndMessages(null)
         streamRetryHandler.postDelayed({
             if (!isFinishing && currentPlayingUrl == ch.streamUrl && streamRetryCount <= streamMaxRetryCount) {
-                try { playRoyalLiveChannel(ch) } catch (_: Exception) {}
+                try { playRoyalLiveChannel(ch, resetRetry = false) } catch (_: Exception) {}
             } else if (streamRetryCount > streamMaxRetryCount) {
                 txtDetailsBottom.text = "⚠️ البث متوقف أو غير متاح: ${ch.name}"
                 txtDetailsBottom.setTextColor(Color.parseColor("#FF5577"))
@@ -1151,6 +1176,7 @@ class TvLivePreviewActivity : AppCompatActivity() {
     override fun onDestroy() {
         try { overlayHandler.removeCallbacks(hideOverlayRunnable) } catch (_: Exception) {}
         try { streamRetryHandler.removeCallbacksAndMessages(null) } catch (_: Exception) {}
+        try { streamStallHandler.removeCallbacksAndMessages(null) } catch (_: Exception) {}
         try { player?.release(); player = null } catch (_: Exception) {}
         super.onDestroy()
     }
